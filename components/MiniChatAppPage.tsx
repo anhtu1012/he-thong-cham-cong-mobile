@@ -35,7 +35,7 @@ const MiniChatAppPage: React.FC<MiniChatAppProps> = ({ onClose }) => {
 
   return (
     <View style={styleOverrides.container}>
-      <ChatAppPage />
+      <ChatAppPage onClose={onClose} />
       {/* Nút đóng custom */}
       <View style={styleOverrides.closeButtonWrapper}>
         <TouchableOpacity style={styleOverrides.closeButton} onPress={onClose}>

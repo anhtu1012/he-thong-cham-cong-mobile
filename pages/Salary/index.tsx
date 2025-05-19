@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
+  ActivityIndicator,
 } from "react-native";
 import {
   AntDesign,
@@ -26,6 +27,7 @@ const SalaryPage = () => {
   const [selectedMonth, setSelectedMonth] = useState("07/2024");
   const [activeTab, setActiveTab] = useState("summary"); // summary, details, history, dailyLog
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Mock data for daily attendance
   const currentDate = new Date();
@@ -202,6 +204,7 @@ const SalaryPage = () => {
     // and then false after a delay
     setTimeout(() => {
       setRefreshing(false);
+      setIsLoading(false);
     }, 1000);
   };
 
@@ -238,7 +241,116 @@ const SalaryPage = () => {
     }
   }, [activeTab, refreshing]);
 
+  // Render tab navigation UI
+  const renderTabNavigation = () => (
+    <View style={styles.tabsContainer}>
+      <TouchableOpacity
+        style={[styles.tabItem, activeTab === "summary" && styles.activeTab]}
+        onPress={() => setActiveTab("summary")}
+      >
+        <Text
+          style={[
+            styles.tabText,
+            activeTab === "summary" && styles.activeTabText,
+          ]}
+        >
+          Tổng quan
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.tabItem, activeTab === "details" && styles.activeTab]}
+        onPress={() => setActiveTab("details")}
+      >
+        <Text
+          style={[
+            styles.tabText,
+            activeTab === "details" && styles.activeTabText,
+          ]}
+        >
+          Chi tiết
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.tabItem, activeTab === "history" && styles.activeTab]}
+        onPress={() => setActiveTab("history")}
+      >
+        <Text
+          style={[
+            styles.tabText,
+            activeTab === "history" && styles.activeTabText,
+          ]}
+        >
+          Lịch sử
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.tabItem, activeTab === "dailyLog" && styles.activeTab]}
+        onPress={() => setActiveTab("dailyLog")}
+      >
+        <Text
+          style={[
+            styles.tabText,
+            activeTab === "dailyLog" && styles.activeTabText,
+          ]}
+        >
+          Chấm công
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderHeaderSection = () => (
+    <View style={styles.header}>
+      <View style={styles.headerContent}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <AntDesign name="arrowleft" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Bảng lương</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.iconButton}>
+            <Feather name="download" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.monthSelector}>
+        <TouchableOpacity style={styles.monthArrow}>
+          <Ionicons name="chevron-back" size={20} color="#fff" />
+        </TouchableOpacity>
+        <View style={styles.selectedMonthContainer}>
+          <Text style={styles.selectedMonthText}>{selectedMonth}</Text>
+          <AntDesign
+            name="caretdown"
+            size={12}
+            color="#fff"
+            style={{ marginLeft: 5 }}
+          />
+        </View>
+        <TouchableOpacity style={styles.monthArrow}>
+          <Ionicons name="chevron-forward" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      {renderTabNavigation()}
+    </View>
+  );
+
   const renderTab = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3674B5" />
+          <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+        </View>
+      );
+    }
+
     switch (activeTab) {
       case "summary":
         return (
@@ -462,7 +574,7 @@ const SalaryPage = () => {
 
                   <View style={styles.detailItem}>
                     <View style={styles.detailItemIconContainer}>
-                      <FontAwesome5 name="bus" size={16} color="#2196F3" />
+                      <Feather name="truck" size={16} color="#9C27B0" />
                     </View>
                     <Text style={styles.detailItemLabel}>Phụ cấp đi lại</Text>
                     <Text style={styles.detailItemValue}>
@@ -472,7 +584,7 @@ const SalaryPage = () => {
 
                   <View style={styles.detailItem}>
                     <View style={styles.detailItemIconContainer}>
-                      <Feather name="phone" size={16} color="#9C27B0" />
+                      <Feather name="phone" size={16} color="#2196F3" />
                     </View>
                     <Text style={styles.detailItemLabel}>
                       Phụ cấp điện thoại
@@ -482,22 +594,11 @@ const SalaryPage = () => {
                     </Text>
                   </View>
 
-                  <View style={styles.detailItem}>
-                    <View style={styles.detailItemIconContainer}>
-                      <Feather name="plus-circle" size={16} color="#607D8B" />
-                    </View>
-                    <Text style={styles.detailItemLabel}>Phụ cấp khác</Text>
-                    <Text style={styles.detailItemValue}>
-                      {formatCurrency(salaryData.otherAllowance)} đ
+                  <View style={styles.detailItemTotal}>
+                    <Text style={styles.detailItemTotalLabel}>
+                      Tổng phụ cấp
                     </Text>
-                  </View>
-
-                  <View style={[styles.detailItem, styles.totalItem]}>
-                    <View style={styles.detailItemIconContainer}>
-                      <Feather name="check-circle" size={16} color="#3674B5" />
-                    </View>
-                    <Text style={styles.totalLabel}>Tổng phụ cấp</Text>
-                    <Text style={styles.totalValue}>
+                    <Text style={styles.detailItemTotalValue}>
                       {formatCurrency(salaryData.totalAllowances)} đ
                     </Text>
                   </View>
@@ -512,9 +613,7 @@ const SalaryPage = () => {
                     size={18}
                     color="#F44336"
                   />
-                  <Text style={[styles.sectionTitle, { color: "#F44336" }]}>
-                    Các khoản khấu trừ
-                  </Text>
+                  <Text style={styles.sectionTitle}>Các khoản khấu trừ</Text>
                 </View>
 
                 <View style={[styles.detailItemCard, styles.deductionCard]}>
@@ -522,7 +621,7 @@ const SalaryPage = () => {
                     <View
                       style={[
                         styles.detailItemIconContainer,
-                        styles.deductionIcon,
+                        { backgroundColor: "#ffebee" },
                       ]}
                     >
                       <Feather name="shield" size={16} color="#F44336" />
@@ -530,7 +629,9 @@ const SalaryPage = () => {
                     <Text style={styles.detailItemLabel}>
                       Bảo hiểm xã hội (9%)
                     </Text>
-                    <Text style={styles.detailItemDeduction}>
+                    <Text
+                      style={[styles.detailItemValue, { color: "#F44336" }]}
+                    >
                       -{formatCurrency(salaryData.socialInsurance)} đ
                     </Text>
                   </View>
@@ -539,15 +640,17 @@ const SalaryPage = () => {
                     <View
                       style={[
                         styles.detailItemIconContainer,
-                        styles.deductionIcon,
+                        { backgroundColor: "#ffebee" },
                       ]}
                     >
-                      <FontAwesome5 name="hospital" size={16} color="#F44336" />
+                      <Feather name="heart" size={16} color="#F44336" />
                     </View>
                     <Text style={styles.detailItemLabel}>
                       Bảo hiểm y tế (1.5%)
                     </Text>
-                    <Text style={styles.detailItemDeduction}>
+                    <Text
+                      style={[styles.detailItemValue, { color: "#F44336" }]}
+                    >
                       -{formatCurrency(salaryData.healthInsurance)} đ
                     </Text>
                   </View>
@@ -556,7 +659,7 @@ const SalaryPage = () => {
                     <View
                       style={[
                         styles.detailItemIconContainer,
-                        styles.deductionIcon,
+                        { backgroundColor: "#ffebee" },
                       ]}
                     >
                       <Feather name="briefcase" size={16} color="#F44336" />
@@ -564,7 +667,9 @@ const SalaryPage = () => {
                     <Text style={styles.detailItemLabel}>
                       Bảo hiểm thất nghiệp (1%)
                     </Text>
-                    <Text style={styles.detailItemDeduction}>
+                    <Text
+                      style={[styles.detailItemValue, { color: "#F44336" }]}
+                    >
                       -{formatCurrency(salaryData.unemploymentInsurance)} đ
                     </Text>
                   </View>
@@ -573,659 +678,312 @@ const SalaryPage = () => {
                     <View
                       style={[
                         styles.detailItemIconContainer,
-                        styles.deductionIcon,
+                        { backgroundColor: "#ffebee" },
                       ]}
                     >
-                      <FontAwesome5 name="receipt" size={16} color="#F44336" />
+                      <FontAwesome5
+                        name="file-invoice-dollar"
+                        size={16}
+                        color="#F44336"
+                      />
                     </View>
                     <Text style={styles.detailItemLabel}>
                       Thuế thu nhập cá nhân
                     </Text>
-                    <Text style={styles.detailItemDeduction}>
+                    <Text
+                      style={[styles.detailItemValue, { color: "#F44336" }]}
+                    >
                       -{formatCurrency(salaryData.personalIncomeTax)} đ
                     </Text>
                   </View>
 
-                  <View style={[styles.detailItem, styles.totalItem]}>
-                    <View
-                      style={[
-                        styles.detailItemIconContainer,
-                        styles.deductionIcon,
-                      ]}
-                    >
-                      <Feather name="minus-circle" size={16} color="#F44336" />
-                    </View>
-                    <Text style={[styles.totalLabel, { color: "#F44336" }]}>
+                  <View style={styles.detailItemTotal}>
+                    <Text style={styles.detailItemTotalLabel}>
                       Tổng khấu trừ
                     </Text>
-                    <Text style={[styles.totalValue, { color: "#F44336" }]}>
+                    <Text
+                      style={[
+                        styles.detailItemTotalValue,
+                        { color: "#F44336" },
+                      ]}
+                    >
                       -{formatCurrency(salaryData.totalDeductions)} đ
                     </Text>
                   </View>
                 </View>
               </View>
 
-              <LinearGradient
-                colors={["#E3F2FD", "#BBDEFB"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.grandTotalContainer}
-              >
-                <View style={styles.grandTotalRow}>
-                  <View style={styles.grandTotalIconContainer}>
-                    <AntDesign name="wallet" size={24} color="#3674B5" />
-                  </View>
-                  <View style={styles.grandTotalContent}>
-                    <Text style={styles.grandTotalLabel}>LƯƠNG THỰC LÃNH</Text>
-                    <Text style={styles.grandTotalSubtext}>
-                      Chuyển khoản ngày {salaryData.paymentDate}
-                    </Text>
-                  </View>
-                  <Text style={styles.grandTotalValue}>
-                    {formatCurrency(salaryData.netSalary)} đ
-                  </Text>
-                </View>
-              </LinearGradient>
-
-              <TouchableOpacity style={styles.downloadPayslipButton}>
-                <AntDesign name="pdffile1" size={20} color="#fff" />
-                <Text style={styles.downloadText}>
-                  Tải phiếu lương chi tiết
+              <View style={styles.netSalaryCard}>
+                <Text style={styles.netSalaryCardLabel}>LƯƠNG THỰC LÃNH</Text>
+                <Text style={styles.netSalaryCardValue}>
+                  {formatCurrency(salaryData.netSalary)} đ
                 </Text>
-              </TouchableOpacity>
+              </View>
             </View>
           </>
         );
 
       case "history":
         return (
-          <>
-            <View style={styles.historyContainer}>
-              <Text style={styles.sectionTitle}>Lịch sử lương năm 2024</Text>
+          <View style={styles.historyContainer}>
+            <View style={styles.filterContainer}>
+              <Text style={styles.filterLabel}>Lọc theo</Text>
+              <TouchableOpacity style={styles.filterButton}>
+                <Text style={styles.filterButtonText}>2024</Text>
+                <AntDesign name="down" size={12} color="#3674B5" />
+              </TouchableOpacity>
+            </View>
 
-              {salaryHistory.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.historyItem,
-                    selectedMonth === item.month && styles.selectedHistoryItem,
-                  ]}
-                  onPress={() => setSelectedMonth(item.month)}
-                >
-                  <View style={styles.historyItemLeft}>
+            {salaryHistory.map((item, index) => (
+              <TouchableOpacity key={index} style={styles.historyItem}>
+                <View style={styles.historyItemLeft}>
+                  <View style={styles.historyIconContainer}>
+                    <MaterialIcons name="payments" size={24} color="#3674B5" />
+                  </View>
+                  <View>
                     <Text style={styles.historyMonth}>
                       Tháng {item.month.split("/")[0]}
                     </Text>
-                    <Text style={styles.historyYear}>
-                      {item.month.split("/")[1]}
-                    </Text>
+                    <Text style={styles.historyDate}>{item.month}</Text>
                   </View>
-
-                  <View style={styles.historyAmountContainer}>
-                    <Text style={styles.historyAmount}>
-                      {formatCurrency(item.amount)} đ
-                    </Text>
-                    {index < salaryHistory.length - 1 && (
-                      <View style={styles.historyTrend}>
-                        {item.amount > salaryHistory[index + 1].amount ? (
-                          <>
-                            <AntDesign
-                              name="arrowup"
-                              size={12}
-                              color="#4CAF50"
-                            />
-                            <Text
-                              style={[
-                                styles.historyTrendText,
-                                { color: "#4CAF50" },
-                              ]}
-                            >
-                              +
-                              {formatCurrency(
-                                item.amount - salaryHistory[index + 1].amount
-                              )}{" "}
-                              đ
-                            </Text>
-                          </>
-                        ) : item.amount < salaryHistory[index + 1].amount ? (
-                          <>
-                            <AntDesign
-                              name="arrowdown"
-                              size={12}
-                              color="#F44336"
-                            />
-                            <Text
-                              style={[
-                                styles.historyTrendText,
-                                { color: "#F44336" },
-                              ]}
-                            >
-                              -
-                              {formatCurrency(
-                                salaryHistory[index + 1].amount - item.amount
-                              )}{" "}
-                              đ
-                            </Text>
-                          </>
-                        ) : (
-                          <Text style={styles.historyTrendText}>
-                            Không thay đổi
-                          </Text>
-                        )}
-                      </View>
-                    )}
-                  </View>
-
-                  <Feather name="chevron-right" size={20} color="#999" />
-                </TouchableOpacity>
-              ))}
-
-              <TouchableOpacity style={styles.downloadButton}>
-                <AntDesign name="pdffile1" size={20} color="#fff" />
-                <Text style={styles.downloadText}>Tải phiếu lương</Text>
+                </View>
+                <View style={styles.historyRight}>
+                  <Text style={styles.historyAmount}>
+                    {formatCurrency(item.amount)} đ
+                  </Text>
+                  <AntDesign name="right" size={16} color="#999" />
+                </View>
               </TouchableOpacity>
-            </View>
-          </>
+            ))}
+          </View>
         );
 
       case "dailyLog":
         return (
-          <>
-            <View style={styles.dailyLogContainer}>
-              {refreshing && (
-                <View style={styles.refreshingIndicator}>
-                  <Text style={styles.refreshingText}>Đang cập nhật...</Text>
-                </View>
-              )}
-              <Text style={styles.sectionTitle}>
-                Chi tiết công tháng {selectedMonth.split("/")[0]}/
-                {selectedMonth.split("/")[1]}
-              </Text>
-
-              {/* Attendance Summary */}
-              <View style={styles.attendanceSummaryCard}>
-                <View style={styles.attendanceSummaryRow}>
-                  <View style={styles.attendanceSummaryItem}>
-                    <Text style={styles.attendanceSummaryValue}>
-                      {attendanceSummary.totalWorkDays}
-                    </Text>
-                    <Text style={styles.attendanceSummaryLabel}>Ngày làm</Text>
-                  </View>
-
-                  <View style={styles.attendanceSummaryItem}>
-                    <Text style={styles.attendanceSummaryValue}>
-                      {attendanceSummary.daysPresent}
-                    </Text>
-                    <Text style={styles.attendanceSummaryLabel}>Có mặt</Text>
-                  </View>
-
-                  <View style={styles.attendanceSummaryItem}>
-                    <Text style={styles.attendanceSummaryValue}>
-                      {attendanceSummary.daysAbsent}
-                    </Text>
-                    <Text style={styles.attendanceSummaryLabel}>Vắng</Text>
-                  </View>
-                </View>
-
-                <View style={styles.attendanceSummaryRow}>
-                  <View style={styles.attendanceSummaryItem}>
-                    <Text style={styles.attendanceSummaryValue}>
-                      {attendanceSummary.lateDays}
-                    </Text>
-                    <Text style={styles.attendanceSummaryLabel}>Đi muộn</Text>
-                  </View>
-
-                  <View style={styles.attendanceSummaryItem}>
-                    <Text style={styles.attendanceSummaryValue}>
-                      {attendanceSummary.earlyDays}
-                    </Text>
-                    <Text style={styles.attendanceSummaryLabel}>Về sớm</Text>
-                  </View>
-
-                  <View style={styles.attendanceSummaryItem}>
-                    <Text style={styles.attendanceSummaryValue}>
-                      {attendanceSummary.totalHours}
-                    </Text>
-                    <Text style={styles.attendanceSummaryLabel}>Tổng giờ</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Daily Log Header */}
-              <View style={styles.dailyLogHeader}>
-                <Text style={[styles.dailyLogHeaderText, { flex: 0.5 }]}>
-                  Ngày
-                </Text>
-                <Text style={[styles.dailyLogHeaderText, { flex: 1 }]}>
-                  Trạng thái
-                </Text>
-                <Text style={[styles.dailyLogHeaderText, { flex: 0.8 }]}>
-                  Vào
-                </Text>
-                <Text style={[styles.dailyLogHeaderText, { flex: 0.8 }]}>
-                  Ra
-                </Text>
-                <Text style={[styles.dailyLogHeaderText, { flex: 0.6 }]}>
-                  Giờ
+          <View style={styles.dailyLogContainer}>
+            <View style={styles.dailyLogSummary}>
+              <View style={styles.dailyLogSummaryItem}>
+                <Text style={styles.dailyLogSummaryLabel}>Tổng công</Text>
+                <Text style={styles.dailyLogSummaryValue}>
+                  {attendanceSummary.totalWorkDays}
                 </Text>
               </View>
+              <View style={styles.dailyLogSummaryItem}>
+                <Text style={styles.dailyLogSummaryLabel}>Đi làm</Text>
+                <Text style={styles.dailyLogSummaryValue}>
+                  {attendanceSummary.daysPresent}
+                </Text>
+              </View>
+              <View style={styles.dailyLogSummaryItem}>
+                <Text style={styles.dailyLogSummaryLabel}>Vắng mặt</Text>
+                <Text style={styles.dailyLogSummaryValue}>
+                  {attendanceSummary.daysAbsent}
+                </Text>
+              </View>
+              <View style={styles.dailyLogSummaryItem}>
+                <Text style={styles.dailyLogSummaryLabel}>Đi muộn</Text>
+                <Text style={styles.dailyLogSummaryValue}>
+                  {attendanceSummary.lateDays}
+                </Text>
+              </View>
+            </View>
 
-              {/* Daily Log Items */}
-              {dailyAttendanceData.slice(0, 22).map((day) => (
+            <Text style={styles.dailyLogTitle}>
+              Bảng chấm công tháng {selectedMonth}
+            </Text>
+
+            {dailyAttendanceData.map((item) => (
+              <View key={item.day} style={styles.attendanceItem}>
                 <View
-                  key={day.day}
                   style={[
-                    styles.dailyLogItem,
-                    day.isWeekend && styles.weekendLogItem,
-                    day.isToday && styles.todayLogItem,
+                    styles.attendanceDay,
+                    item.isWeekend && styles.weekendDay,
+                    item.isToday && styles.currentDay,
                   ]}
                 >
                   <Text
                     style={[
-                      styles.dailyLogText,
-                      { flex: 0.5 },
-                      day.isWeekend && styles.weekendText,
+                      styles.attendanceDayText,
+                      item.isWeekend && styles.weekendDayText,
                     ]}
                   >
-                    {day.day}
-                  </Text>
-
-                  <View style={[styles.dailyStatusContainer, { flex: 1 }]}>
-                    {!day.isWeekend && (
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          {
-                            backgroundColor:
-                              day.status === "Đúng giờ"
-                                ? "#E8F5E9"
-                                : day.status === "Đi muộn"
-                                ? "#FFF3E0"
-                                : day.status === "Về sớm"
-                                ? "#E3F2FD"
-                                : day.status === "Vắng mặt"
-                                ? "#FFEBEE"
-                                : "#F5F5F5",
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.statusBadgeText,
-                            {
-                              color:
-                                day.status === "Đúng giờ"
-                                  ? "#4CAF50"
-                                  : day.status === "Đi muộn"
-                                  ? "#FF9800"
-                                  : day.status === "Về sớm"
-                                  ? "#2196F3"
-                                  : day.status === "Vắng mặt"
-                                  ? "#F44336"
-                                  : "#757575",
-                            },
-                          ]}
-                        >
-                          {day.status}
-                        </Text>
-                      </View>
-                    )}
-
-                    {day.isWeekend && (
-                      <Text style={styles.weekendText}>Cuối tuần</Text>
-                    )}
-                  </View>
-
-                  <Text
-                    style={[
-                      styles.dailyLogText,
-                      { flex: 0.8 },
-                      day.isWeekend && styles.weekendText,
-                    ]}
-                  >
-                    {day.checkIn || "--:--"}
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.dailyLogText,
-                      { flex: 0.8 },
-                      day.isWeekend && styles.weekendText,
-                    ]}
-                  >
-                    {day.checkOut || "--:--"}
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.dailyLogText,
-                      { flex: 0.6 },
-                      day.isWeekend && styles.weekendText,
-                    ]}
-                  >
-                    {day.hoursWorked || "0"}
-                  </Text>
-                </View>
-              ))}
-
-              <View style={styles.upcomingDaysContainer}>
-                <View style={styles.upcomingDaysHeader}>
-                  <Feather name="calendar" size={16} color="#3674B5" />
-                  <Text style={styles.upcomingDaysTitle}>
-                    Ngày làm việc sắp tới
+                    {item.day}
                   </Text>
                 </View>
 
-                {dailyAttendanceData.slice(22, 31).map((day) => (
-                  <View key={day.day} style={styles.upcomingDayItem}>
-                    <Text style={styles.upcomingDayDate}>{day.date}</Text>
-                    <Text style={styles.upcomingDayStatus}>
-                      {day.isWeekend ? "Cuối tuần" : "Chưa đến"}
+                <View style={styles.attendanceContent}>
+                  <Text style={styles.attendanceDate}>{item.date}</Text>
+                  <View
+                    style={[
+                      styles.attendanceStatus,
+                      item.status === "Đi muộn" && styles.lateStatus,
+                      item.status === "Về sớm" && styles.earlyStatus,
+                      item.status === "Vắng mặt" && styles.absentStatus,
+                      item.status === "Cuối tuần" && styles.weekendStatus,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.attendanceStatusText,
+                        item.status === "Đi muộn" && styles.lateStatusText,
+                        item.status === "Về sớm" && styles.earlyStatusText,
+                        item.status === "Vắng mặt" && styles.absentStatusText,
+                        item.status === "Cuối tuần" && styles.weekendStatusText,
+                      ]}
+                    >
+                      {item.status}
                     </Text>
                   </View>
-                ))}
-              </View>
+                </View>
 
-              <TouchableOpacity style={styles.exportButton}>
-                <FontAwesome5 name="file-export" size={18} color="#fff" />
-                <Text style={styles.exportButtonText}>
-                  Xuất báo cáo công tháng
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
+                {item.checkIn ? (
+                  <View style={styles.attendanceTime}>
+                    <View style={styles.timeRow}>
+                      <Text style={styles.timeLabel}>Vào:</Text>
+                      <Text style={styles.timeValue}>{item.checkIn}</Text>
+                    </View>
+                    <View style={styles.timeRow}>
+                      <Text style={styles.timeLabel}>Ra:</Text>
+                      <Text style={styles.timeValue}>{item.checkOut}</Text>
+                    </View>
+                    <View style={styles.timeRow}>
+                      <Text style={styles.timeLabel}>Giờ làm:</Text>
+                      <Text style={styles.hoursValue}>{item.hoursWorked}h</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.attendanceTime}>
+                    <Text style={styles.noTimeData}>Không có dữ liệu</Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
         );
 
       default:
-        return null;
+        return <View />;
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Enhanced Header with Gradient */}
+    <SafeAreaView style={styles.container}>
       <LinearGradient
         colors={["#3674B5", "#2196F3"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
         style={styles.headerGradient}
       >
-        {/* Month Selector - now part of the gradient header */}
-        <View style={styles.monthSelector}>
-          <TouchableOpacity
-            style={styles.monthArrowContainer}
-            activeOpacity={0.7}
-          >
-            <AntDesign name="left" size={20} color="#fff" />
-          </TouchableOpacity>
-
-          <View style={styles.monthTextContainer}>
-            <Text style={styles.monthText}>{selectedMonth}</Text>
-            <View style={styles.monthIndicator} />
-          </View>
-
-          <TouchableOpacity
-            style={styles.monthArrowContainer}
-            activeOpacity={0.7}
-          >
-            <AntDesign name="right" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        {renderHeaderSection()}
       </LinearGradient>
 
-      {/* Tab Navigation */}
-      <View style={styles.tabOuterContainer}>
-        <View style={styles.tabContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tabContentContainer}
-          >
-            <TouchableOpacity
-              style={[
-                styles.tabButton,
-                activeTab === "summary" && styles.activeTabButton,
-              ]}
-              onPress={() => setActiveTab("summary")}
-            >
-              <Feather
-                name="pie-chart"
-                size={18}
-                color={activeTab === "summary" ? "#3674B5" : "#888"}
-                style={styles.tabIcon}
-              />
-              <Text
-                style={[
-                  styles.tabButtonText,
-                  activeTab === "summary" && styles.activeTabText,
-                ]}
-              >
-                Tổng quan
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.tabButton,
-                activeTab === "details" && styles.activeTabButton,
-              ]}
-              onPress={() => setActiveTab("details")}
-            >
-              <Feather
-                name="list"
-                size={18}
-                color={activeTab === "details" ? "#3674B5" : "#888"}
-                style={styles.tabIcon}
-              />
-              <Text
-                style={[
-                  styles.tabButtonText,
-                  activeTab === "details" && styles.activeTabText,
-                ]}
-              >
-                Chi tiết
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.tabButton,
-                activeTab === "dailyLog" && styles.activeTabButton,
-              ]}
-              onPress={() => setActiveTab("dailyLog")}
-            >
-              <Feather
-                name="calendar"
-                size={18}
-                color={activeTab === "dailyLog" ? "#3674B5" : "#888"}
-                style={styles.tabIcon}
-              />
-              <Text
-                style={[
-                  styles.tabButtonText,
-                  activeTab === "dailyLog" && styles.activeTabText,
-                ]}
-              >
-                Chi tiết công
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.tabButton,
-                activeTab === "history" && styles.activeTabButton,
-              ]}
-              onPress={() => setActiveTab("history")}
-            >
-              <Feather
-                name="clock"
-                size={18}
-                color={activeTab === "history" ? "#3674B5" : "#888"}
-                style={styles.tabIcon}
-              />
-              <Text
-                style={[
-                  styles.tabButtonText,
-                  activeTab === "history" && styles.activeTabText,
-                ]}
-              >
-                Lịch sử
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentContainer}
-      >
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderTab()}
-        {/* Bottom space */}
-        <View style={styles.bottomSpace} />
+        <View style={{ height: 20 }} />
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+// Add styles
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
-  contentContainer: {
-    padding: 16,
-  },
   headerGradient: {
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   header: {
+    paddingTop: 20,
+    paddingBottom: 0,
+  },
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 16,
-    paddingBottom: 8,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+  },
+  backButton: {
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "bold",
     color: "#fff",
+    flex: 1,
     textAlign: "center",
+  },
+  headerRight: {
+    flexDirection: "row",
+  },
+  iconButton: {
+    padding: 8,
   },
   monthSelector: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  monthArrowContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 16,
+    marginBottom: 16,
   },
-  monthTextContainer: {
+  monthArrow: {
+    padding: 8,
+  },
+  selectedMonthContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
   },
-  monthText: {
+  selectedMonthText: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: "#fff",
-    marginBottom: 4,
   },
-  monthIndicator: {
-    width: 30,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: "#fff",
-  },
-  tabOuterContainer: {
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  tabContainer: {
+  tabsContainer: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
   },
-  tabContentContainer: {
-    flexDirection: "row",
-    width: width,
-    paddingHorizontal: 8,
-  },
-  tabButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: "center",
-    justifyContent: "center",
+  tabItem: {
     flex: 1,
-    flexDirection: "row",
+    paddingVertical: 12,
+    alignItems: "center",
   },
-  activeTabButton: {
+  activeTab: {
     borderBottomWidth: 3,
-    borderBottomColor: "#3674B5",
+    borderBottomColor: "#fff",
   },
-  tabIcon: {
-    marginRight: 6,
-  },
-  tabButtonText: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
+  tabText: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontWeight: "500",
   },
   activeTabText: {
-    color: "#3674B5",
-    fontWeight: "600",
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#f5f5f5",
   },
   gradientSummaryContainer: {
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 16,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  summaryContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    alignItems: "center",
     elevation: 2,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 3,
   },
   summaryTitle: {
     fontSize: 14,
     color: "#fff",
-    marginBottom: 8,
+    opacity: 0.9,
   },
   netSalaryContainer: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    marginBottom: 8,
+    alignItems: "baseline",
+    marginTop: 8,
   },
   netSalaryValue: {
     fontSize: 28,
@@ -1234,63 +992,64 @@ const styles = StyleSheet.create({
   },
   currencyText: {
     fontSize: 16,
-    fontWeight: "600",
     color: "#fff",
-    marginLeft: 4,
-    marginBottom: 4,
+    marginLeft: 6,
   },
   statusContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 8,
   },
   statusIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: "#4CAF50",
     marginRight: 6,
   },
   statusText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#fff",
+    opacity: 0.9,
   },
   quickInfoContainer: {
     flexDirection: "row",
-    marginTop: 16,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 8,
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderRadius: 12,
     padding: 12,
+    marginTop: 16,
   },
   quickInfoItem: {
     flex: 1,
     alignItems: "center",
   },
-  quickInfoDivider: {
-    width: 1,
-    height: "100%",
-    backgroundColor: "rgba(255,255,255,0.3)",
-  },
   quickInfoLabel: {
     fontSize: 12,
     color: "#fff",
-    opacity: 0.9,
+    opacity: 0.8,
     marginBottom: 4,
   },
   quickInfoValue: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: "#fff",
+  },
+  quickInfoDivider: {
+    width: 1,
+    height: "100%",
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   componentsContainer: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     elevation: 2,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 3,
   },
   sectionTitle: {
     fontSize: 16,
@@ -1306,9 +1065,9 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f0f0f0",
   },
   componentIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#f5f5f5",
     justifyContent: "center",
     alignItems: "center",
@@ -1321,32 +1080,31 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
     color: "#333",
-    marginBottom: 4,
+    marginBottom: 3,
   },
   componentDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#666",
   },
   componentValue: {
     fontSize: 15,
     fontWeight: "600",
     color: "#333",
-    minWidth: 100,
     textAlign: "right",
   },
   netSalaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 16,
     paddingTop: 16,
+    marginTop: 4,
     borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
+    borderTopColor: "#f0f0f0",
   },
   netSalaryLabel: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: "#3674B5",
   },
   netSalaryAmount: {
     fontSize: 18,
@@ -1355,32 +1113,37 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     elevation: 2,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 3,
   },
   chart: {
     marginTop: 8,
-    borderRadius: 8,
+    borderRadius: 16,
   },
   detailsContainer: {
-    flex: 1,
+    padding: 0,
+  },
+  refreshingIndicator: {
+    padding: 10,
+    backgroundColor: "#e3f2fd",
+    borderRadius: 8,
+    alignItems: "center",
     marginBottom: 16,
   },
+  refreshingText: {
+    color: "#3674B5",
+    fontSize: 14,
+  },
   detailsSummaryCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
   },
   detailsSummaryRow: {
     flexDirection: "row",
@@ -1390,33 +1153,32 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
   },
-  detailsSummaryDivider: {
-    width: 1,
-    height: "100%",
-    backgroundColor: "rgba(255,255,255,0.3)",
-    marginHorizontal: 16,
-  },
   detailsSummaryLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#fff",
-    opacity: 0.9,
-    marginBottom: 8,
+    opacity: 0.8,
+    marginBottom: 4,
   },
   detailsSummaryValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#fff",
   },
+  detailsSummaryDivider: {
+    width: 1,
+    height: "100%",
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+  },
   detailSectionCard: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 16,
+    overflow: "hidden",
     elevation: 2,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    overflow: "hidden",
+    shadowRadius: 3,
   },
   detailSectionHeader: {
     flexDirection: "row",
@@ -1426,335 +1188,296 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f0f0f0",
   },
   detailItemCard: {
-    padding: 12,
+    padding: 16,
   },
   deductionCard: {
-    backgroundColor: "#FFF8F8",
+    backgroundColor: "#fff",
   },
   detailItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#f5f5f5",
   },
   detailItemIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#f5f5f5",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#e8f5e9",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
-  deductionIcon: {
-    backgroundColor: "#FFEBEE",
-  },
   detailItemLabel: {
-    fontSize: 14,
-    color: "#555",
     flex: 1,
+    fontSize: 14,
+    color: "#333",
   },
   detailItemValue: {
     fontSize: 14,
-    fontWeight: "500",
-    color: "#333",
-    textAlign: "right",
-  },
-  detailItemDeduction: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#F44336",
-    textAlign: "right",
-  },
-  totalItem: {
-    borderBottomWidth: 0,
-    marginTop: 4,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
-  },
-  totalLabel: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#333",
-    flex: 1,
-  },
-  totalValue: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#3674B5",
-  },
-  grandTotalContainer: {
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  grandTotalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-  },
-  grandTotalIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  grandTotalContent: {
-    flex: 1,
-  },
-  grandTotalLabel: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  grandTotalSubtext: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 2,
-  },
-  grandTotalValue: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#3674B5",
-  },
-  downloadPayslipButton: {
-    backgroundColor: "#3674B5",
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  downloadText: {
-    color: "#fff",
     fontWeight: "600",
+    color: "#333",
+  },
+  detailItemTotal: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 12,
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  detailItemTotalLabel: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  detailItemTotalValue: {
     fontSize: 16,
-    marginLeft: 8,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  netSalaryCard: {
+    backgroundColor: "#3674B5",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: "center",
+  },
+  netSalaryCardLabel: {
+    fontSize: 14,
+    color: "#fff",
+    opacity: 0.9,
+    marginBottom: 8,
+  },
+  netSalaryCardValue: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
   },
   historyContainer: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    overflow: "hidden",
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
-  historyItem: {
+  filterContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 16,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
-  selectedHistoryItem: {
-    backgroundColor: "#E3F2FD",
-    borderRadius: 8,
+  filterLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginRight: 10,
+  },
+  filterButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    marginHorizontal: -12,
+    borderRadius: 16,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: "#3674B5",
+    marginRight: 8,
+  },
+  historyItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f5f5f5",
   },
   historyItemLeft: {
-    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  historyIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#e3f2fd",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
   historyMonth: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "600",
     color: "#333",
   },
-  historyYear: {
+  historyDate: {
     fontSize: 13,
     color: "#666",
     marginTop: 2,
   },
-  historyAmountContainer: {
-    flex: 2,
-    alignItems: "flex-end",
-    marginRight: 8,
+  historyRight: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   historyAmount: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "600",
-    color: "#3674B5",
-    marginBottom: 4,
-  },
-  historyTrend: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  historyTrendText: {
-    fontSize: 12,
-    marginLeft: 4,
-  },
-  downloadButton: {
-    backgroundColor: "#3674B5",
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    marginTop: 16,
-  },
-  bottomSpace: {
-    height: 80,
+    color: "#333",
+    marginRight: 8,
   },
   dailyLogContainer: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
-  attendanceSummaryCard: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  attendanceSummaryRow: {
+  dailyLogSummary: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 12,
+    justifyContent: "space-between",
+    marginBottom: 20,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    padding: 10,
   },
-  attendanceSummaryItem: {
-    flex: 1,
+  dailyLogSummaryItem: {
     alignItems: "center",
+    flex: 1,
   },
-  attendanceSummaryValue: {
+  dailyLogSummaryLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 4,
+  },
+  dailyLogSummaryValue: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#3674B5",
-    marginBottom: 4,
   },
-  attendanceSummaryLabel: {
-    fontSize: 12,
-    color: "#666",
-  },
-  dailyLogHeader: {
-    flexDirection: "row",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-    marginBottom: 8,
-  },
-  dailyLogHeaderText: {
-    fontSize: 14,
+  dailyLogTitle: {
+    fontSize: 16,
     fontWeight: "600",
-    color: "#666",
-  },
-  dailyLogItem: {
-    flexDirection: "row",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-    alignItems: "center",
-  },
-  weekendLogItem: {
-    backgroundColor: "#f9f9f9",
-  },
-  todayLogItem: {
-    backgroundColor: "#E3F2FD",
-  },
-  dailyLogText: {
-    fontSize: 14,
     color: "#333",
+    marginBottom: 16,
   },
-  weekendText: {
-    color: "#9e9e9e",
-  },
-  dailyStatusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  upcomingDaysContainer: {
-    marginTop: 24,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    padding: 12,
-  },
-  upcomingDaysHeader: {
+  attendanceItem: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
+    overflow: "hidden",
   },
-  upcomingDaysTitle: {
-    fontSize: 15,
-    fontWeight: "600",
+  attendanceDay: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#e3f2fd",
+  },
+  weekendDay: {
+    backgroundColor: "#f8bbd0",
+  },
+  currentDay: {
+    backgroundColor: "#3674B5",
+  },
+  attendanceDayText: {
+    fontSize: 16,
+    fontWeight: "bold",
     color: "#3674B5",
-    marginLeft: 8,
   },
-  upcomingDayItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+  weekendDayText: {
+    color: "#e91e63",
   },
-  upcomingDayDate: {
+  attendanceContent: {
+    flex: 1,
+    paddingHorizontal: 12,
+  },
+  attendanceDate: {
     fontSize: 14,
     color: "#333",
+    marginBottom: 4,
   },
-  upcomingDayStatus: {
-    fontSize: 14,
-    color: "#757575",
+  attendanceStatus: {
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    backgroundColor: "#e8f5e9",
+    borderRadius: 10,
+    alignSelf: "flex-start",
   },
-  exportButton: {
-    backgroundColor: "#3674B5",
-    borderRadius: 8,
+  lateStatus: {
+    backgroundColor: "#fff3e0",
+  },
+  earlyStatus: {
+    backgroundColor: "#e1f5fe",
+  },
+  absentStatus: {
+    backgroundColor: "#ffebee",
+  },
+  weekendStatus: {
+    backgroundColor: "#f8bbd0",
+  },
+  attendanceStatusText: {
+    fontSize: 12,
+    color: "#4caf50",
+    fontWeight: "500",
+  },
+  lateStatusText: {
+    color: "#ff9800",
+  },
+  earlyStatusText: {
+    color: "#03a9f4",
+  },
+  absentStatusText: {
+    color: "#f44336",
+  },
+  weekendStatusText: {
+    color: "#e91e63",
+  },
+  attendanceTime: {
+    padding: 10,
+    alignItems: "flex-end",
+  },
+  timeRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    marginTop: 20,
+    marginBottom: 2,
   },
-  exportButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-    marginLeft: 8,
+  timeLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginRight: 5,
+    width: 45,
+    textAlign: "right",
   },
-  refreshingIndicator: {
-    backgroundColor: "rgba(54, 116, 181, 0.1)",
-    padding: 8,
-    borderRadius: 4,
-    marginTop: 8,
-    marginHorizontal: 16,
-    alignItems: "center",
+  timeValue: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#333",
   },
-  refreshingText: {
+  hoursValue: {
+    fontSize: 12,
+    fontWeight: "bold",
     color: "#3674B5",
-    fontSize: 14,
+  },
+  noTimeData: {
+    fontSize: 12,
+    color: "#999",
+    fontStyle: "italic",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: "#3674B5",
+    fontSize: 16,
   },
 });
 

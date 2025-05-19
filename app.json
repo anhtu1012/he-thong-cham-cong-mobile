@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "sphss-mobile",
-    "slug": "sphss-mobile",
+    "name": "he-thong-cham-cong-mobile",
+    "slug": "he-thong-cham-cong-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,17 +12,21 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.anhtus.hethongchamcongmobile",
+      "runtimeVersion": "1.0.0"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "95670fb8-5a1d-46c3-8250-ef50ea708e01"
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "updates": {
+      "url": "https://u.expo.dev/95670fb8-5a1d-46c3-8250-ef50ea708e01"
     }
   }
 }

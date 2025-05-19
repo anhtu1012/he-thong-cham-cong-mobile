@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -19,6 +19,10 @@ import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import trainingData from "../../data/trainingData.json";
 // Define message type
+interface ChatAppPageProps {
+  onClose?: () => void;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -28,56 +32,58 @@ interface Message {
 
 // Sample training data (should be moved to a separate file)
 
-function ChatAppPage() {
+function ChatAppPage({ onClose }: ChatAppPageProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>("");
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const navigation = useNavigation();
-  // ...existing code
-  // Add welcome message when component mounts
-  useEffect(() => {
-    const welcomeMessage: Message = {
+
+  // WELCOME MESSAGE DEFINITION
+  const getWelcomeMessage = useCallback((): Message => {
+    return {
       role: "assistant",
       content:
         "Xin chào! Tôi là trợ lý tâm lý AI. Bạn có thể chia sẻ với tôi bất cứ điều gì đang khiến bạn trăn trở. Tôi luôn ở đây để lắng nghe và hỗ trợ bạn 😊",
       timestamp: Date.now(),
     };
-    setMessages([welcomeMessage]);
-
-    // Load previous messages from storage if any
-    loadMessages();
   }, []);
 
-  // Scroll to bottom when messages update
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping, isThinking]);
-
-  // Load messages from storage
-  const loadMessages = async () => {
-    try {
-      const savedMessages = await AsyncStorage.getItem("chatMessages");
-      if (savedMessages) {
-        setMessages(JSON.parse(savedMessages));
-      }
-    } catch (error) {
-      console.error("Error loading messages:", error);
-    }
-  };
-
   // Save messages to storage
-  const saveMessages = async (newMessages: Message[]) => {
+  const saveMessages = useCallback(async (newMessages: Message[]) => {
     try {
       await AsyncStorage.setItem("chatMessages", JSON.stringify(newMessages));
     } catch (error) {
       console.error("Error saving messages:", error);
     }
-  };
+  }, []);
+
+  // Scroll to bottom of conversation
+  const scrollToBottom = useCallback(() => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  }, []);
+
+  // Handle API errors - không phụ thuộc vào saveMessages để tránh circular dependency
+  const handleApiError = useCallback((updatedMessages: Message[]) => {
+    const fallbackResponse: Message = {
+      role: "assistant",
+      content:
+        "Xin lỗi, tôi đang gặp vấn đề kết nối. Vui lòng thử lại sau hoặc kiểm tra kết nối mạng của bạn.",
+    };
+    const newMessages = [...updatedMessages, fallbackResponse];
+    setMessages(newMessages);
+    
+    // Gọi trực tiếp AsyncStorage để tránh dependency cycle
+    AsyncStorage.setItem("chatMessages", JSON.stringify(newMessages))
+      .catch(error => console.error("Error saving messages:", error));
+      
+    setIsTyping(false);
+    setIsThinking(false);
+  }, []);
 
   // Find response in training data
-  const findTrainingResponse = (input: string): string | null => {
+  const findTrainingResponse = useCallback((input: string): string | null => {
     const normalizedInput = input.toLowerCase().trim();
     const inputWords = normalizedInput.split(" ");
 
@@ -116,15 +122,10 @@ function ChatAppPage() {
     // Sort by match count in descending order and take the answer with the highest match
     matches.sort((a, b) => b.matchCount - a.matchCount);
     return matches.length > 0 ? matches[0].answer : null;
-  };
-
-  // Scroll to bottom of conversation
-  const scrollToBottom = () => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  };
+  }, []);
 
   // Send message handler using deepseek model
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!input.trim()) return;
 
     const userMessage: Message = {
@@ -197,24 +198,17 @@ function ChatAppPage() {
       console.error("Error making API request:", error);
       handleApiError(updatedMessages);
     }
-  };
+  }, [input, messages, saveMessages, findTrainingResponse, handleApiError]);
 
-  // Handle API errors
-  const handleApiError = (updatedMessages: Message[]) => {
-    const fallbackResponse: Message = {
-      role: "assistant",
-      content:
-        "Xin lỗi, tôi đang gặp vấn đề kết nối. Vui lòng thử lại sau hoặc kiểm tra kết nối mạng của bạn.",
-    };
-    const newMessages = [...updatedMessages, fallbackResponse];
-    setMessages(newMessages);
-    saveMessages(newMessages);
-    setIsTyping(false);
-    setIsThinking(false);
-  };
+  // Format timestamp into readable time
+  const formatTime = useCallback((timestamp?: number) => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }, []);
 
   // Add new function to start a new chat
-  const startNewChat = () => {
+  const startNewChat = useCallback(() => {
     Alert.alert(
       "Tạo cuộc trò chuyện mới",
       "Bạn có chắc muốn bắt đầu cuộc trò chuyện mới? Lịch sử trò chuyện hiện tại sẽ bị xóa.",
@@ -226,11 +220,7 @@ function ChatAppPage() {
         {
           text: "Đồng ý",
           onPress: () => {
-            const welcomeMessage: Message = {
-              role: "assistant",
-              content:
-                "Xin chào! Tôi là trợ lý tâm lý AI. Bạn có thể chia sẻ với tôi bất cứ điều gì đang khiến bạn trăn trở. Tôi luôn ở đây để lắng nghe và hỗ trợ bạn 😊",
-            };
+            const welcomeMessage = getWelcomeMessage();
             setMessages([welcomeMessage]);
             saveMessages([welcomeMessage]);
             setInput("");
@@ -240,17 +230,10 @@ function ChatAppPage() {
         },
       ]
     );
-  };
-
-  // Format timestamp into readable time
-  const formatTime = (timestamp?: number) => {
-    if (!timestamp) return "";
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
+  }, [getWelcomeMessage, saveMessages]);
 
   // Enhanced message rendering
-  const renderMessage = (message: Message, index: number) => {
+  const renderMessage = useCallback((message: Message, index: number) => {
     const isUser = message.role === "user";
     return (
       <View
@@ -288,7 +271,44 @@ function ChatAppPage() {
         </View>
       </View>
     );
-  };
+  }, [formatTime]);
+
+  // Handler for back button
+  const handleBackPress = useCallback(() => {
+    if (onClose) {
+      onClose();
+    } else {
+      navigation.goBack();
+    }
+  }, [onClose, navigation]);
+
+  // Add welcome message when component mounts - optimized to prevent double setState
+  useEffect(() => {
+    const initializeChat = async () => {
+      try {
+        const savedMessages = await AsyncStorage.getItem("chatMessages");
+        if (savedMessages) {
+          const parsedMessages = JSON.parse(savedMessages);
+          if (parsedMessages && parsedMessages.length > 0) {
+            setMessages(parsedMessages);
+            return; // Return early if we successfully loaded messages
+          }
+        }
+        // Only set welcome message if no saved messages found
+        setMessages([getWelcomeMessage()]);
+      } catch (error) {
+        console.error("Error loading messages:", error);
+        setMessages([getWelcomeMessage()]);
+      }
+    };
+
+    initializeChat();
+  }, [getWelcomeMessage]); // Only depends on getWelcomeMessage, which is memoized
+
+  // Scroll to bottom when messages update
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping, isThinking, scrollToBottom]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -296,7 +316,7 @@ function ChatAppPage() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={handleBackPress}
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>

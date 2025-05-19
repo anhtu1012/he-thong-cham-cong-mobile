@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, memo, useMemo } from "react";
 import {
   View,
   StyleSheet,
@@ -8,9 +8,9 @@ import {
 } from "react-native";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { AntDesign, MaterialIcons, Entypo, Feather } from "@expo/vector-icons";
+import { AntDesign, MaterialIcons, Feather } from "@expo/vector-icons";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import MonthlyTimesheet from "../../pages/Timesheet/MonthlyTimesheet";
 import WeeklyTimesheet from "../../pages/Timesheet/WeeklyTimesheet";
 import StatsTimesheet from "../../pages/Timesheet/StatsTimesheet";
@@ -19,9 +19,16 @@ import { LinearGradient } from "expo-linear-gradient";
 import {
   TimesheetTabParamList,
   TimesheetBottomTabParamList,
+  RootStackParamList,
 } from "../../utils/routes";
+import { NavigationProp, ParamListBase } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
+
+// Memoized components
+const MemoizedMonthlyTimesheet = memo(MonthlyTimesheet);
+const MemoizedWeeklyTimesheet = memo(WeeklyTimesheet);
+const MemoizedStatsTimesheet = memo(StatsTimesheet);
 
 // Tab Navigator cho 3 loại hiển thị công
 const TopTab = createMaterialTopTabNavigator<TimesheetTabParamList>();
@@ -29,9 +36,81 @@ const BottomTab = createBottomTabNavigator<TimesheetBottomTabParamList>();
 const Stack = createNativeStackNavigator();
 
 // Màn hình chính của Timesheet có top tabs
-const TimesheetMainScreen = () => {
+const TimesheetMainScreen = memo(() => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+
+  // Tối ưu hóa navigation handler
+  const handleGoHome = useCallback(() => {
+    const resetAction = CommonActions.reset({
+      index: 0,
+      routes: [{ name: "MainAppScreen" }], // Updated name
+    });
+    navigation.dispatch(resetAction);
+  }, [navigation]);
+
+  // Handler cho refresh button
+  const handleRefresh = useCallback(() => {
+    // Implement refresh logic here
+    console.log("Refreshing timesheet data...");
+  }, []);
+
+  // Tab icons - memoized
+  const renderMonthlyIcon = useCallback(({ color }: { color: string }) => (
+    <Feather
+      name="calendar"
+      size={18}
+      color={color}
+      style={styles.tabIcon}
+    />
+  ), []);
+
+  const renderWeeklyIcon = useCallback(({ color }: { color: string }) => (
+    <MaterialIcons
+      name="view-week"
+      size={18}
+      color={color}
+      style={styles.tabIcon}
+    />
+  ), []);
+
+  const renderStatsIcon = useCallback(({ color }: { color: string }) => (
+    <Feather
+      name="bar-chart-2"
+      size={18}
+      color={color}
+      style={styles.tabIcon}
+    />
+  ), []);
+
+  // Tab screen options
+  const tabScreenOptions = useMemo(() => ({
+    tabBarActiveTintColor: "#3674B5",
+    tabBarInactiveTintColor: "#666",
+    tabBarIndicatorStyle: {
+      backgroundColor: "#3674B5",
+      height: 3,
+    },
+    tabBarLabelStyle: {
+      fontSize: 14,
+      fontWeight: "500" as const,
+      textTransform: "none" as const,
+    },
+    tabBarItemStyle: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      paddingHorizontal: 10,
+    },
+    tabBarStyle: {
+      backgroundColor: "#fff",
+      elevation: 2,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      height: 50,
+    },
+  }), []);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -44,127 +123,145 @@ const TimesheetMainScreen = () => {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={handleGoHome}
           >
             <AntDesign name="arrowleft" size={24} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Bảng chấm công</Text>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleRefresh}>
             <MaterialIcons name="refresh" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
       </LinearGradient>
 
-      <TopTab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: "#3674B5",
-          tabBarInactiveTintColor: "#666",
-          tabBarIndicatorStyle: {
-            backgroundColor: "#3674B5",
-            height: 3,
-          },
-          tabBarLabelStyle: {
-            fontSize: 14,
-            fontWeight: "500",
-            textTransform: "none",
-          },
-          tabBarItemStyle: {
-            flexDirection: "row",
-            alignItems: "center",
-            paddingHorizontal: 10,
-          },
-          tabBarStyle: {
-            backgroundColor: "#fff",
-            elevation: 2,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 2,
-            height: 50,
-          },
-        }}
-      >
+      <TopTab.Navigator screenOptions={tabScreenOptions}>
         <TopTab.Screen
           name="MonthlyTimesheet"
-          component={MonthlyTimesheet}
+          component={MemoizedMonthlyTimesheet}
           options={{
             tabBarLabel: "Công tháng",
-            tabBarIcon: ({ color }) => (
-              <Feather
-                name="calendar"
-                size={18}
-                color={color}
-                style={styles.tabIcon}
-              />
-            ),
+            tabBarIcon: renderMonthlyIcon,
           }}
         />
         <TopTab.Screen
           name="WeeklyTimesheet"
-          component={WeeklyTimesheet}
+          component={MemoizedWeeklyTimesheet}
           options={{
             tabBarLabel: "Công tuần",
-            tabBarIcon: ({ color }) => (
-              <MaterialIcons
-                name="view-week"
-                size={18}
-                color={color}
-                style={styles.tabIcon}
-              />
-            ),
+            tabBarIcon: renderWeeklyIcon,
           }}
         />
         <TopTab.Screen
           name="StatsTimesheet"
-          component={StatsTimesheet}
+          component={MemoizedStatsTimesheet}
           options={{
             tabBarLabel: "Thống kê",
-            tabBarIcon: ({ color }) => (
-              <Feather
-                name="bar-chart-2"
-                size={18}
-                color={color}
-                style={styles.tabIcon}
-              />
-            ),
+            tabBarIcon: renderStatsIcon,
           }}
         />
       </TopTab.Navigator>
     </View>
   );
-};
+});
 
-// Bottom Tabs của Timesheet
-const TimesheetBottomTabs = () => {
-  const navigation = useNavigation();
-
+// Memoized custom tab button component
+const ClockInButton = memo(({ onPress, accessibilityState }: any) => {
   return (
-    <BottomTab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: "#3674B5",
-        tabBarInactiveTintColor: "#666",
-        tabBarStyle: {
-          backgroundColor: "#fff",
-          borderTopWidth: 1,
-          borderTopColor: "#e0e0e0",
-          height: 60,
-          paddingBottom: 6,
-          elevation: 8,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-        },
+    <TouchableOpacity
+      onPress={onPress}
+      accessibilityState={accessibilityState}
+      style={{
+        width: 70,
+        alignItems: "center",
+        justifyContent: "center",
+        marginLeft: 40,
       }}
     >
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          height: 30,
+          width: 70,
+          backgroundColor: "#fff",
+        }}
+      />
+      <LinearGradient
+        colors={["#3674B5", "#2196F3"]}
+        style={{
+          bottom: 25,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          justifyContent: "center",
+          alignItems: "center",
+          borderWidth: 4,
+          borderColor: "#fff",
+          elevation: 6,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.27,
+          shadowRadius: 4.65,
+        }}
+      >
+        <Feather name="clock" size={22} color="#fff" />
+      </LinearGradient>
+      <Text
+        style={{
+          fontSize: 12,
+          color: "#3674B5",
+          fontWeight: "500",
+          bottom: 8,
+        }}
+      >
+        Chấm công
+      </Text>
+    </TouchableOpacity>
+  );
+});
+
+// Bottom Tabs của Timesheet
+const TimesheetBottomTabs = memo(() => {
+  // Tab screen options
+  const tabScreenOptions = useMemo(() => ({
+    headerShown: false,
+    tabBarActiveTintColor: "#3674B5",
+    tabBarInactiveTintColor: "#666",
+    tabBarStyle: {
+      backgroundColor: "#fff",
+      borderTopWidth: 1,
+      borderTopColor: "#e0e0e0",
+      height: 60,
+      paddingBottom: 6,
+      elevation: 8,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+    },
+  }), []);
+
+  // Memoized tab icons - moved inside component
+  const renderAttendanceIcon = useCallback(({ color }: { color: string }) => (
+    <AntDesign name="checkcircle" size={22} color={color} />
+  ), []);
+
+  const renderUserProfileIcon = useCallback(({ color }: { color: string }) => (
+    <Feather name="user" size={22} color={color} />
+  ), []);
+
+  // Memoize custom tab bar button renderer
+  const renderDetailsTabButton = useCallback((props: any) => (
+    <ClockInButton {...props} />
+  ), []);
+
+  return (
+    <BottomTab.Navigator screenOptions={tabScreenOptions}>
       <BottomTab.Screen
-        name="Attendance"
+        name="AttendanceTab" // Updated name
         component={TimesheetMainScreen}
         options={{
-          tabBarIcon: ({ color }) => (
-            <AntDesign name="checkcircle" size={22} color={color} />
-          ),
+          tabBarIcon: renderAttendanceIcon,
           tabBarLabel: "Điểm danh",
           tabBarLabelStyle: {
             fontSize: 12,
@@ -172,74 +269,18 @@ const TimesheetBottomTabs = () => {
         }}
       />
       <BottomTab.Screen
-        name="Details"
+        name="DetailsTab" // Updated name
         component={TimesheetMainScreen}
         options={{
           tabBarLabel: () => null,
-          tabBarButton: (props) => {
-            const { onPress, accessibilityState } = props;
-            return (
-              <TouchableOpacity
-                onPress={onPress}
-                accessibilityState={accessibilityState}
-                style={{
-                  width: 70,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginLeft: 40,
-                }}
-              >
-                <View
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    height: 30,
-                    width: 70,
-                    backgroundColor: "#fff",
-                  }}
-                />
-                <LinearGradient
-                  colors={["#3674B5", "#2196F3"]}
-                  style={{
-                    bottom: 25,
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderWidth: 4,
-                    borderColor: "#fff",
-                    elevation: 6,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowOpacity: 0.27,
-                    shadowRadius: 4.65,
-                  }}
-                >
-                  <Feather name="clock" size={22} color="#fff" />
-                </LinearGradient>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: "#3674B5",
-                    fontWeight: "500",
-                    bottom: 8,
-                  }}
-                >
-                  Chấm công
-                </Text>
-              </TouchableOpacity>
-            );
-          },
+          tabBarButton: renderDetailsTabButton,
         }}
       />
       <BottomTab.Screen
-        name="UserProfile"
+        name="UserProfileTab" // Updated name
         component={TimesheetMainScreen}
         options={{
-          tabBarIcon: ({ color }) => (
-            <Feather name="user" size={22} color={color} />
-          ),
+          tabBarIcon: renderUserProfileIcon,
           tabBarLabel: "Cá nhân",
           tabBarLabelStyle: {
             fontSize: 12,
@@ -248,12 +289,17 @@ const TimesheetBottomTabs = () => {
       />
     </BottomTab.Navigator>
   );
-};
+});
 
 // Stack Navigator bọc TimesheetScreen
 const TimesheetNavigator = () => {
+  // Screen options
+  const screenOptions = useMemo(() => ({ 
+    headerShown: false 
+  }), []);
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen
         name="TimesheetBottomTabs"
         component={TimesheetBottomTabs}
@@ -299,4 +345,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TimesheetNavigator;
+export default memo(TimesheetNavigator);

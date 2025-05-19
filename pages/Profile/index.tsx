@@ -138,7 +138,7 @@ const ProfilePage = () => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: "HomeTabs" }],
+        routes: [{ name: "DrawerHomeScreen" }],
       })
     );
   };

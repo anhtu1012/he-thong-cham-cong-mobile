@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, memo, useMemo } from "react";
 import {
   StyleSheet,
   TouchableOpacity,
@@ -42,7 +42,7 @@ function FloatingChatButton() {
         }),
       ]).start(() => setShowBubble(false));
     }
-  }, [showBubble]);
+  }, [showBubble, bubbleAnimation]);
 
   useEffect(() => {
     if (showChatPreview) {
@@ -59,23 +59,19 @@ function FloatingChatButton() {
         useNativeDriver: true,
       }).start();
     }
-  }, [showChatPreview]);
+  }, [showChatPreview, chatPreviewAnimation]);
 
-  const handlePress = () => {
-    if (showChatPreview) {
-      setShowChatPreview(false);
-    } else {
-      setShowChatPreview(true);
-    }
-  };
+  const handlePress = useCallback(() => {
+    setShowChatPreview(prevState => !prevState);
+  }, []);
 
-  const handleLongPress = () => {
+  const handleLongPress = useCallback(() => {
     setShowBubble(true);
-  };
+  }, []);
 
-  const handleClosePreview = () => {
+  const handleClosePreview = useCallback(() => {
     setShowChatPreview(false);
-  };
+  }, []);
 
   const bubbleScale = bubbleAnimation.interpolate({
     inputRange: [0, 1],
@@ -91,21 +87,60 @@ function FloatingChatButton() {
 
   const previewOpacity = chatPreviewAnimation;
 
-  // Render bọc ChatAppPage khi hiển thị trong modal
-  const renderChatAppWrapper = () => {
-    // Chỉ render component khi cần thiết để tiết kiệm tài nguyên
+  // Render bọc ChatAppPage khi hiển thị trong modal - memoized để tránh re-render không cần thiết
+  const renderChatAppWrapper = useCallback(() => {
+    // Không có gì để render nếu không hiển thị
     if (!showChatPreview) return null;
 
-    // Khởi tạo component ChatAppPage với các props cần thiết
     return (
       <View style={styles.chatAppWrapper}>
         <ChatAppMiniWrapper onClose={handleClosePreview} />
       </View>
     );
-  };
+  }, [showChatPreview, handleClosePreview]);
 
+  // Chỉ render modal khi showChatPreview thực sự thay đổi
+  const chatModal = useMemo(() => {
+    if (!showChatPreview) return null;
+    
+    return (
+      <Modal
+        transparent={true}
+        visible={showChatPreview}
+        animationType="none"
+        onRequestClose={handleClosePreview}
+        statusBarTranslucent={true}
+      >
+        <TouchableWithoutFeedback onPress={handleClosePreview}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <Animated.View
+                style={[
+                  styles.chatPreviewContainer,
+                  {
+                    transform: [{ scale: previewScale }],
+                    opacity: previewOpacity,
+                  },
+                ]}
+              >
+                {renderChatAppWrapper()}
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    );
+  }, [showChatPreview, handleClosePreview, previewScale, previewOpacity, renderChatAppWrapper]);
+
+  // Chỉ render container khi không có modal hiển thị
+  // Giới hạn kích thước của button và hit area
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { pointerEvents: "box-none" },
+      ]}
+    >
       {/* Tooltip bubble that appears on long press */}
       {showBubble && (
         <Animated.View
@@ -116,42 +151,23 @@ function FloatingChatButton() {
               opacity: bubbleOpacity,
             },
           ]}
+          pointerEvents="none"
         >
           <Text style={styles.bubbleText}>Mở trợ lý AI</Text>
           <View style={styles.bubbleTriangle} />
         </Animated.View>
       )}
 
-      {/* Chat Modal sử dụng ChatAppPage */}
-      {showChatPreview && (
-        <Modal
-          transparent={true}
-          visible={showChatPreview}
-          animationType="none"
-          onRequestClose={handleClosePreview}
-        >
-          <View style={styles.modalOverlay}>
-            <Animated.View
-              style={[
-                styles.chatPreviewContainer,
-                {
-                  transform: [{ scale: previewScale }],
-                  opacity: previewOpacity,
-                },
-              ]}
-            >
-              {renderChatAppWrapper()}
-            </Animated.View>
-          </View>
-        </Modal>
-      )}
+      {chatModal}
 
-      {/* Main Floating Button */}
+      {/* Main Floating Button - limit the touchable area */}
       <TouchableOpacity
         style={[styles.button, showChatPreview && styles.buttonActive]}
         onPress={handlePress}
         onLongPress={handleLongPress}
         delayLongPress={500}
+        activeOpacity={0.8}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <MaterialIcons name="chat" size={20} color="#ffffff" />
       </TouchableOpacity>
@@ -159,29 +175,8 @@ function FloatingChatButton() {
   );
 }
 
-// Component bọc ChatAppPage để tùy chỉnh giao diện
-const ChatAppMiniWrapper = ({ onClose }: { onClose: () => void }) => {
-  // Override các khu vực cần thiết của ChatAppPage
-  const ChatAppOverride = () => {
-    const ChatApp = ChatAppPage as any;
-
-    // Hook để bắt và xử lý sự kiện trước khi chuyển đến ChatApp thông thường
-    const customNavigation = useNavigation();
-    const wrappedNavigation = {
-      ...customNavigation,
-      goBack: () => {
-        // Khi nhấn nút back trong ChatApp, đóng modal thay vì quay lại
-        onClose();
-      },
-    };
-
-    return (
-      <View style={styles.chatAppOverride}>
-        <ChatApp navigation={wrappedNavigation} />
-      </View>
-    );
-  };
-
+// Component bọc ChatAppPage để tùy chỉnh giao diện - memoized để tránh re-render không cần thiết
+const ChatAppMiniWrapper = memo(({ onClose }: { onClose: () => void }) => {
   return (
     <View style={styles.chatAppMiniContainer}>
       <View style={styles.chatAppTopBar}>
@@ -189,10 +184,12 @@ const ChatAppMiniWrapper = ({ onClose }: { onClose: () => void }) => {
           <MaterialIcons name="close" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
-      <ChatAppOverride />
+      <View style={styles.chatAppOverride}>
+        <ChatAppPage onClose={onClose} />
+      </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -200,7 +197,9 @@ const styles = StyleSheet.create({
     bottom: 50,
     right: 25,
     alignItems: "flex-end",
-    zIndex: 999,
+    width: 60, // Limit the width
+    height: 60, // Limit the height
+    zIndex: 50, // Lower the zIndex to avoid blocking other interactions
   },
   button: {
     width: 42,

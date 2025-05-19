@@ -27,6 +27,7 @@ export interface ILoginScreenProps {
 
 export type NavigationProps = {
   navigate: (screen: string) => void;
+  reset: (state: { index: number; routes: { name: string }[] }) => void;
 };
 
 const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
@@ -59,7 +60,7 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
           "userData",
           JSON.stringify(response.data.user)
         );
-        navigation.navigate("AppNavigation");
+        navigation.navigate("AppNavigationRoot");
       } else {
         Toast.show({
           type: "error",
@@ -70,7 +71,10 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
       */
 
       // Demo navigation - remove in production
-      navigation.navigate("AppNavigation");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "MainAppScreen" }], // Updated name
+      });
     } catch (error) {
       console.error("Error logging in:", error);
       Toast.show({
