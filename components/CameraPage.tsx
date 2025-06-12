@@ -5,19 +5,33 @@ import {
   useCameraPermissions,
 } from "expo-camera";
 import { useRef, useState } from "react";
-import { Button, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Button,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Image } from "expo-image";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import { registerFace } from "../service/api";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function CameraPage() {
   const [permission, requestPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
   const [uri, setUri] = useState<string | null>(null);
+  const [faceRecognitionResult, setFaceRecognitionResult] = useState<
+    boolean | null
+  >(null);
   const [mode, setMode] = useState<CameraMode>("picture");
   const [facing, setFacing] = useState<CameraType>("front");
   const [recording, setRecording] = useState(false);
+  const [isRegisterd, setIsRegistered] = useState(false);
 
   if (!permission) {
     return null;
@@ -58,7 +72,74 @@ export default function CameraPage() {
     setFacing((prev) => (prev === "back" ? "front" : "back"));
   };
 
-  const renderPicture = () => {
+  const handleRegisterFace = async () => {
+    if (!uri) return;
+    let userDataStr = await AsyncStorage.getItem("userData");
+
+    if (userDataStr !== null) {
+      const user = JSON.parse(userDataStr);
+      try {
+        const formData = new FormData();
+        formData.append("key", `${user.userProfile.userName}.jpg`);
+        formData.append("userCode", user.userProfile.code);
+
+        if (Platform.OS === "web") {
+          // Web: fetch the blob and append it
+          const blob = await fetch(uri).then((res) => res.blob());
+          formData.append("file", blob, "face.jpg");
+        } else {
+          // Native (iOS/Android)
+          formData.append("file", {
+            uri,
+            type: "image/jpeg",
+            name: "face.jpg",
+          } as any);
+        }
+
+        const res = await registerFace(formData);
+        const data = res.data;
+
+        console.log(data);
+      } catch (error) {
+        console.log("Upload error:", error);
+      }
+    }
+  };
+
+  const handleFaceRecognition = async () => {
+    if (!uri) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("name", "phuc");
+
+      if (Platform.OS === "web") {
+        // Web: fetch the blob and append it
+        const blob = await fetch(uri).then((res) => res.blob());
+        formData.append("file", blob, "face.jpg");
+      } else {
+        // Native (iOS/Android)
+        formData.append("file", {
+          uri,
+          type: "image/jpeg",
+          name: "face.jpg",
+        } as any);
+      }
+
+      const res = await axios.post("http://localhost:8000/verify", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const data = res.data;
+      setFaceRecognitionResult(data.matched);
+    } catch (error) {
+      console.log("Upload error:", error);
+    }
+  };
+
+  const renderRegisterPage = () => {
     return (
       <View>
         <Image
@@ -67,7 +148,30 @@ export default function CameraPage() {
           style={{ width: 300, aspectRatio: 1 }}
         />
         <Button onPress={() => setUri(null)} title="Chụp lại" />
-        <Button onPress={() => setUri(null)} title="Xác nhận" />
+        <Button onPress={() => handleRegisterFace()} title="Xác nhận" />
+      </View>
+    );
+  };
+
+  const renderPicture = () => {
+    return (
+      <View>
+        <Image
+          source={{ uri }}
+          contentFit="contain"
+          style={{ width: 300, aspectRatio: 1 }}
+        />
+        {faceRecognitionResult != null ? (
+          faceRecognitionResult == true ? (
+            <Text>Thành công nhận diện khuôn mặt</Text>
+          ) : (
+            <Text>Lỗi khi nhận diện khuôn mặt</Text>
+          )
+        ) : (
+          <Text></Text>
+        )}
+        <Button onPress={() => setUri(null)} title="Chụp lại" />
+        <Button onPress={() => handleFaceRecognition()} title="Xác nhận" />
       </View>
     );
   };
@@ -122,7 +226,8 @@ export default function CameraPage() {
 
   return (
     <View style={styles.container}>
-      {uri ? renderPicture() : renderCamera()}
+      {/* {uri ? renderPicture() : renderCamera()} */}
+      {uri ? renderRegisterPage() : renderCamera()}
     </View>
   );
 }

@@ -4,6 +4,7 @@ import axios from "axios";
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
 });
+
 // Add a request interceptor
 api.interceptors.request.use(
   async function (config) {
@@ -18,4 +19,5 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
 export default api;
