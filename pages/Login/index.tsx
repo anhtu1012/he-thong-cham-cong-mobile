@@ -48,26 +48,26 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
       // Simulating login
       // In a real app, uncomment this code
 
-      // const response = await loginUser({ username: userName, password });
-      // if (response.status === 201) {
-      //   Toast.show({
-      //     type: "success",
-      //     text1: "Đăng nhập thành công!",
-      //     text1Style: { textAlign: "center", fontSize: 16 },
-      //   });
-      //   await AsyncStorage.setItem("token", response.data.token);
-      //   await AsyncStorage.setItem(
-      //     "userData",
-      //     JSON.stringify(response.data.user)
-      //   );
-      //   navigation.navigate("AppNavigationRoot");
-      // } else {
-      //   Toast.show({
-      //     type: "error",
-      //     text1: "Tài khoản hoặc mật khẩu không đúng!",
-      //     text1Style: { textAlign: "center", fontSize: 16 },
-      //   });
-      // }
+      const response = await loginUser({ username: userName, password });
+      if (response.status === 201) {
+        Toast.show({
+          type: "success",
+          text1: "Đăng nhập thành công!",
+          text1Style: { textAlign: "center", fontSize: 16 },
+        });
+        await AsyncStorage.setItem("token", response.data.token);
+        await AsyncStorage.setItem(
+          "userData",
+          JSON.stringify(response.data.user)
+        );
+        navigation.navigate("AppNavigationRoot");
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Tài khoản hoặc mật khẩu không đúng!",
+          text1Style: { textAlign: "center", fontSize: 16 },
+        });
+      }
 
       // Demo navigation - remove in production
       navigation.reset({
