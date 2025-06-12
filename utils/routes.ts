@@ -4,26 +4,26 @@ export type RootStackParamList = {
   Login: undefined;
   MainAppScreen: undefined; // Renamed from AppNavigationRoot for the root level
   DrawerHomeScreen: undefined; // Added for drawer home screen
-  
+
   // Root level screens (second level)
   HomePage: undefined;
   ChatAppScreen: undefined;
   ProfileScreen: undefined;
   TimesheetNav: undefined;
   FormDetail: { formId: string; formTitle: string };
-  
+
   // BottomTab screens with unique names
   HomeTab: undefined;
   CreateFormTab: undefined;
   TimesheetTab: undefined;
   SalaryTab: undefined;
   MenuTab: undefined;
-  
+
   // Drawer screens with unique names
   HomeDrawer: undefined;
   ChatAppDrawer: undefined;
   ProfileDrawer: undefined;
-  
+
   // Timesheet bottom tab screens
   TimesheetBottomTabs: undefined;
   AttendanceTab: undefined;
@@ -59,4 +59,5 @@ export type TimesheetBottomTabParamList = {
   AttendanceTab: undefined;
   DetailsTab: undefined;
   UserProfileTab: undefined;
+  CameraPage: undefined;
 };
