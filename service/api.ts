@@ -12,3 +12,7 @@ export const logout = () => {
 export const registerFace = (values: FormData) => {
   return api.post("/upload/direct-upload", values);
 };
+
+export const getForms = () => {
+  return api.get("/form");
+};
