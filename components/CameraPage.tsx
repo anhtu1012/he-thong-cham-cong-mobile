@@ -4,7 +4,7 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   Button,
   Platform,
@@ -17,7 +17,6 @@ import { Image } from "expo-image";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import axios from "axios";
 import {
   compareFace,
   getUserFaceImg,

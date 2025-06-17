@@ -5,20 +5,16 @@ import {
   useCameraPermissions,
 } from "expo-camera";
 import { useRef, useState } from "react";
-import {
-  Button,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Button, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { registerFace } from "../service/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Toast from "react-native-toast-message";
+import { useNavigation } from "@react-navigation/native";
+import { NavigationProps } from "../pages/Login";
 
 export default function FaceRegisterPage() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -27,6 +23,7 @@ export default function FaceRegisterPage() {
   const [mode, setMode] = useState<CameraMode>("picture");
   const [facing, setFacing] = useState<CameraType>("front");
   const [recording, setRecording] = useState(false);
+  const navigation = useNavigation<NavigationProps>();
 
   if (!permission) {
     return null;
@@ -83,9 +80,21 @@ export default function FaceRegisterPage() {
         } as any);
 
         const res = await registerFace(formData);
-        const data = res.data;
 
-        console.log(data);
+        if (res.status === 201) {
+          Toast.show({
+            type: "success",
+            text1: "Upload khuôn mặt thành công!",
+            text1Style: { textAlign: "center", fontSize: 16 },
+          });
+          navigation.navigate("DrawerHomeScreen");
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Lỗi khi upload khuôn mặt!",
+            text1Style: { textAlign: "center", fontSize: 16 },
+          });
+        }
       } catch (error) {
         console.log("Upload error:", error);
       }
