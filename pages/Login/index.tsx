@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   Keyboard,
@@ -37,6 +37,22 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigation = useNavigation<NavigationProps>();
 
+  useEffect(() => {
+    const handleIsLogin = async () => {
+      const userData = await AsyncStorage.getItem("userData");
+
+      if (userData) {
+        navigation.navigate("AppNavigationRoot");
+
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "MainAppScreen" }], // Updated name
+        });
+      }
+    };
+    handleIsLogin();
+  }, []);
+
   const handleEyePress = () => {
     setPasswordVisible((oldValue) => !oldValue);
     onEyePress?.();
@@ -55,11 +71,12 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
           text1: "Đăng nhập thành công!",
           text1Style: { textAlign: "center", fontSize: 16 },
         });
-        await AsyncStorage.setItem("token", response.data.token);
+        await AsyncStorage.setItem("token", response.data.refreshToken);
         await AsyncStorage.setItem(
           "userData",
-          JSON.stringify(response.data.user)
+          JSON.stringify(response.data.userProfile)
         );
+
         navigation.navigate("AppNavigationRoot");
       } else {
         Toast.show({

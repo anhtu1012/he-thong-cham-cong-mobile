@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
 } from "react-native";
 import { AntDesign, Feather, FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { getTimeSchedule } from "../../service/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
 
@@ -19,40 +22,125 @@ type DayStatus = {
 };
 
 const MonthlyTimesheet = () => {
+  const [daysInMonth, setDaysInMonth] = useState<DayStatus[]>([]);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+
+  useFocusEffect(() => {
+    useCallback(() => {
+      handleGetTimeSchedule();
+    }, [currentDate]);
+  });
+
+  const handleGetTimeSchedule = async () => {
+    const userData = await AsyncStorage.getItem("userData");
+    const user = JSON.parse(userData!);
+    const userCode = user.code;
+    let fromDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0
+    );
+    const toDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      99
+    );
+    let days: DayStatus[] = Array.from({ length: toDate.getDate() }, (_, i) => {
+      const currentDay = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        i + 1
+      ).getDay();
+
+      return {
+        day: i + 1,
+        value: 0,
+        status: currentDay == 0 || currentDay == 6 ? "weekend" : "normal",
+      };
+    });
+
+    const timeScheduleRes = await getTimeSchedule(fromDate, toDate, userCode);
+    let timeSchedule = timeScheduleRes.data.data;
+
+    // get current day & store to asyncStorage
+    timeSchedule.map(async (time: any) => {
+      const today = new Date();
+      if (time.date.getDate() == today.getDate()) {
+        await AsyncStorage.setItem("currentTimeScheduleDate", time);
+      }
+    });
+
+    console.log("timeSchedule", timeSchedule);
+
+    // add status and value to daysInMonth
+    timeSchedule = timeSchedule.map((date: any) => {
+      const currentDate = new Date(date.date);
+      const day = days[currentDate.getDate() - 1];
+      if (date.workingHours) {
+        day.value = date.workingHours;
+      } else {
+        day.value = "N";
+      }
+    });
+    console.log("daysInMonth", days);
+
+    setDaysInMonth(days);
+  };
+
+  const handleChangeMonth = (isForward: boolean) => {
+    if (isForward) {
+      setCurrentDate(
+        (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1)
+      );
+    } else {
+      setCurrentDate(
+        (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1)
+      );
+    }
+  };
+
   // Giả lập dữ liệu chấm công tháng hiện tại
-  const daysInMonth: DayStatus[] = [
-    { day: 1, status: "normal", value: 7 },
-    { day: 2, status: "normal", value: "N" },
-    { day: 3, status: "half", value: 7.5 },
-    { day: 4, status: "normal", value: 7 },
-    { day: 5, status: "normal", value: 8 },
-    { day: 6, status: "weekend", value: "N" },
-    { day: 7, status: "weekend", value: "D" },
-    { day: 8, status: "normal", value: 7 },
-    { day: 9, status: "normal", value: "O" },
-    { day: 10, status: "normal", value: 0 },
-    { day: 11, status: "normal", value: 0 },
-    { day: 12, status: "normal", value: 0 },
-    { day: 13, status: "weekend", value: 0 },
-    { day: 14, status: "weekend", value: 0 },
-    { day: 15, status: "normal", value: 0 },
-    { day: 16, status: "normal", value: 0 },
-    { day: 17, status: "normal", value: 0 },
-    { day: 18, status: "normal", value: 0 },
-    { day: 19, status: "normal", value: 0 },
-    { day: 20, status: "weekend", value: 0 },
-    { day: 21, status: "weekend", value: 0 },
-    { day: 22, status: "normal", value: 0 },
-    { day: 23, status: "normal", value: 0 },
-    { day: 24, status: "normal", value: 0 },
-    { day: 25, status: "normal", value: 0 },
-    { day: 26, status: "normal", value: 0 },
-    { day: 27, status: "weekend", value: 0 },
-    { day: 28, status: "weekend", value: 0 },
-    { day: 29, status: "normal", value: 0 },
-    { day: 30, status: "normal", value: 0 },
-    { day: 31, status: "normal", value: 0 },
-  ];
+  // const daysInMonth: DayStatus[] = [
+  //   { day: 1, status: "normal", value: 7 },
+  //   { day: 2, status: "normal", value: "N" },
+  //   { day: 3, status: "half", value: 7.5 },
+  //   { day: 4, status: "normal", value: 7 },
+  //   { day: 5, status: "normal", value: 8 },
+  //   { day: 6, status: "weekend", value: "N" },
+  //   { day: 7, status: "weekend", value: "D" },
+  //   { day: 8, status: "normal", value: 7 },
+  //   { day: 9, status: "normal", value: "O" },
+  //   { day: 10, status: "normal", value: 0 },
+  //   { day: 11, status: "normal", value: 0 },
+  //   { day: 12, status: "normal", value: 0 },
+  //   { day: 13, status: "weekend", value: 0 },
+  //   { day: 14, status: "weekend", value: 0 },
+  //   { day: 15, status: "normal", value: 0 },
+  //   { day: 16, status: "normal", value: 0 },
+  //   { day: 17, status: "normal", value: 0 },
+  //   { day: 18, status: "normal", value: 0 },
+  //   { day: 19, status: "normal", value: 0 },
+  //   { day: 20, status: "weekend", value: 0 },
+  //   { day: 21, status: "weekend", value: 0 },
+  //   { day: 22, status: "normal", value: 0 },
+  //   { day: 23, status: "normal", value: 0 },
+  //   { day: 24, status: "normal", value: 0 },
+  //   { day: 25, status: "normal", value: 0 },
+  //   { day: 26, status: "normal", value: 0 },
+  //   { day: 27, status: "weekend", value: 0 },
+  //   { day: 28, status: "weekend", value: 0 },
+  //   { day: 29, status: "normal", value: 0 },
+  //   { day: 30, status: "normal", value: 0 },
+  //   { day: 31, status: "normal", value: 0 },
+  // ];
 
   // Render weekday headers
   const renderWeekdays = () => {
@@ -68,6 +156,40 @@ const MonthlyTimesheet = () => {
 
   // Render calendar grid
   const renderGrid = () => {
+    if (daysInMonth.length) {
+      const firstDay = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        daysInMonth[0].day
+      ).getDay();
+
+      // render white box for placeholder date
+      if (firstDay != 0) {
+        for (let i = 0; i < firstDay - 1; i++) {
+          daysInMonth.unshift({
+            day: 0,
+            status: "normal",
+            value: 0,
+          });
+        }
+      } else {
+        for (let i = 0; i < 6; i++) {
+          daysInMonth.unshift({
+            day: 0,
+            status: "empty",
+            value: 0,
+          });
+        }
+      }
+
+      while (daysInMonth.length % 7 != 0) {
+        daysInMonth.push({
+          day: 0,
+          status: "empty",
+          value: 0,
+        });
+      }
+    }
     const chunks = [];
     for (let i = 0; i < daysInMonth.length; i += 7) {
       chunks.push(daysInMonth.slice(i, i + 7));
@@ -77,7 +199,7 @@ const MonthlyTimesheet = () => {
       <View key={`week-${weekIndex}`} style={styles.weekRow}>
         {week.map((day, dayIndex) => (
           <TouchableOpacity
-            key={`day-${day.day}`}
+            key={`day-${dayIndex}`}
             style={[
               styles.dayCell,
               day.status === "weekend" && styles.weekendCell,
@@ -94,7 +216,7 @@ const MonthlyTimesheet = () => {
                 day.day < 10 && styles.singleDigitDay,
               ]}
             >
-              {day.day}
+              {day.day == 0 ? " " : day.day}
             </Text>
 
             {day.value !== 0 && (
@@ -128,19 +250,25 @@ const MonthlyTimesheet = () => {
 
   // Header with month selector
   const renderHeader = () => {
-    const month = 1; // Tháng hiện tại
-    const year = 2024; // Năm hiện tại
+    const month = currentDate.getMonth() + 1; // Tháng hiện tại
+    const year = currentDate.getFullYear(); // Năm hiện tại
 
     return (
       <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.monthButton}>
+        <TouchableOpacity
+          style={styles.monthButton}
+          onPress={() => handleChangeMonth(false)}
+        >
           <AntDesign name="left" size={18} color="#555" />
         </TouchableOpacity>
         <View style={styles.monthTitleContainer}>
           <Text style={styles.monthTitle}>{`Tháng ${month}/${year}`}</Text>
           <View style={styles.monthIndicator} />
         </View>
-        <TouchableOpacity style={styles.monthButton}>
+        <TouchableOpacity
+          style={styles.monthButton}
+          onPress={() => handleChangeMonth(true)}
+        >
           <AntDesign name="right" size={18} color="#555" />
         </TouchableOpacity>
       </View>

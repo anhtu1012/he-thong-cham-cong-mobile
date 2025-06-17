@@ -68,19 +68,14 @@ export default function FaceRegisterPage() {
   };
 
   const handleRegisterFace = async () => {
-    console.log("hello register face");
-
     if (!uri) return;
     let userDataStr = await AsyncStorage.getItem("userData");
-    console.log("uri", userDataStr);
     if (userDataStr !== null) {
       const user = JSON.parse(userDataStr);
       try {
         const formData = new FormData();
-        formData.append("key", `${user.userProfile.userName}.jpg`);
-        formData.append("userCode", user.userProfile.code);
-
-        // Native (iOS/Android)
+        formData.append("key", `${user.userName}.jpg`);
+        formData.append("userCode", user.code);
         formData.append("file", {
           uri,
           type: "image/jpeg",

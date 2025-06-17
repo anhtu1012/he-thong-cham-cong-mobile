@@ -4,7 +4,7 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
   Platform,
@@ -18,6 +18,17 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import axios from "axios";
+import {
+  compareFace,
+  getUserFaceImg,
+  timeKeepingCheckIn,
+  timeKeepingCheckOut,
+} from "../service/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { checkInValues, checkOutValues } from "../models/timekeeping";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { NavigationProps } from "../pages/Login";
+import Toast from "react-native-toast-message";
 
 export default function CameraPage() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -29,6 +40,34 @@ export default function CameraPage() {
   const [mode, setMode] = useState<CameraMode>("picture");
   const [facing, setFacing] = useState<CameraType>("front");
   const [recording, setRecording] = useState(false);
+  const navigation = useNavigation<NavigationProps>();
+
+  useFocusEffect(() => {
+    useCallback(async () => {
+      if (faceRecognitionResult !== null) {
+        if (faceRecognitionResult) {
+          const currentTimeScheduleDateStr = await AsyncStorage.getItem(
+            "currentTimeScheduleDate"
+          );
+          if (currentTimeScheduleDateStr) {
+            const currentTimeScheduleDate = JSON.parse(
+              currentTimeScheduleDateStr
+            );
+            if (currentTimeScheduleDate.status === "NOTSTARTED")
+              handleCheckIn();
+            else if (currentTimeScheduleDate.status === "ACTIVE")
+              handleCheckOut();
+          }
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Khuôn mặt không trùng khớp!",
+            text1Style: { textAlign: "center", fontSize: 16 },
+          });
+        }
+      }
+    }, [faceRecognitionResult]);
+  });
 
   if (!permission) {
     return null;
@@ -71,34 +110,104 @@ export default function CameraPage() {
 
   const handleFaceRecognition = async () => {
     if (!uri) return;
+    let userDataStr = await AsyncStorage.getItem("userData");
+    if (userDataStr !== null) {
+      try {
+        const formData = new FormData();
+        const user = JSON.parse(userDataStr);
+        // get user image from minio
+        const userImgRes = await getUserFaceImg(`${user.userName}.jpg`);
+        const userImg = userImgRes.data;
+        formData.append("refImg", userImg);
 
-    try {
-      const formData = new FormData();
-      formData.append("name", "phuc");
-
-      if (Platform.OS === "web") {
-        // Web: fetch the blob and append it
-        const blob = await fetch(uri).then((res) => res.blob());
-        formData.append("file", blob, "face.jpg");
-      } else {
-        // Native (iOS/Android)
-        formData.append("file", {
+        formData.append("comparedImg", {
           uri,
           type: "image/jpeg",
           name: "face.jpg",
         } as any);
+
+        const res = await compareFace(formData);
+        const data = res.data;
+        setFaceRecognitionResult(data.matched);
+      } catch (error) {
+        console.log("Upload error:", error);
       }
+    }
+  };
 
-      const res = await axios.post("http://localhost:8000/verify", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+  const handleCheckIn = async () => {
+    const currentTimeScheduleDateStr = await AsyncStorage.getItem(
+      "currentTimeScheduleDate"
+    );
+    const userStr = await AsyncStorage.getItem("userData");
 
-      const data = res.data;
-      setFaceRecognitionResult(data.matched);
-    } catch (error) {
-      console.log("Upload error:", error);
+    if (currentTimeScheduleDateStr && userStr) {
+      const user = JSON.parse(userStr);
+      const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
+      const payload: checkInValues = {
+        userCode: user.code,
+        checkInTime: new Date(),
+      };
+
+      try {
+        const res = await timeKeepingCheckIn(
+          currentTimeScheduleDate.id,
+          payload
+        );
+        if (res.status === 200) {
+          Toast.show({
+            type: "success",
+            text1: "Chấm công thành công!",
+            text1Style: { textAlign: "center", fontSize: 16 },
+          });
+          navigation.navigate("TimesheetNav");
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Chấm công thất bại!",
+            text1Style: { textAlign: "center", fontSize: 16 },
+          });
+        }
+      } catch (err) {
+        console.log("Error: ", err);
+      }
+    }
+  };
+
+  const handleCheckOut = async () => {
+    const currentTimeScheduleDateStr = await AsyncStorage.getItem(
+      "currentTimeScheduleDate"
+    );
+
+    if (currentTimeScheduleDateStr) {
+      const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
+      const payload: checkOutValues = {
+        checkOutTime: new Date(),
+        status: "END",
+      };
+
+      try {
+        const res = await timeKeepingCheckOut(
+          currentTimeScheduleDate.timeKeepingId,
+          payload
+        );
+        if (res.status === 200) {
+          Toast.show({
+            type: "success",
+            text1: "Chấm công thành công!",
+            text1Style: { textAlign: "center", fontSize: 16 },
+          });
+          navigation.navigate("TimesheetNav");
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Chấm công thất bại!",
+            text1Style: { textAlign: "center", fontSize: 16 },
+          });
+        }
+      } catch (err) {
+        console.log("Error: ", err);
+      }
     }
   };
 
@@ -110,15 +219,6 @@ export default function CameraPage() {
           contentFit="contain"
           style={{ width: 300, aspectRatio: 1 }}
         />
-        {faceRecognitionResult != null ? (
-          faceRecognitionResult == true ? (
-            <Text>Thành công nhận diện khuôn mặt</Text>
-          ) : (
-            <Text>Lỗi khi nhận diện khuôn mặt</Text>
-          )
-        ) : (
-          <Text></Text>
-        )}
         <Button onPress={() => setUri(null)} title="Chụp lại" />
         <Button onPress={() => handleFaceRecognition()} title="Xác nhận" />
       </View>
