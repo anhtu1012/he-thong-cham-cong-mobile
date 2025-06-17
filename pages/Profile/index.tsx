@@ -19,6 +19,7 @@ import {
 } from "@expo/vector-icons";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import FaceRegisterPage from "../../components/FaceRegisterPage";
 
 const { width } = Dimensions.get("window");
 
@@ -767,6 +768,15 @@ const ProfilePage = () => {
           </View>
         );
 
+      case "dangkykhuonmat":
+        return (
+          <View style={styles.tabContent}>
+            <View style={{ height: 700 }}>
+              <FaceRegisterPage />
+            </View>
+          </View>
+        );
+
       default:
         return (
           <View style={styles.tabContent}>
@@ -859,6 +869,23 @@ const ProfilePage = () => {
               ]}
             >
               Lịch sử đơn
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.tabItem,
+              activeTab === "dangkykhuonmat" && styles.activeTab,
+            ]}
+            onPress={() => setActiveTab("dangkykhuonmat")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "dangkykhuonmat" && styles.activeTabText,
+              ]}
+            >
+              Đăng ký khuôn mặt
             </Text>
           </TouchableOpacity>
         </ScrollView>

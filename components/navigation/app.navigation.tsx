@@ -8,7 +8,7 @@ import {
   NavigationProp,
   ParamListBase,
   useNavigation,
-  CommonActions
+  CommonActions,
 } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -37,7 +37,7 @@ import TimesheetNavigator from "./timesheet.navigation";
 
 export type AppStackParamList = {
   Login: undefined;
-  MainAppScreen: undefined;  // Updated name
+  MainAppScreen: undefined; // Updated name
 };
 
 // Memoized components
@@ -54,13 +54,13 @@ const HomeLayout = memo(() => {
   const Stack = createNativeStackNavigator<RootStackParamList>();
   return (
     <Stack.Navigator
-      initialRouteName="HomePage"  // Updated name
+      initialRouteName="HomePage" // Updated name
       screenOptions={{
         headerShown: false,
       }}
     >
       <Stack.Screen
-        name="HomePage"  // Updated name
+        name="HomePage" // Updated name
         component={MemoizedHomePage}
         options={{
           title: "Trang chủ",
@@ -79,56 +79,52 @@ interface TabBarIconProps {
   iconType?: "AntDesign" | "MaterialIcons" | "Entypo";
 }
 
-const TabBarIcon = memo(({
-  focused,
-  name,
-  color,
-  size,
-  iconType = "AntDesign",
-}: TabBarIconProps) => {
-  const animatedValue = React.useRef(new Animated.Value(1)).current;
+const TabBarIcon = memo(
+  ({ focused, name, color, size, iconType = "AntDesign" }: TabBarIconProps) => {
+    const animatedValue = React.useRef(new Animated.Value(1)).current;
 
-  React.useEffect(() => {
-    if (focused) {
-      Animated.sequence([
-        Animated.timing(animatedValue, {
-          toValue: 0.8,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animatedValue, {
-          toValue: 1.2,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(animatedValue, {
-          toValue: 1,
-          friction: 4,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [focused, animatedValue]);
+    React.useEffect(() => {
+      if (focused) {
+        Animated.sequence([
+          Animated.timing(animatedValue, {
+            toValue: 0.8,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animatedValue, {
+            toValue: 1.2,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.spring(animatedValue, {
+            toValue: 1,
+            friction: 4,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    }, [focused, animatedValue]);
 
-  const animatedStyle = {
-    transform: [{ scale: animatedValue }],
-  };
+    const animatedStyle = {
+      transform: [{ scale: animatedValue }],
+    };
 
-  return (
-    <Animated.View style={[animatedStyle, localStyles.iconContainer]}>
-      {iconType === "AntDesign" && (
-        <AntDesign name={name as any} size={size} color={color} />
-      )}
-      {iconType === "MaterialIcons" && (
-        <MaterialIcons name={name as any} size={size} color={color} />
-      )}
-      {iconType === "Entypo" && (
-        <Entypo name={name as any} size={size} color={color} />
-      )}
-      {focused && <View style={localStyles.indicator} />}
-    </Animated.View>
-  );
-});
+    return (
+      <Animated.View style={[animatedStyle, localStyles.iconContainer]}>
+        {iconType === "AntDesign" && (
+          <AntDesign name={name as any} size={size} color={color} />
+        )}
+        {iconType === "MaterialIcons" && (
+          <MaterialIcons name={name as any} size={size} color={color} />
+        )}
+        {iconType === "Entypo" && (
+          <Entypo name={name as any} size={size} color={color} />
+        )}
+        {focused && <View style={localStyles.indicator} />}
+      </Animated.View>
+    );
+  }
+);
 
 // Custom Tab Bar with background
 interface CustomTabBarProps {
@@ -137,89 +133,118 @@ interface CustomTabBarProps {
   navigation: any;
 }
 
-const CustomTabBar = memo(({
-  state,
-  descriptors,
-  navigation,
-}: CustomTabBarProps) => {
-  // Dùng useCallback cho onPress để tránh tạo hàm mới mỗi lần render
-  const getTabPressHandler = useCallback((route: any, isFocused: boolean) => {
-    return () => {
-      const event = navigation.emit({
-        type: "tabPress",
-        target: route.key,
-        canPreventDefault: true,
-      });
+const CustomTabBar = memo(
+  ({ state, descriptors, navigation }: CustomTabBarProps) => {
+    // Dùng useCallback cho onPress để tránh tạo hàm mới mỗi lần render
+    const getTabPressHandler = useCallback(
+      (route: any, isFocused: boolean) => {
+        return () => {
+          const event = navigation.emit({
+            type: "tabPress",
+            target: route.key,
+            canPreventDefault: true,
+          });
 
-      if (!isFocused && !event.defaultPrevented) {
-        navigation.navigate(route.name);
-      }
-    };
-  }, [navigation]);
-
-  // Handler cho tab Timesheet riêng biệt
-  const handleTimesheetTabPress = useCallback(() => {
-    const rootNavigation = navigation.getParent()?.getParent();
-    if (rootNavigation) {
-      const resetAction = CommonActions.reset({
-        index: 0,
-        routes: [{ name: "TimesheetNav" }],
-      });
-      rootNavigation.dispatch(resetAction);
-    }
-  }, [navigation]);
-
-  // Handler cho Menu tab riêng biệt
-  const handleMenuTabPress = useCallback(() => {
-    const parentNavigation = navigation.getParent();
-    if (parentNavigation) {
-      parentNavigation.dispatch(DrawerActions.openDrawer());
-    }
-  }, [navigation]);
-
-  return (
-    <View style={localStyles.tabBarContainer}>
-      <LinearGradient
-        colors={["rgba(255,255,255,0.9)", "#ffffff"]}
-        style={localStyles.tabBar}
-      >
-        {state.routes.map((route: any, index: number) => {
-          const { options } = descriptors[route.key];
-          const label =
-            options.tabBarLabel !== undefined
-              ? options.tabBarLabel
-              : options.title !== undefined
-              ? options.title
-              : route.name;
-
-          const isFocused = state.index === index;
-
-          // Xử lý các tab đặc biệt
-          if (route.name === "TimesheetTab") {
-            return (
-              <TouchableOpacity
-                key={index}
-                accessibilityRole="button"
-                accessibilityState={isFocused ? { selected: true } : {}}
-                accessibilityLabel={options.tabBarAccessibilityLabel}
-                testID={options.tabBarTestID}
-                onPress={handleTimesheetTabPress}
-                style={localStyles.tabItem}
-              >
-                {options.tabBarIcon({
-                  focused: isFocused,
-                  color: isFocused ? "#3674B5" : "#888",
-                  size: 24,
-                })}
-                {options.tabBarLabel({
-                  focused: isFocused,
-                  color: isFocused ? "#3674B5" : "#888",
-                })}
-              </TouchableOpacity>
-            );
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
           }
+        };
+      },
+      [navigation]
+    );
 
-          if (route.name === "MenuTab") {
+    // Handler cho tab Timesheet riêng biệt
+    const handleTimesheetTabPress = useCallback(() => {
+      const rootNavigation = navigation.getParent()?.getParent();
+      if (rootNavigation) {
+        const resetAction = CommonActions.reset({
+          index: 0,
+          routes: [{ name: "TimesheetNav" }],
+        });
+        rootNavigation.dispatch(resetAction);
+      }
+    }, [navigation]);
+
+    // Handler cho Menu tab riêng biệt
+    const handleMenuTabPress = useCallback(() => {
+      const parentNavigation = navigation.getParent();
+      if (parentNavigation) {
+        parentNavigation.dispatch(DrawerActions.openDrawer());
+      }
+    }, [navigation]);
+
+    return (
+      <View style={localStyles.tabBarContainer}>
+        <LinearGradient
+          colors={["rgba(255,255,255,0.9)", "#ffffff"]}
+          style={localStyles.tabBar}
+        >
+          {state.routes.map((route: any, index: number) => {
+            const { options } = descriptors[route.key];
+            const label =
+              options.tabBarLabel !== undefined
+                ? options.tabBarLabel
+                : options.title !== undefined
+                ? options.title
+                : route.name;
+
+            const isFocused = state.index === index;
+
+            // Xử lý các tab đặc biệt
+            if (route.name === "TimesheetTab") {
+              return (
+                <TouchableOpacity
+                  key={index}
+                  accessibilityRole="button"
+                  accessibilityState={isFocused ? { selected: true } : {}}
+                  accessibilityLabel={options.tabBarAccessibilityLabel}
+                  testID={options.tabBarTestID}
+                  onPress={handleTimesheetTabPress}
+                  style={localStyles.tabItem}
+                >
+                  {options.tabBarIcon({
+                    focused: isFocused,
+                    color: isFocused ? "#3674B5" : "#888",
+                    size: 24,
+                  })}
+                  {options.tabBarLabel({
+                    focused: isFocused,
+                    color: isFocused ? "#3674B5" : "#888",
+                  })}
+                </TouchableOpacity>
+              );
+            }
+
+            if (route.name === "MenuTab") {
+              return (
+                <TouchableOpacity
+                  key={index}
+                  accessibilityRole="button"
+                  accessibilityState={isFocused ? { selected: true } : {}}
+                  accessibilityLabel={options.tabBarAccessibilityLabel}
+                  testID={options.tabBarTestID}
+                  onPress={handleMenuTabPress}
+                  style={localStyles.tabItem}
+                >
+                  {options.tabBarIcon({
+                    focused: isFocused,
+                    color: isFocused ? "#3674B5" : "#888",
+                    size: 24,
+                  })}
+                  <Text
+                    style={{
+                      color: isFocused ? "#3674B5" : "#888",
+                      fontSize: 12,
+                      fontWeight: isFocused ? "bold" : "500",
+                      marginTop: 3,
+                    }}
+                  >
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }
+
             return (
               <TouchableOpacity
                 key={index}
@@ -227,7 +252,7 @@ const CustomTabBar = memo(({
                 accessibilityState={isFocused ? { selected: true } : {}}
                 accessibilityLabel={options.tabBarAccessibilityLabel}
                 testID={options.tabBarTestID}
-                onPress={handleMenuTabPress}
+                onPress={getTabPressHandler(route, isFocused)}
                 style={localStyles.tabItem}
               >
                 {options.tabBarIcon({
@@ -247,40 +272,12 @@ const CustomTabBar = memo(({
                 </Text>
               </TouchableOpacity>
             );
-          }
-
-          return (
-            <TouchableOpacity
-              key={index}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel}
-              testID={options.tabBarTestID}
-              onPress={getTabPressHandler(route, isFocused)}
-              style={localStyles.tabItem}
-            >
-              {options.tabBarIcon({
-                focused: isFocused,
-                color: isFocused ? "#3674B5" : "#888",
-                size: 24,
-              })}
-              <Text
-                style={{
-                  color: isFocused ? "#3674B5" : "#888",
-                  fontSize: 12,
-                  fontWeight: isFocused ? "bold" : "500",
-                  marginTop: 3,
-                }}
-              >
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </LinearGradient>
-    </View>
-  );
-});
+          })}
+        </LinearGradient>
+      </View>
+    );
+  }
+);
 
 const BottomTabNavigation = memo(() => {
   const Tab = createBottomTabNavigator<TabParamList>();
@@ -323,7 +320,7 @@ const BottomTabNavigation = memo(() => {
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tab.Screen
-        name="HomeTab"  // Updated name
+        name="HomeTab" // Updated name
         component={HomeLayout}
         options={{
           tabBarIcon: ({ color, size, focused }) => (
@@ -338,7 +335,7 @@ const BottomTabNavigation = memo(() => {
         }}
       />
       <Tab.Screen
-        name="CreateFormTab"  // Updated name
+        name="CreateFormTab" // Updated name
         component={MemoizedCreateFormPage}
         options={{
           tabBarIcon: ({ color, size, focused }) => (
@@ -353,7 +350,7 @@ const BottomTabNavigation = memo(() => {
         }}
       />
       <Tab.Screen
-        name="TimesheetTab"  // Updated name
+        name="TimesheetTab" // Updated name
         component={MemoizedTimesheetPage}
         options={{
           tabBarIcon: ({ color, size, focused }) => (
@@ -407,7 +404,7 @@ const BottomTabNavigation = memo(() => {
         }}
       />
       <Tab.Screen
-        name="SalaryTab"  // Updated name
+        name="SalaryTab" // Updated name
         component={MemoizedSalaryPage}
         options={{
           tabBarIcon: ({ color, size, focused }) => (
@@ -423,7 +420,7 @@ const BottomTabNavigation = memo(() => {
         }}
       />
       <Tab.Screen
-        name="MenuTab"  // Updated name
+        name="MenuTab" // Updated name
         component={View}
         options={{
           tabBarIcon: ({ color, size, focused }) => (
@@ -503,78 +500,81 @@ function AppNavigation() {
   }, [navigation]);
 
   // Custom drawer content - memoized
-  const renderDrawerContent = useCallback((props: any) => {
-    return (
-      <>
-        <Text
-          style={{
-            padding: 16,
-            fontSize: 20,
-            fontWeight: "bold",
-            color: "#3674B5",
-            borderBottomWidth: 1,
-            borderBottomColor: "#eee",
-            marginTop: 30,
-          }}
-        >
-          HỆ THỐNG CHẤM CÔNG
-        </Text>
-        {props.descriptors &&
-          Object.entries(props.descriptors).map(
-            ([key, descriptor]: [string, any], index: number) => (
-              <Pressable
-                key={key}
-                onPress={() =>
-                  props.navigation.navigate(descriptor.route.name)
-                }
-                style={({ pressed }) => ({
-                  backgroundColor: pressed
-                    ? "#f0f0f0"
-                    : props.state.index === index
-                    ? "#A1E3F9"
-                    : "transparent",
-                  borderRadius: 8,
-                })}
-              >
-                <Text
-                  style={{
-                    padding: 16,
-                    color: props.state.index === index ? "#3674B5" : "#333",
-                    fontWeight:
-                      props.state.index === index ? "600" : "normal",
-                    fontSize: 16,
-                  }}
-                >
-                  {descriptor.options.title || descriptor.route.name}
-                </Text>
-              </Pressable>
-            )
-          )}
-        <Pressable
-          onPress={handleLogout}
-          style={({ pressed }) => ({
-            marginTop: 10,
-            padding: 16,
-            width: 300,
-            backgroundColor: pressed ? "tomato" : "#3674B5",
-            borderRadius: 8,
-            alignSelf: "center",
-          })}
-        >
+  const renderDrawerContent = useCallback(
+    (props: any) => {
+      return (
+        <>
           <Text
             style={{
-              color: "white",
-              fontSize: 16,
+              padding: 16,
+              fontSize: 20,
               fontWeight: "bold",
-              textAlign: "center",
+              color: "#3674B5",
+              borderBottomWidth: 1,
+              borderBottomColor: "#eee",
+              marginTop: 30,
             }}
           >
-            Đăng xuất
+            HỆ THỐNG CHẤM CÔNG
           </Text>
-        </Pressable>
-      </>
-    );
-  }, [handleLogout]);
+          {props.descriptors &&
+            Object.entries(props.descriptors).map(
+              ([key, descriptor]: [string, any], index: number) => (
+                <Pressable
+                  key={key}
+                  onPress={() =>
+                    props.navigation.navigate(descriptor.route.name)
+                  }
+                  style={({ pressed }) => ({
+                    backgroundColor: pressed
+                      ? "#f0f0f0"
+                      : props.state.index === index
+                      ? "#A1E3F9"
+                      : "transparent",
+                    borderRadius: 8,
+                  })}
+                >
+                  <Text
+                    style={{
+                      padding: 16,
+                      color: props.state.index === index ? "#3674B5" : "#333",
+                      fontWeight:
+                        props.state.index === index ? "600" : "normal",
+                      fontSize: 16,
+                    }}
+                  >
+                    {descriptor.options.title || descriptor.route.name}
+                  </Text>
+                </Pressable>
+              )
+            )}
+          <Pressable
+            onPress={handleLogout}
+            style={({ pressed }) => ({
+              marginTop: 10,
+              padding: 16,
+              width: 300,
+              backgroundColor: pressed ? "tomato" : "#3674B5",
+              borderRadius: 8,
+              alignSelf: "center",
+            })}
+          >
+            <Text
+              style={{
+                color: "white",
+                fontSize: 16,
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+            >
+              Đăng xuất
+            </Text>
+          </Pressable>
+        </>
+      );
+    },
+    [handleLogout]
+  );
 
   // MainDrawer memoized
   const MainDrawer = useCallback(() => {
@@ -592,7 +592,7 @@ function AppNavigation() {
         drawerContent={renderDrawerContent}
       >
         <Drawer.Screen
-          name="HomeDrawer"  // Updated name
+          name="HomeDrawer" // Updated name
           component={BottomTabNavigation}
           options={{
             title: "Trang chủ",
@@ -600,7 +600,7 @@ function AppNavigation() {
         />
 
         <Drawer.Screen
-          name="ChatAppDrawer"  // Updated name
+          name="ChatAppDrawer" // Updated name
           component={MemoizedChatAppPage}
           options={{
             title: "Chat App",
@@ -608,7 +608,7 @@ function AppNavigation() {
         />
 
         <Drawer.Screen
-          name="ProfileDrawer"  // Updated name
+          name="ProfileDrawer" // Updated name
           component={MemoizedProfilePage}
           options={{
             title: "Thông tin cá nhân",
@@ -628,10 +628,10 @@ function AppNavigation() {
         headerShown: false,
         animation: "slide_from_right", // Consistent animation
       }}
-      initialRouteName="DrawerHomeScreen"  // Renamed to avoid conflicts
+      initialRouteName="DrawerHomeScreen" // Renamed to avoid conflicts
     >
       <RootStack.Screen
-        name="DrawerHomeScreen"  // Renamed from AppNavigationRoot
+        name="DrawerHomeScreen" // Renamed from AppNavigationRoot
         component={MainDrawer}
         options={{
           animationTypeForReplace: "pop",

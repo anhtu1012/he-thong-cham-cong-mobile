@@ -4,72 +4,26 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { useRef, useState, useCallback } from "react";
-import {
-  Button,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { useRef, useState } from "react";
+import { Button, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import {
-  compareFace,
-  getUserFaceImg,
-  timeKeepingCheckIn,
-  timeKeepingCheckOut,
-} from "../service/api";
+import { registerFace } from "../service/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { checkInValues, checkOutValues } from "../models/timekeeping";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { NavigationProps } from "../pages/Login";
 import Toast from "react-native-toast-message";
+import { useNavigation } from "@react-navigation/native";
+import { NavigationProps } from "../pages/Login";
 
-export default function CameraPage() {
+export default function FaceRegisterPage() {
   const [permission, requestPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
   const [uri, setUri] = useState<string | null>(null);
-  const [faceRecognitionResult, setFaceRecognitionResult] = useState<
-    boolean | null
-  >(null);
   const [mode, setMode] = useState<CameraMode>("picture");
   const [facing, setFacing] = useState<CameraType>("front");
   const [recording, setRecording] = useState(false);
   const navigation = useNavigation<NavigationProps>();
-
-  useFocusEffect(
-    useCallback(() => {
-      if (faceRecognitionResult !== null) {
-        if (faceRecognitionResult) {
-          const handleAsync = async () => {
-            const currentTimeScheduleDateStr = await AsyncStorage.getItem(
-              "currentTimeScheduleDate"
-            );
-            if (currentTimeScheduleDateStr) {
-              const currentTimeScheduleDate = JSON.parse(
-                currentTimeScheduleDateStr
-              );
-              if (currentTimeScheduleDate.status === "NOTSTARTED")
-                handleCheckIn();
-              else if (currentTimeScheduleDate.status === "ACTIVE")
-                handleCheckOut();
-            }
-          };
-          handleAsync();
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Khuôn mặt không trùng khớp!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-        }
-      }
-    }, [faceRecognitionResult])
-  );
 
   if (!permission) {
     return null;
@@ -110,110 +64,44 @@ export default function CameraPage() {
     setFacing((prev) => (prev === "back" ? "front" : "back"));
   };
 
-  const handleFaceRecognition = async () => {
+  const handleRegisterFace = async () => {
     if (!uri) return;
     let userDataStr = await AsyncStorage.getItem("userData");
     if (userDataStr !== null) {
+      const user = JSON.parse(userDataStr);
       try {
         const formData = new FormData();
-        const user = JSON.parse(userDataStr);
-        // get user image from minio
-        const userImgRes = await getUserFaceImg(`${user.userName}.jpg`);
-        const userImg = userImgRes.data;
-        formData.append("refImg", userImg);
-
-        formData.append("comparedImg", {
+        formData.append("key", `${user.userName}.jpg`);
+        formData.append("userCode", user.code);
+        formData.append("file", {
           uri,
           type: "image/jpeg",
           name: "face.jpg",
         } as any);
 
-        const res = await compareFace(formData);
-        const data = res.data;
-        setFaceRecognitionResult(data.matched);
+        const res = await registerFace(formData);
+
+        if (res.status === 201) {
+          Toast.show({
+            type: "success",
+            text1: "Upload khuôn mặt thành công!",
+            text1Style: { textAlign: "center", fontSize: 16 },
+          });
+          navigation.navigate("DrawerHomeScreen");
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Lỗi khi upload khuôn mặt!",
+            text1Style: { textAlign: "center", fontSize: 16 },
+          });
+        }
       } catch (error) {
         console.log("Upload error:", error);
       }
     }
   };
 
-  const handleCheckIn = async () => {
-    const currentTimeScheduleDateStr = await AsyncStorage.getItem(
-      "currentTimeScheduleDate"
-    );
-    const userStr = await AsyncStorage.getItem("userData");
-
-    if (currentTimeScheduleDateStr && userStr) {
-      const user = JSON.parse(userStr);
-      const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
-      const payload: checkInValues = {
-        userCode: user.code,
-        checkInTime: new Date(),
-      };
-
-      try {
-        const res = await timeKeepingCheckIn(
-          currentTimeScheduleDate.id,
-          payload
-        );
-        if (res.status === 200) {
-          Toast.show({
-            type: "success",
-            text1: "Chấm công thành công!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-          navigation.navigate("TimesheetNav");
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Chấm công thất bại!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-        }
-      } catch (err) {
-        console.log("Error: ", err);
-      }
-    }
-  };
-
-  const handleCheckOut = async () => {
-    const currentTimeScheduleDateStr = await AsyncStorage.getItem(
-      "currentTimeScheduleDate"
-    );
-
-    if (currentTimeScheduleDateStr) {
-      const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
-      const payload: checkOutValues = {
-        checkOutTime: new Date(),
-        status: "END",
-      };
-
-      try {
-        const res = await timeKeepingCheckOut(
-          currentTimeScheduleDate.timeKeepingId,
-          payload
-        );
-        if (res.status === 200) {
-          Toast.show({
-            type: "success",
-            text1: "Chấm công thành công!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-          navigation.navigate("TimesheetNav");
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Chấm công thất bại!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-        }
-      } catch (err) {
-        console.log("Error: ", err);
-      }
-    }
-  };
-
-  const renderPicture = () => {
+  const renderRegisterPage = () => {
     return (
       <View>
         <Image
@@ -222,7 +110,7 @@ export default function CameraPage() {
           style={{ width: 300, aspectRatio: 1 }}
         />
         <Button onPress={() => setUri(null)} title="Chụp lại" />
-        <Button onPress={() => handleFaceRecognition()} title="Xác nhận" />
+        <Button onPress={() => handleRegisterFace()} title="Xác nhận" />
       </View>
     );
   };
@@ -277,7 +165,8 @@ export default function CameraPage() {
 
   return (
     <View style={styles.container}>
-      {uri ? renderPicture() : renderCamera()}
+      {/* {uri ? renderPicture() : renderCamera()} */}
+      {uri ? renderRegisterPage() : renderCamera()}
     </View>
   );
 }
