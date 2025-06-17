@@ -25,11 +25,11 @@ const MonthlyTimesheet = () => {
   const [daysInMonth, setDaysInMonth] = useState<DayStatus[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
-  useFocusEffect(() => {
+  useFocusEffect(
     useCallback(() => {
       handleGetTimeSchedule();
-    }, [currentDate]);
-  });
+    }, [currentDate])
+  );
 
   const handleGetTimeSchedule = async () => {
     const userData = await AsyncStorage.getItem("userData");

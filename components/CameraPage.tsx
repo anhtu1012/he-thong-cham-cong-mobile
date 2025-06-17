@@ -4,7 +4,7 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import {
   Button,
   Platform,
@@ -41,22 +41,25 @@ export default function CameraPage() {
   const [recording, setRecording] = useState(false);
   const navigation = useNavigation<NavigationProps>();
 
-  useFocusEffect(() => {
-    useCallback(async () => {
+  useFocusEffect(
+    useCallback(() => {
       if (faceRecognitionResult !== null) {
         if (faceRecognitionResult) {
-          const currentTimeScheduleDateStr = await AsyncStorage.getItem(
-            "currentTimeScheduleDate"
-          );
-          if (currentTimeScheduleDateStr) {
-            const currentTimeScheduleDate = JSON.parse(
-              currentTimeScheduleDateStr
+          const handleAsync = async () => {
+            const currentTimeScheduleDateStr = await AsyncStorage.getItem(
+              "currentTimeScheduleDate"
             );
-            if (currentTimeScheduleDate.status === "NOTSTARTED")
-              handleCheckIn();
-            else if (currentTimeScheduleDate.status === "ACTIVE")
-              handleCheckOut();
-          }
+            if (currentTimeScheduleDateStr) {
+              const currentTimeScheduleDate = JSON.parse(
+                currentTimeScheduleDateStr
+              );
+              if (currentTimeScheduleDate.status === "NOTSTARTED")
+                handleCheckIn();
+              else if (currentTimeScheduleDate.status === "ACTIVE")
+                handleCheckOut();
+            }
+          };
+          handleAsync();
         } else {
           Toast.show({
             type: "error",
@@ -65,8 +68,8 @@ export default function CameraPage() {
           });
         }
       }
-    }, [faceRecognitionResult]);
-  });
+    }, [faceRecognitionResult])
+  );
 
   if (!permission) {
     return null;
