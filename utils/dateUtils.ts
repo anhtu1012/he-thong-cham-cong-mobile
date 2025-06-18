@@ -16,6 +16,10 @@ export const formatDate = (dateString?: string): string => {
   return dayjs.utc(dateString).tz("Asia/Ho_Chi_Minh").format("DD/MM/YYYY");
 };
 
+export const getCurrentDateRes = (): string => {
+  return dayjs().tz("Asia/Ho_Chi_Minh").format();
+};
+
 /**
  * Hàm chuyển đổi định dạng thời gian từ API về dạng `HH:mm`
  * @param timeString

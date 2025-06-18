@@ -28,6 +28,8 @@ import { checkInValues, checkOutValues } from "../models/timekeeping";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NavigationProps } from "../pages/Login";
 import Toast from "react-native-toast-message";
+import * as FileSystem from "expo-file-system";
+import { getCurrentDateRes } from "../utils/dateUtils";
 
 export default function CameraPage() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -43,31 +45,60 @@ export default function CameraPage() {
 
   useFocusEffect(
     useCallback(() => {
-      if (faceRecognitionResult !== null) {
-        if (faceRecognitionResult) {
-          const handleAsync = async () => {
-            const currentTimeScheduleDateStr = await AsyncStorage.getItem(
-              "currentTimeScheduleDate"
-            );
-            if (currentTimeScheduleDateStr) {
-              const currentTimeScheduleDate = JSON.parse(
+      console.log("CameraPage focused", faceRecognitionResult);
+
+      const processFaceRecognition = async () => {
+        if (faceRecognitionResult !== null) {
+          if (faceRecognitionResult) {
+            try {
+              const currentTimeScheduleDateStr = await AsyncStorage.getItem(
+                "currentTimeScheduleDate"
+              );
+              console.log(
+                "currentTimeScheduleDateStr: ",
                 currentTimeScheduleDateStr
               );
-              if (currentTimeScheduleDate.status === "NOTSTARTED")
-                handleCheckIn();
-              else if (currentTimeScheduleDate.status === "ACTIVE")
+
+              if (currentTimeScheduleDateStr) {
+                const currentTimeScheduleDate = JSON.parse(
+                  currentTimeScheduleDateStr
+                );
+                if (currentTimeScheduleDate.status === "NOTSTARTED") {
+                  console.log("checkIn");
+                  handleCheckIn();
+                } else if (currentTimeScheduleDate.status === "ACTIVE")
+                  console.log("checkIn");
                 handleCheckOut();
+              }
+
+              Toast.show({
+                type: "success",
+                text1: "Chấm công thành công",
+                text1Style: { textAlign: "center", fontSize: 16 },
+              });
+              navigation.navigate("DrawerHomeScreen");
+            } catch (error) {
+              console.error("Error processing face recognition result:", error);
+              Toast.show({
+                type: "error",
+                text1: "Có lỗi xảy ra khi xử lý dữ liệu!",
+                text1Style: { textAlign: "center", fontSize: 16 },
+              });
             }
-          };
-          handleAsync();
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Khuôn mặt không trùng khớp!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
+          } else {
+            Toast.show({
+              type: "error",
+              text1: "Khuôn mặt không trùng khớp!",
+              text1Style: { textAlign: "center", fontSize: 16 },
+            });
+          }
         }
-      }
+      };
+
+      processFaceRecognition();
+
+      // This effect should run whenever faceRecognitionResult changes
+      // and the screen is focused
     }, [faceRecognitionResult])
   );
 
@@ -112,28 +143,45 @@ export default function CameraPage() {
 
   const handleFaceRecognition = async () => {
     if (!uri) return;
+
     let userDataStr = await AsyncStorage.getItem("userData");
-    if (userDataStr !== null) {
-      try {
-        const formData = new FormData();
-        const user = JSON.parse(userDataStr);
-        // get user image from minio
-        const userImgRes = await getUserFaceImg(`${user.userName}.jpg`);
-        const userImg = userImgRes.data;
-        formData.append("refImg", userImg);
+    if (!userDataStr) return;
 
-        formData.append("comparedImg", {
-          uri,
-          type: "image/jpeg",
-          name: "face.jpg",
-        } as any);
+    try {
+      const formData = new FormData();
+      const user = JSON.parse(userDataStr);
 
-        const res = await compareFace(formData);
-        const data = res.data;
-        setFaceRecognitionResult(data.matched);
-      } catch (error) {
-        console.log("Upload error:", error);
-      }
+      // Binary image response
+      const userImgRes = await getUserFaceImg(`${user.userName}.jpg`);
+      const binary = userImgRes.data;
+
+      //  Convert binary to base64
+      const base64Data = Buffer.from(binary, "binary").toString("base64");
+
+      // Save it to Expo's cache
+      const userImgPath = `${FileSystem.cacheDirectory}${user.userName}.jpg`;
+      await FileSystem.writeAsStringAsync(userImgPath, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Attach images to FormData
+      formData.append("refImg", {
+        uri: userImgPath,
+        type: "image/jpeg",
+        name: `${user.userName}.jpg`,
+      } as any);
+
+      formData.append("comparedImg", {
+        uri,
+        type: "image/jpeg",
+        name: "face.jpg",
+      } as any);
+
+      const res = await compareFace(formData);
+      const data = res.data;
+      setFaceRecognitionResult(data.matched);
+    } catch (err) {
+      console.log("Upload error:", err);
     }
   };
 
@@ -148,7 +196,7 @@ export default function CameraPage() {
       const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
       const payload: checkInValues = {
         userCode: user.code,
-        checkInTime: new Date(),
+        checkInTime: getCurrentDateRes(),
       };
 
       try {
@@ -184,7 +232,7 @@ export default function CameraPage() {
     if (currentTimeScheduleDateStr) {
       const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
       const payload: checkOutValues = {
-        checkOutTime: new Date(),
+        checkOutTime: getCurrentDateRes(),
         status: "END",
       };
 

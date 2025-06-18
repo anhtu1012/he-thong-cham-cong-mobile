@@ -20,7 +20,9 @@ export const registerFace = (values: FormData) => {
 };
 
 export const getUserFaceImg = (path: string) => {
-  return api.get(`/upload/download?path=${path}`);
+  return api.get(`/upload/download?path=${path}`, {
+    responseType: "arraybuffer",
+  });
 };
 
 export const compareFace = (values: FormData) => {
@@ -53,7 +55,7 @@ export const timeKeepingCheckIn = (
   workingScheduleId: string,
   values: checkInValues
 ) => {
-  return api.post(`/business/cham-cong/${workingScheduleId}`, values);
+  return api.put(`/business/cham-cong/${workingScheduleId}`, values);
 };
 
 export const timeKeepingCheckOut = (

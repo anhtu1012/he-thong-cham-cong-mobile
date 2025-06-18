@@ -1,3 +1,5 @@
+import { Buffer } from "buffer";
+global.Buffer = global.Buffer || Buffer;
 import { NavigationContainer } from "@react-navigation/native";
 import LoginPage from "./pages/Login";
 import AppNavigation from "./components/navigation/app.navigation";
@@ -7,7 +9,13 @@ import { View, Text, LogBox, Platform, AppState, Alert } from "react-native";
 import FloatingChatButton from "./components/FloatingChatButton";
 import { enableScreens } from "react-native-screens";
 import { RootStackParamList } from "./utils/routes";
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 
@@ -19,7 +27,7 @@ LogBox.ignoreLogs([
   "react-native-chart-kit",
   // Ignore Metro bundler connectivity issues during development
   "No apps connected",
-  "Sending \"reload\" to all React Native apps failed",
+  'Sending "reload" to all React Native apps failed',
 ]);
 
 // Enable screens for better navigation performance
@@ -81,10 +89,19 @@ class ErrorBoundary extends React.Component<
           >
             Có lỗi xảy ra trong ứng dụng
           </Text>
-          <Text style={{ textAlign: "center", marginBottom: 20, color: "#2c3e50" }}>
+          <Text
+            style={{ textAlign: "center", marginBottom: 20, color: "#2c3e50" }}
+          >
             Vui lòng khởi động lại ứng dụng hoặc liên hệ hỗ trợ
           </Text>
-          <Text style={{ color: "#666", fontSize: 12, textAlign: "center", marginBottom: 10 }}>
+          <Text
+            style={{
+              color: "#666",
+              fontSize: 12,
+              textAlign: "center",
+              marginBottom: 10,
+            }}
+          >
             {errorMessage}
           </Text>
           {__DEV__ && (
@@ -148,10 +165,10 @@ export default function App() {
   const handleNavigationStateChange = useCallback((state: any) => {
     try {
       if (!state) return;
-      
+
       const routes = state.routes;
       const index = state.index ?? 0;
-      
+
       if (routes?.length > 0 && index >= 0 && index < routes.length) {
         const routeName = routes[index]?.name;
         if (routeName && currentRouteRef.current !== routeName) {

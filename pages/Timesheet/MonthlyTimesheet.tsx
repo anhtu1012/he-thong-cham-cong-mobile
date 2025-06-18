@@ -12,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { getTimeSchedule } from "../../service/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
+import { getCurrentDateRes } from "../../utils/dateUtils";
 
 const { width } = Dimensions.get("window");
 
@@ -62,7 +63,7 @@ const MonthlyTimesheet = () => {
 
       return {
         day: i + 1,
-        value: 0,
+        value: currentDay == 0 || currentDay == 6 ? "N" : 0,
         status: currentDay == 0 || currentDay == 6 ? "weekend" : "normal",
       };
     });
@@ -70,16 +71,24 @@ const MonthlyTimesheet = () => {
     const timeScheduleRes = await getTimeSchedule(fromDate, toDate, userCode);
     let timeSchedule = timeScheduleRes.data.data;
 
-    // get current day & store to asyncStorage
-    timeSchedule.map(async (time: any) => {
-      const today = new Date();
-      if (time.date.getDate() == today.getDate()) {
-        await AsyncStorage.setItem("currentTimeScheduleDate", time);
-      }
-    });
-
     console.log("timeSchedule", timeSchedule);
+    // get current day & store to asyncStorage
+    for (const time of timeSchedule) {
+      try {
+        const today = new Date(getCurrentDateRes());
+        const timeDate = new Date(time.date);
 
+        if (timeDate.getDate() === today.getDate()) {
+          console.log("It's today!!!");
+          await AsyncStorage.setItem(
+            "currentTimeScheduleDate",
+            JSON.stringify(time)
+          );
+        }
+      } catch (err) {
+        console.error("Error processing timeSchedule item:", err);
+      }
+    }
     // add status and value to daysInMonth
     timeSchedule = timeSchedule.map((date: any) => {
       const currentDate = new Date(date.date);
@@ -90,7 +99,7 @@ const MonthlyTimesheet = () => {
         day.value = "N";
       }
     });
-    console.log("daysInMonth", days);
+    // console.log("daysInMonth", days);
 
     setDaysInMonth(days);
   };
