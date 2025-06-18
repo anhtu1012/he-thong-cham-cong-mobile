@@ -62,3 +62,7 @@ export const timeKeepingCheckOut = (
 ) => {
   return api.put(`/time-keeping/${timeKeepingId}`, values);
 };
+
+export const getForms = () => {
+  return api.get("/form");
+};
