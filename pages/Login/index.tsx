@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   Keyboard,
@@ -37,6 +37,22 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigation = useNavigation<NavigationProps>();
 
+  useEffect(() => {
+    const handleIsLogin = async () => {
+      const userData = await AsyncStorage.getItem("userData");
+
+      if (userData) {
+        navigation.navigate("AppNavigationRoot");
+
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "MainAppScreen" }], // Updated name
+        });
+      }
+    };
+    handleIsLogin();
+  }, []);
+
   const handleEyePress = () => {
     setPasswordVisible((oldValue) => !oldValue);
     onEyePress?.();
@@ -49,7 +65,7 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
       // In a real app, uncomment this code
 
       const response = await loginUser({ username: userName, password });
-      console.log("Login response:", response);
+
       if (response.status === 201) {
         Toast.show({
           type: "success",
