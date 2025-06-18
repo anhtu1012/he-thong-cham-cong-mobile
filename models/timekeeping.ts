@@ -1,9 +1,9 @@
 export interface checkInValues {
   userCode: string;
-  checkInTime: Date;
+  checkInTime: string;
 }
 
 export interface checkOutValues {
-  checkOutTime: Date;
+  checkOutTime: string;
   status: "END";
 }
