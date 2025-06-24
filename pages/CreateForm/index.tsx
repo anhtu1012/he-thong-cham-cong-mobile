@@ -59,7 +59,10 @@ const CreateFormPage = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Text style={styles.pageTitle}>Tạo mới đơn từ</Text>
 
         {loading ? (
@@ -97,6 +100,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 30, // Add padding at the bottom to avoid overlap with tab navigation
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -128,7 +134,7 @@ const styles = StyleSheet.create({
   },
   formList: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 50, // Increased padding to prevent overlap with tab navigation
   },
   loadingContainer: {
     padding: 20,
