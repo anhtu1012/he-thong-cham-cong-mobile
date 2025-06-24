@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Dimensions,
   Image,
   SafeAreaView,
+  ActivityIndicator,
 } from "react-native";
 import {
   AntDesign,
@@ -17,58 +18,127 @@ import {
 } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../utils/routes";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getFormDescriptions } from "../../service/api";
+import Toast from "react-native-toast-message";
 
 const { width } = Dimensions.get("window");
 
-type FormStatus = "Chờ duyệt" | "Đã duyệt" | "Từ chối";
+interface UserProfile {
+  id: string;
+  code: string;
+  userName: string;
+  fullName: string;
+}
 
-interface FormItem {
-  id: number;
-  type: string;
-  date: string;
+type FormStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+interface FormDescription {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  code: string;
+  reason: string;
   status: FormStatus;
-  description: string;
-  reviewer: string;
-  reviewerTitle: string;
-  reviewDate?: string;
-  rejectReason?: string;
+  file: string;
+  startTime: string;
+  endTime: string;
+  approvedTime?: string;
+  formTitle: string;
+  submittedBy: string;
+  approvedBy?: string;
 }
 
 function HomePage() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [forms, setForms] = useState<FormDescription[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - replace with actual data from API
-  const pendingForms: FormItem[] = [
-    {
-      id: 1,
-      type: "Đơn nghỉ phép",
-      date: "12/07/2024",
-      status: "Chờ duyệt",
-      description: "Nghỉ phép có lương - Lý do: Việc gia đình",
-      reviewer: "Trần Văn B",
-      reviewerTitle: "Trưởng phòng",
-    },
-    {
-      id: 2,
-      type: "Đơn tăng ca",
-      date: "10/07/2024",
-      status: "Đã duyệt",
-      description: "OT 3 giờ - Dự án ABC cần gấp",
-      reviewer: "Trần Văn B",
-      reviewerTitle: "Trưởng phòng",
-      reviewDate: "10/07/2024 15:30",
-    },
-    {
-      id: 3,
-      type: "Đơn vắng mặt",
-      date: "05/07/2024",
-      status: "Từ chối",
-      description: "Vắng có phép - Lý do: Đi khám bệnh",
-      reviewer: "Trần Văn B",
-      reviewerTitle: "Trưởng phòng",
-      rejectReason: "Đã hết ngày phép trong tháng",
-    },
-  ];
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  useEffect(() => {
+    if (userProfile) {
+      fetchForms();
+    }
+  }, [userProfile]);
+
+  const loadUserProfile = async () => {
+    try {
+      const userData = await AsyncStorage.getItem("userData");
+      if (userData) {
+        const parsedUserData = JSON.parse(userData);
+        setUserProfile(parsedUserData);
+      }
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+    }
+  };
+
+  const fetchForms = async () => {
+    try {
+      setLoading(true);
+      const response = await getFormDescriptions({});
+      if (response.data && response.data.data) {
+        // Không lọc theo người dùng, lấy tất cả đơn từ
+        const allForms = response.data.data;
+
+        // Sắp xếp theo thời gian tạo mới nhất
+        const sortedForms = allForms.sort(
+          (a: FormDescription, b: FormDescription) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        // Lấy 3 đơn gần nhất
+        setForms(sortedForms.slice(0, 3));
+      }
+    } catch (error) {
+      console.error("Error fetching forms:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể lấy danh sách đơn từ",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Format date to DD/MM/YYYY
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  };
+
+  // Map API status to display string
+  const getFormStatusText = (status: FormStatus): string => {
+    switch (status) {
+      case "PENDING":
+        return "Chờ duyệt";
+      case "APPROVED":
+        return "Đã duyệt";
+      case "REJECTED":
+        return "Từ chối";
+      default:
+        return "Không xác định";
+    }
+  };
+
+  // Status colors
+  const getStatusColor = (status: FormStatus): string => {
+    switch (status) {
+      case "PENDING":
+        return "#FFA500";
+      case "APPROVED":
+        return "#4CAF50";
+      case "REJECTED":
+        return "#FF5252";
+      default:
+        return "#007BFF";
+    }
+  };
 
   const upcomingEvents = [
     { id: 1, title: "Họp team", time: "10:00 - 11:30", date: "15/07/2024" },
@@ -83,26 +153,14 @@ function HomePage() {
     attendance: "100%",
   };
 
-  // Status colors
-  const getStatusColor = (status: FormStatus): string => {
-    switch (status) {
-      case "Chờ duyệt":
-        return "#FFA500";
-      case "Đã duyệt":
-        return "#4CAF50";
-      case "Từ chối":
-        return "#FF5252";
-      default:
-        return "#007BFF";
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Xin chào,</Text>
-          <Text style={styles.userName}>Nguyễn Văn A</Text>
+          <Text style={styles.userName}>
+            {userProfile?.fullName || "Người dùng"}
+          </Text>
         </View>
         <View style={styles.avatarContainer}>
           <Image
@@ -212,109 +270,135 @@ function HomePage() {
             <Text style={styles.sectionTitle}>Tình trạng đơn từ</Text>
             <TouchableOpacity
               style={styles.viewAllButton}
-              onPress={() => navigation.navigate("CreateForm" as any)}
+              onPress={() => navigation.navigate("FormList" as any)}
             >
               <Text style={styles.viewAllText}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
-          {pendingForms.map((form) => (
-            <TouchableOpacity key={form.id} style={styles.formItem}>
-              <View
-                style={[
-                  styles.formLeftBorder,
-                  { backgroundColor: getStatusColor(form.status) },
-                ]}
-              />
-              <View style={styles.formItemContent}>
-                <View style={styles.formHeader}>
-                  <View style={styles.formTitleContainer}>
-                    <Text style={styles.formType}>{form.type}</Text>
-                    <View
-                      style={[
-                        styles.formBadge,
-                        { backgroundColor: getStatusColor(form.status) },
-                      ]}
-                    >
-                      <Text style={styles.formBadgeText}>{form.status}</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity style={styles.formIconButton}>
-                    <Feather name="more-vertical" size={18} color="#999" />
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.formDescription}>{form.description}</Text>
-
-                <View style={styles.formDetailSection}>
-                  <View style={styles.formDetailRow}>
-                    <View style={styles.formDetailIcon}>
-                      <Feather name="calendar" size={14} color="#3674B5" />
-                    </View>
-                    <Text style={styles.formDetailText}>
-                      Ngày tạo: {form.date}
-                    </Text>
-                  </View>
-
-                  <View style={styles.formDetailRow}>
-                    <View style={styles.formDetailIcon}>
-                      <Feather name="user" size={14} color="#3674B5" />
-                    </View>
-                    <Text style={styles.formDetailText}>
-                      Người duyệt: {form.reviewer} ({form.reviewerTitle})
-                    </Text>
-                  </View>
-
-                  {form.status === "Đã duyệt" && form.reviewDate && (
-                    <View style={styles.formDetailRow}>
-                      <View style={styles.formDetailIcon}>
-                        <Feather
-                          name="check-circle"
-                          size={14}
-                          color="#4CAF50"
-                        />
-                      </View>
-                      <Text style={styles.formDetailText}>
-                        Thời gian duyệt: {form.reviewDate}
-                      </Text>
-                    </View>
-                  )}
-
-                  {form.status === "Từ chối" && form.rejectReason && (
-                    <View style={styles.formDetailRow}>
-                      <View style={styles.formDetailIcon}>
-                        <Feather name="x-circle" size={14} color="#FF5252" />
-                      </View>
-                      <Text style={styles.formDetailText}>
-                        Lý do từ chối: {form.rejectReason}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={styles.formFooter}>
-                  <TouchableOpacity style={styles.formButton}>
-                    <Text style={styles.formButtonText}>Chi tiết</Text>
-                  </TouchableOpacity>
-
-                  {form.status === "Chờ duyệt" && (
-                    <TouchableOpacity
-                      style={[
-                        styles.formButton,
-                        { backgroundColor: "#ffebee" },
-                      ]}
-                    >
-                      <Text
-                        style={[styles.formButtonText, { color: "#FF5252" }]}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#3674B5" />
+              <Text style={styles.loadingText}>
+                Đang tải danh sách đơn từ...
+              </Text>
+            </View>
+          ) : forms.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>Không có đơn từ nào</Text>
+            </View>
+          ) : (
+            forms.map((form) => (
+              <TouchableOpacity key={form.id} style={styles.formItem}>
+                <View
+                  style={[
+                    styles.formLeftBorder,
+                    { backgroundColor: getStatusColor(form.status) },
+                  ]}
+                />
+                <View style={styles.formItemContent}>
+                  <View style={styles.formHeader}>
+                    <View style={styles.formTitleContainer}>
+                      <Text style={styles.formType}>{form.formTitle}</Text>
+                      <View
+                        style={[
+                          styles.formBadge,
+                          { backgroundColor: getStatusColor(form.status) },
+                        ]}
                       >
-                        Hủy đơn
-                      </Text>
+                        <Text style={styles.formBadgeText}>
+                          {getFormStatusText(form.status)}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity style={styles.formIconButton}>
+                      <Feather name="more-vertical" size={18} color="#999" />
                     </TouchableOpacity>
-                  )}
+                  </View>
+
+                  <Text style={styles.formDescription}>
+                    Lý do: {form.reason}
+                  </Text>
+
+                  <View style={styles.formDetailSection}>
+                    <View style={styles.formDetailRow}>
+                      <View style={styles.formDetailIcon}>
+                        <Feather name="calendar" size={14} color="#3674B5" />
+                      </View>
+                      <Text style={styles.formDetailText}>
+                        Ngày tạo: {formatDate(form.createdAt)}
+                      </Text>
+                    </View>
+
+                    {form.status !== "PENDING" && (
+                      <View style={styles.formDetailRow}>
+                        <View style={styles.formDetailIcon}>
+                          <Feather name="user" size={14} color="#3674B5" />
+                        </View>
+                        <Text style={styles.formDetailText}>
+                          Người duyệt: {form.approvedBy || "Không xác định"}
+                        </Text>
+                      </View>
+                    )}
+
+                    {form.status === "APPROVED" && (
+                      <View style={styles.formDetailRow}>
+                        <View style={styles.formDetailIcon}>
+                          <Feather
+                            name="check-circle"
+                            size={14}
+                            color="#4CAF50"
+                          />
+                        </View>
+                        <Text style={styles.formDetailText}>
+                          Thời gian duyệt: {formatDate(form.updatedAt)}
+                        </Text>
+                      </View>
+                    )}
+
+                    {form.status === "REJECTED" && (
+                      <View style={styles.formDetailRow}>
+                        <View style={styles.formDetailIcon}>
+                          <Feather name="x-circle" size={14} color="#FF5252" />
+                        </View>
+                        <Text style={styles.formDetailText}>
+                          Thời gian từ chối: {formatDate(form.updatedAt)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.formFooter}>
+                    <TouchableOpacity
+                      style={styles.formButton}
+                      onPress={() => {
+                        navigation.navigate("FormDetailView" as any, {
+                          formId: form.id,
+                        });
+                      }}
+                    >
+                      <Text style={styles.formButtonText}>Chi tiết</Text>
+                    </TouchableOpacity>
+
+                    {form.status === "PENDING" && (
+                      <TouchableOpacity
+                        style={[
+                          styles.formButton,
+                          { backgroundColor: "#ffebee" },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.formButtonText, { color: "#FF5252" }]}
+                        >
+                          Hủy đơn
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         {/* Upcoming Events */}
@@ -378,7 +462,7 @@ function HomePage() {
 
             <TouchableOpacity
               style={styles.quickActionItem}
-              onPress={() => navigation.navigate("CreateForm" as any)}
+              onPress={() => navigation.navigate("FormList" as any)}
             >
               <View
                 style={[styles.quickActionIcon, { backgroundColor: "#FFF3E0" }]}
@@ -572,6 +656,25 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: "#666",
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
   },
   formItem: {
     flexDirection: "row",

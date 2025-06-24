@@ -28,16 +28,27 @@ import HomePage from "../../pages/Home";
 import ProfilePage from "../../pages/Profile";
 import SalaryPage from "../../pages/Salary";
 import TimesheetPage from "../../pages/Timesheet";
-import {
-  DrawerParamList,
-  RootStackParamList,
-  TabParamList,
-} from "../../utils/routes";
+import { DrawerParamList, TabParamList } from "../../utils/routes";
 import TimesheetNavigator from "./timesheet.navigation";
+import FormListPage from "../FormListPage";
+import FormDetailView from "../FormDetailView";
 
 export type AppStackParamList = {
   Login: undefined;
   MainAppScreen: undefined; // Updated name
+};
+
+// Định nghĩa type cho Root Stack
+export type RootStackParamList = {
+  Login: undefined;
+  MainAppScreen: undefined;
+  AppNavigationRoot: undefined;
+  DrawerHomeScreen: undefined;
+  TimesheetNav: undefined;
+  FormDetail: { formId: string; formTitle: string };
+  FormList: undefined;
+  FormDetailView: { formId: string }; // Thêm định nghĩa cho FormDetailView
+  HomePage: undefined; // Thêm HomePage vào định nghĩa
 };
 
 // Memoized components
@@ -648,6 +659,19 @@ function AppNavigation() {
         name="FormDetail"
         component={MemoizedFormDetail}
         options={{
+          animation: "slide_from_right",
+        }}
+      />
+      <RootStack.Screen
+        name="FormList"
+        component={FormListPage}
+        options={{ headerShown: false }}
+      />
+      <RootStack.Screen
+        name="FormDetailView"
+        component={FormDetailView}
+        options={{
+          headerShown: false,
           animation: "slide_from_right",
         }}
       />

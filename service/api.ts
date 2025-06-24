@@ -85,3 +85,18 @@ export const createForm = async (formData: {
     throw error;
   }
 };
+
+export const getFormDescriptions = async (params: {
+  quickSearch?: string;
+  fromDate?: string;
+  toDate?: string;
+  formId?: string;
+}) => {
+  try {
+    const response = await api.get('/form-description/filter', { params });
+    return response;
+  } catch (error) {
+    console.error('Error fetching form descriptions:', error);
+    throw error;
+  }
+};
