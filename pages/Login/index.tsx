@@ -42,11 +42,9 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
       const userData = await AsyncStorage.getItem("userData");
 
       if (userData) {
-        navigation.navigate("AppNavigationRoot");
-
         navigation.reset({
           index: 0,
-          routes: [{ name: "MainAppScreen" }], // Updated name
+          routes: [{ name: "MainAppScreen" }],
         });
       }
     };
@@ -77,7 +75,10 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
           "userData",
           JSON.stringify(response.data.userProfile)
         );
-        navigation.navigate("AppNavigationRoot");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "MainAppScreen" }],
+        });
       } else {
         Toast.show({
           type: "error",
@@ -89,7 +90,7 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
       // Demo navigation - remove in production
       navigation.reset({
         index: 0,
-        routes: [{ name: "MainAppScreen" }], // Updated name
+        routes: [{ name: "MainAppScreen" }],
       });
     } catch (error) {
       console.error("Error logging in:", error);
