@@ -189,7 +189,8 @@ const FormListPage = () => {
                 <Feather name="check-circle" size={14} color="#4CAF50" />
               </View>
               <Text style={styles.formDetailText}>
-                Thời gian duyệt: {formatDate(item.updatedAt)}
+                Thời gian duyệt:{" "}
+                {formatDate(item.approvedTime || item.updatedAt)}
               </Text>
             </View>
           )}
@@ -200,7 +201,8 @@ const FormListPage = () => {
                 <Feather name="x-circle" size={14} color="#FF5252" />
               </View>
               <Text style={styles.formDetailText}>
-                Thời gian từ chối: {formatDate(item.updatedAt)}
+                Thời gian từ chối:{" "}
+                {formatDate(item.approvedTime || item.updatedAt)}
               </Text>
             </View>
           )}

@@ -19,8 +19,10 @@ import {
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../utils/routes";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getFormDescriptions } from "../../service/api";
+import { getFormDescriptions, getTimeSchedule } from "../../service/api";
 import Toast from "react-native-toast-message";
+import TodayWidget from "../../components/TodayWidget";
+import FormsStatusWidget from "../../components/FormsStatusWidget";
 
 const { width } = Dimensions.get("window");
 
@@ -49,11 +51,41 @@ interface FormDescription {
   approvedBy?: string;
 }
 
+interface WorkingSchedule {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  timeKeepingId: string | null;
+  code: string;
+  userCode: string;
+  userContractCode: string;
+  status: string;
+  date: string;
+  fullName: string;
+  shiftCode: string;
+  shiftName: string;
+  branchName: string;
+  branchCode: string;
+  addressLine: string;
+  startShiftTime: string;
+  endShiftTime: string;
+  workingHours: number;
+  checkInTime: string | null;
+  checkOutTime: string | null;
+  statusTimeKeeping: string | null;
+  positionName: string;
+  managerFullName: string;
+}
+
 function HomePage() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [forms, setForms] = useState<FormDescription[]>([]);
   const [loading, setLoading] = useState(true);
+  const [todaySchedule, setTodaySchedule] = useState<WorkingSchedule | null>(
+    null
+  );
+  const [loadingSchedule, setLoadingSchedule] = useState(true);
 
   useEffect(() => {
     loadUserProfile();
@@ -62,6 +94,7 @@ function HomePage() {
   useEffect(() => {
     if (userProfile) {
       fetchForms();
+      fetchTodaySchedule();
     }
   }, [userProfile]);
 
@@ -82,11 +115,13 @@ function HomePage() {
       setLoading(true);
       const response = await getFormDescriptions({});
       if (response.data && response.data.data) {
-        // Không lọc theo người dùng, lấy tất cả đơn từ
-        const allForms = response.data.data;
+        // Lọc đơn từ của người dùng hiện tại
+        const userForms = response.data.data.filter(
+          (form: FormDescription) => form.submittedBy === userProfile?.fullName
+        );
 
         // Sắp xếp theo thời gian tạo mới nhất
-        const sortedForms = allForms.sort(
+        const sortedForms = userForms.sort(
           (a: FormDescription, b: FormDescription) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
@@ -106,38 +141,84 @@ function HomePage() {
     }
   };
 
+  const fetchTodaySchedule = async () => {
+    try {
+      setLoadingSchedule(true);
+
+      // Lấy ngày hiện tại
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Sử dụng trực tiếp đối tượng Date làm tham số
+      if (!userProfile?.code) {
+        throw new Error("Không có thông tin mã người dùng");
+      }
+
+      const response = await getTimeSchedule(today, tomorrow, userProfile.code);
+
+      if (
+        response.data &&
+        response.data.data &&
+        response.data.data.length > 0
+      ) {
+        // Lấy lịch làm việc của ngày hôm nay (phần tử đầu tiên)
+        setTodaySchedule(response.data.data[0]);
+      } else {
+        console.log("Không có lịch làm việc cho ngày hôm nay");
+        setTodaySchedule(null);
+      }
+    } catch (error) {
+      console.error("Error fetching today's schedule:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể lấy lịch làm việc hôm nay",
+      });
+    } finally {
+      setLoadingSchedule(false);
+    }
+  };
+
+  // Lấy ngày hiện tại theo định dạng chuẩn
+  const getCurrentDateString = () => {
+    const today = new Date();
+    // Trả về ngày hiện tại theo định dạng YYYY-MM-DD
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(today.getDate()).padStart(2, "0")}`;
+  };
+
   // Format date to DD/MM/YYYY
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   };
 
-  // Map API status to display string
-  const getFormStatusText = (status: FormStatus): string => {
-    switch (status) {
-      case "PENDING":
-        return "Chờ duyệt";
-      case "APPROVED":
-        return "Đã duyệt";
-      case "REJECTED":
-        return "Từ chối";
-      default:
-        return "Không xác định";
-    }
-  };
+  // Format date to Thứ X, DD/MM/YYYY
+  const formatDateWithDay = (dateString: string) => {
+    const date = new Date(dateString);
+    const dayOfWeek = date.getDay();
+    console.log("Day of week value:", dayOfWeek, "for date:", dateString);
 
-  // Status colors
-  const getStatusColor = (status: FormStatus): string => {
-    switch (status) {
-      case "PENDING":
-        return "#FFA500";
-      case "APPROVED":
-        return "#4CAF50";
-      case "REJECTED":
-        return "#FF5252";
-      default:
-        return "#007BFF";
-    }
+    // Trong JavaScript, getDay() trả về 0 cho Chủ nhật, 1 cho Thứ 2, ..., 6 cho Thứ 7
+    const days = [
+      "Chủ nhật",
+      "Thứ 2",
+      "Thứ 3",
+      "Thứ 4",
+      "Thứ 5",
+      "Thứ 6",
+      "Thứ 7",
+    ];
+
+    // Lấy thứ từ mảng days dựa vào dayOfWeek
+    const day = days[dayOfWeek];
+
+    return `${day}, ${date.getDate()}/${
+      date.getMonth() + 1
+    }/${date.getFullYear()}`;
   };
 
   const upcomingEvents = [
@@ -200,206 +281,17 @@ function HomePage() {
         </View>
 
         {/* Today Widget */}
-        <View style={styles.todayContainer}>
-          <View style={styles.todayHeader}>
-            <AntDesign name="calendar" size={24} color="#3674B5" />
-            <Text style={styles.todayTitle}>Hôm nay</Text>
-          </View>
-          <View style={styles.todayContent}>
-            <View style={styles.timeInfo}>
-              <Text style={styles.currentDate}>Thứ 4, 08/01/2025</Text>
-              <Text style={styles.shiftTime}>Ca làm: 8:00 - 17:00</Text>
-            </View>
-            <View style={styles.attendanceActions}>
-              <TouchableOpacity
-                style={[styles.checkinButton, { backgroundColor: "#4CAF50" }]}
-                disabled={true}
-              >
-                <Text style={styles.checkinText}>Đã check-in</Text>
-              </TouchableOpacity>
-              <Text style={[styles.checkinStatus, { color: "#4CAF50" }]}>
-                03:19 PM
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.attendanceDetails}>
-            <View style={styles.timeDetail}>
-              <View style={styles.timeDetailIcon}>
-                <AntDesign name="clockcircle" size={18} color="#4CAF50" />
-              </View>
-              <View>
-                <Text style={styles.timeDetailLabel}>Giờ vào</Text>
-                <Text style={styles.timeDetailValue}>03:19 PM</Text>
-                <Text style={styles.timeDetailStatus}>Đến đúng giờ</Text>
-              </View>
-            </View>
-
-            <View style={styles.timeDetail}>
-              <View style={styles.timeDetailIcon}>
-                <AntDesign name="clockcircle" size={18} color="#4CAF50" />
-              </View>
-              <View>
-                <Text style={styles.timeDetailLabel}>Giờ về</Text>
-                <Text style={styles.timeDetailValue}>11:33 PM</Text>
-                <Text style={styles.timeDetailStatus}>Đã check out</Text>
-              </View>
-            </View>
-
-            <View style={styles.timeDetail}>
-              <View
-                style={[styles.timeDetailIcon, { backgroundColor: "#E3F2FD" }]}
-              >
-                <MaterialCommunityIcons
-                  name="clock-time-eight"
-                  size={18}
-                  color="#3674B5"
-                />
-              </View>
-              <View>
-                <Text style={styles.timeDetailLabel}>Tổng thời gian</Text>
-                <Text style={styles.timeDetailValue}>07:00p</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+        <TodayWidget
+          todaySchedule={todaySchedule}
+          loadingSchedule={loadingSchedule}
+        />
 
         {/* Forms Status */}
-        <View style={styles.formsContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Tình trạng đơn từ</Text>
-            <TouchableOpacity
-              style={styles.viewAllButton}
-              onPress={() => navigation.navigate("FormList" as any)}
-            >
-              <Text style={styles.viewAllText}>Xem tất cả</Text>
-            </TouchableOpacity>
-          </View>
-
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#3674B5" />
-              <Text style={styles.loadingText}>
-                Đang tải danh sách đơn từ...
-              </Text>
-            </View>
-          ) : forms.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Không có đơn từ nào</Text>
-            </View>
-          ) : (
-            forms.map((form) => (
-              <TouchableOpacity key={form.id} style={styles.formItem}>
-                <View
-                  style={[
-                    styles.formLeftBorder,
-                    { backgroundColor: getStatusColor(form.status) },
-                  ]}
-                />
-                <View style={styles.formItemContent}>
-                  <View style={styles.formHeader}>
-                    <View style={styles.formTitleContainer}>
-                      <Text style={styles.formType}>{form.formTitle}</Text>
-                      <View
-                        style={[
-                          styles.formBadge,
-                          { backgroundColor: getStatusColor(form.status) },
-                        ]}
-                      >
-                        <Text style={styles.formBadgeText}>
-                          {getFormStatusText(form.status)}
-                        </Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity style={styles.formIconButton}>
-                      <Feather name="more-vertical" size={18} color="#999" />
-                    </TouchableOpacity>
-                  </View>
-
-                  <Text style={styles.formDescription}>
-                    Lý do: {form.reason}
-                  </Text>
-
-                  <View style={styles.formDetailSection}>
-                    <View style={styles.formDetailRow}>
-                      <View style={styles.formDetailIcon}>
-                        <Feather name="calendar" size={14} color="#3674B5" />
-                      </View>
-                      <Text style={styles.formDetailText}>
-                        Ngày tạo: {formatDate(form.createdAt)}
-                      </Text>
-                    </View>
-
-                    {form.status !== "PENDING" && (
-                      <View style={styles.formDetailRow}>
-                        <View style={styles.formDetailIcon}>
-                          <Feather name="user" size={14} color="#3674B5" />
-                        </View>
-                        <Text style={styles.formDetailText}>
-                          Người duyệt: {form.approvedBy || "Không xác định"}
-                        </Text>
-                      </View>
-                    )}
-
-                    {form.status === "APPROVED" && (
-                      <View style={styles.formDetailRow}>
-                        <View style={styles.formDetailIcon}>
-                          <Feather
-                            name="check-circle"
-                            size={14}
-                            color="#4CAF50"
-                          />
-                        </View>
-                        <Text style={styles.formDetailText}>
-                          Thời gian duyệt: {formatDate(form.updatedAt)}
-                        </Text>
-                      </View>
-                    )}
-
-                    {form.status === "REJECTED" && (
-                      <View style={styles.formDetailRow}>
-                        <View style={styles.formDetailIcon}>
-                          <Feather name="x-circle" size={14} color="#FF5252" />
-                        </View>
-                        <Text style={styles.formDetailText}>
-                          Thời gian từ chối: {formatDate(form.updatedAt)}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.formFooter}>
-                    <TouchableOpacity
-                      style={styles.formButton}
-                      onPress={() => {
-                        navigation.navigate("FormDetailView" as any, {
-                          formId: form.id,
-                        });
-                      }}
-                    >
-                      <Text style={styles.formButtonText}>Chi tiết</Text>
-                    </TouchableOpacity>
-
-                    {form.status === "PENDING" && (
-                      <TouchableOpacity
-                        style={[
-                          styles.formButton,
-                          { backgroundColor: "#ffebee" },
-                        ]}
-                      >
-                        <Text
-                          style={[styles.formButtonText, { color: "#FF5252" }]}
-                        >
-                          Hủy đơn
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
+        <FormsStatusWidget
+          forms={forms}
+          loading={loading}
+          formatDate={formatDate}
+        />
 
         {/* Upcoming Events */}
         <View style={styles.eventsContainer}>
@@ -570,64 +462,6 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 4,
   },
-  todayContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  todayHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  todayTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginLeft: 8,
-    color: "#333",
-  },
-  todayContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  timeInfo: {
-    flex: 1,
-  },
-  currentDate: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
-  },
-  shiftTime: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-  },
-  attendanceActions: {
-    alignItems: "center",
-  },
-  checkinButton: {
-    backgroundColor: "#3674B5",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  checkinText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  checkinStatus: {
-    fontSize: 12,
-    color: "#F57C00",
-  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -645,132 +479,6 @@ const styles = StyleSheet.create({
   viewAllText: {
     color: "#3674B5",
     fontSize: 14,
-  },
-  formsContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  loadingContainer: {
-    padding: 20,
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: "#666",
-  },
-  emptyContainer: {
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-  },
-  formItem: {
-    flexDirection: "row",
-    marginBottom: 12,
-    borderRadius: 8,
-    backgroundColor: "#f9f9f9",
-    overflow: "hidden",
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
-  },
-  formLeftBorder: {
-    width: 4,
-    height: "100%",
-  },
-  formItemContent: {
-    flex: 1,
-    padding: 12,
-  },
-  formHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  formTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  formType: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginRight: 8,
-  },
-  formBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  formBadgeText: {
-    fontSize: 11,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  formIconButton: {
-    padding: 4,
-  },
-  formDescription: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  formDetailSection: {
-    marginBottom: 12,
-  },
-  formDetailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  formDetailIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#f0f0f0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 6,
-  },
-  formDetailText: {
-    fontSize: 13,
-    color: "#666",
-  },
-  formFooter: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingTop: 8,
-  },
-  formButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-    backgroundColor: "#e3f2fd",
-    marginLeft: 8,
-  },
-  formButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#3674B5",
   },
   eventsContainer: {
     backgroundColor: "#fff",
@@ -848,42 +556,6 @@ const styles = StyleSheet.create({
   },
   bottomSpace: {
     height: 80, // Space for bottom navigation
-  },
-  attendanceDetails: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  timeDetail: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  timeDetailIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#E8F5E9",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  timeDetailLabel: {
-    fontSize: 12,
-    color: "#666",
-  },
-  timeDetailValue: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#333",
-    marginTop: 2,
-  },
-  timeDetailStatus: {
-    fontSize: 11,
-    color: "#4CAF50",
-    marginTop: 2,
   },
 });
 
