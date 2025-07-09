@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { formatTime as formatTimeUtil } from "../utils/dateUtils";
+import { formatDate, formatTime as formatTimeUtil } from "../utils/dateUtils";
 
 type DayData = {
   day: number;
@@ -32,7 +32,7 @@ const TimeScheduleModal = ({
   currentDate?: Date;
 }) => {
   // Format date for display
-  const formatDate = (date?: Date, day?: number) => {
+  const formatDateToTime = (date?: Date, day?: number) => {
     if (!date || !day || day === 0) return "Thông tin chấm công";
     const fullDate = new Date(date.getFullYear(), date.getMonth(), day);
     return `Chấm công, ngày ${day.toString().padStart(2, "0")}/${(
@@ -63,7 +63,7 @@ const TimeScheduleModal = ({
         <View style={styles.modalContainer}>
           <ScrollView>
             <Text style={styles.dateTitle}>
-              {formatDate(currentDate, selectedDate?.day)}
+              {formatDateToTime(currentDate, selectedDate?.day)}
             </Text>
 
             <View style={styles.timeBoxContainer}>
@@ -104,16 +104,13 @@ const TimeScheduleModal = ({
                 <Text style={styles.workLabel}>
                   {selectedDate?.workingHourReal || "0h"}
                 </Text>
-                <Text style={styles.workValue}>
-                  {selectedDate?.value || "0"}
-                </Text>
               </View>
             </View>
 
             <View style={styles.detailsBox}>
               <Text style={styles.sectionLabel}>Thông tin chấm công</Text>
               <Text style={styles.detailText}>
-                Ngày: {selectedDate?.date || "N/A"}
+                Ngày: {formatDate(selectedDate?.date) || "N/A"}
               </Text>
               <Text style={styles.detailText}>
                 Giờ vào: {formatTime(selectedDate?.checkInTime)}
@@ -226,7 +223,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     marginTop: 20,
-    backgroundColor: "#6C3EB5",
+    backgroundColor: "#3674B5",
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",

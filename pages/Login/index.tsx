@@ -41,7 +41,6 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
     const handleIsLogin = async () => {
       const userData = await AsyncStorage.getItem("userData");
 
-
       if (userData) {
         navigation.reset({
           index: 0,
@@ -71,7 +70,7 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
           text1: "Đăng nhập thành công!",
           text1Style: { textAlign: "center", fontSize: 16 },
         });
-        await AsyncStorage.setItem("token", response.data.refreshToken);
+        await AsyncStorage.setItem("token", response.data.accessToken);
         await AsyncStorage.setItem(
           "userData",
           JSON.stringify(response.data.userProfile)

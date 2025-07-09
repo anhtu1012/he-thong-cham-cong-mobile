@@ -264,14 +264,37 @@ export default function CameraPage() {
 
   const renderPicture = () => {
     return (
-      <View>
-        <Image
-          source={{ uri }}
-          contentFit="contain"
-          style={{ width: 300, aspectRatio: 1 }}
-        />
-        <Button onPress={() => setUri(null)} title="Chụp lại" />
-        <Button onPress={() => handleFaceRecognition()} title="Xác nhận" />
+      <View style={styles.pictureContainer}>
+        <Text style={styles.pictureTitle}>Xác nhận khuôn mặt</Text>
+        <Text style={styles.pictureSubtitle}>
+          Kiểm tra ảnh và xác nhận để tiếp tục chấm công
+        </Text>
+
+        <View style={styles.imageWrapper}>
+          <Image
+            source={{ uri }}
+            contentFit="cover"
+            style={styles.capturedImage}
+          />
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <Pressable
+            style={[styles.actionButton, styles.retakeButton]}
+            onPress={() => setUri(null)}
+          >
+            <AntDesign name="reload1" size={20} color="#666" />
+            <Text style={styles.retakeButtonText}>Chụp lại</Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.actionButton, styles.confirmButton]}
+            onPress={() => handleFaceRecognition()}
+          >
+            <AntDesign name="check" size={20} color="white" />
+            <Text style={styles.confirmButtonText}>Xác nhận</Text>
+          </Pressable>
+        </View>
       </View>
     );
   };
@@ -366,5 +389,83 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 50,
+  },
+  // Picture preview styles
+  pictureContainer: {
+    flex: 1,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  pictureTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  pictureSubtitle: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 30,
+    lineHeight: 22,
+  },
+  imageWrapper: {
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 40,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    backgroundColor: "#fff",
+  },
+  capturedImage: {
+    width: 280,
+    height: 280,
+    borderRadius: 20,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: 10,
+    gap: 15,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  retakeButton: {
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  retakeButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#666",
+  },
+  confirmButton: {
+    backgroundColor: "#3674B5",
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
   },
 });
