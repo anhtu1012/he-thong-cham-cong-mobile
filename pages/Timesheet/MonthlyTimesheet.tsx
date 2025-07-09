@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,18 +13,25 @@ import { getTimeSchedule } from "../../service/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { getCurrentDateRes } from "../../utils/dateUtils";
+import TimeScheduleModal from "../../components/TimeScheduleModal";
 
 const { width } = Dimensions.get("window");
 
 type DayStatus = {
   day: number;
-  status: "normal" | "half" | "absent" | "weekend" | "empty";
+  status: "normal" | "half" | "absent" | "weekend" | "empty" | "ongoing";
   value: string | number;
+  date?: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  workingHourReal?: string;
 };
 
 const MonthlyTimesheet = () => {
   const [daysInMonth, setDaysInMonth] = useState<DayStatus[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [choosenDate, setChoosenDate] = useState<DayStatus>();
 
   useFocusEffect(
     useCallback(() => {
@@ -65,6 +72,12 @@ const MonthlyTimesheet = () => {
         day: i + 1,
         value: currentDay == 0 || currentDay == 6 ? "N" : 0,
         status: currentDay == 0 || currentDay == 6 ? "weekend" : "normal",
+        date: new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1)
+          .toISOString()
+          .split("T")[0],
+        checkInTime: undefined,
+        checkOutTime: undefined,
+        workingHourReal: undefined,
       };
     });
 
@@ -72,6 +85,8 @@ const MonthlyTimesheet = () => {
     let timeSchedule = timeScheduleRes.data.data;
 
     console.log("timeSchedule", timeSchedule);
+    console.log(getCurrentDateRes());
+
     // get current day & store to asyncStorage
     for (const time of timeSchedule) {
       try {
@@ -93,10 +108,20 @@ const MonthlyTimesheet = () => {
     timeSchedule = timeSchedule.map((date: any) => {
       const currentDate = new Date(date.date);
       const day = days[currentDate.getDate() - 1];
-      if (date.workingHours) {
-        day.value = date.workingHours;
+
+      // Store additional data
+      day.checkInTime = date.checkInTime;
+      day.checkOutTime = date.checkOutTime;
+      day.workingHourReal = date.workingHourReal;
+
+      // Set status based on statusTimeKeeping
+      if (date.statusTimeKeeping === "STARTED" && !date.workingHourReal) {
+        day.status = "ongoing";
+        day.value = "D";
+      } else if (date.workingHourReal && date.timeKeepingId) {
+        day.value = date.workingHourReal.split("h")[0];
       } else {
-        day.value = "N";
+        day.value = 0;
       }
     });
     // console.log("daysInMonth", days);
@@ -114,6 +139,10 @@ const MonthlyTimesheet = () => {
         (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1)
       );
     }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalVisible(false);
   };
 
   // Giả lập dữ liệu chấm công tháng hiện tại
@@ -163,48 +192,61 @@ const MonthlyTimesheet = () => {
     ));
   };
 
-  // Render calendar grid
-  const renderGrid = () => {
-    if (daysInMonth.length) {
-      const firstDay = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        daysInMonth[0].day
-      ).getDay();
+  // Prepare grid data with useMemo to avoid recalculation on every render
+  const gridData = useMemo(() => {
+    if (!daysInMonth.length) return [];
 
-      // render white box for placeholder date
-      if (firstDay != 0) {
-        for (let i = 0; i < firstDay - 1; i++) {
-          daysInMonth.unshift({
-            day: 0,
-            status: "normal",
-            value: 0,
-          });
-        }
-      } else {
-        for (let i = 0; i < 6; i++) {
-          daysInMonth.unshift({
-            day: 0,
-            status: "empty",
-            value: 0,
-          });
-        }
+    // Create a copy of daysInMonth to avoid mutating state
+    let days = [...daysInMonth];
+
+    const firstDay = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      days[0].day
+    ).getDay();
+
+    // Add placeholder days for the beginning of the month
+    if (firstDay !== 0) {
+      for (let i = 0; i < firstDay - 1; i++) {
+        days.unshift({
+          day: 0,
+          status: "empty",
+          value: 0,
+        });
       }
-
-      while (daysInMonth.length % 7 != 0) {
-        daysInMonth.push({
+    } else {
+      for (let i = 0; i < 6; i++) {
+        days.unshift({
           day: 0,
           status: "empty",
           value: 0,
         });
       }
     }
-    const chunks = [];
-    for (let i = 0; i < daysInMonth.length; i += 7) {
-      chunks.push(daysInMonth.slice(i, i + 7));
+
+    // Add placeholder days to complete the grid (make it divisible by 7)
+    while (days.length % 7 !== 0) {
+      days.push({
+        day: 0,
+        status: "empty",
+        value: 0,
+      });
     }
 
-    return chunks.map((week, weekIndex) => (
+    // Split into weeks
+    const chunks = [];
+    for (let i = 0; i < days.length; i += 7) {
+      chunks.push(days.slice(i, i + 7));
+    }
+
+    return chunks;
+  }, [daysInMonth, currentDate]);
+
+  // Render calendar grid
+  const renderGrid = useCallback(() => {
+    console.log("render grid is always!");
+
+    return gridData.map((week, weekIndex) => (
       <View key={`week-${weekIndex}`} style={styles.weekRow}>
         {week.map((day, dayIndex) => (
           <TouchableOpacity
@@ -214,9 +256,15 @@ const MonthlyTimesheet = () => {
               day.status === "weekend" && styles.weekendCell,
               day.status === "half" && styles.halfDayCell,
               day.status === "absent" && styles.absentDayCell,
+              day.status === "ongoing" && styles.ongoingDayCell,
             ]}
             activeOpacity={0.7}
-            disabled={day.value === 0}
+            onPress={() => {
+              if (day.day !== 0) {
+                setChoosenDate(day);
+                setIsModalVisible(true);
+              }
+            }}
           >
             <Text
               style={[
@@ -228,12 +276,13 @@ const MonthlyTimesheet = () => {
               {day.day == 0 ? " " : day.day}
             </Text>
 
-            {day.value !== 0 && (
+            {day.status !== "empty" && (
               <View
                 style={[
                   styles.valueContainer,
                   typeof day.value === "string" && styles.specialValueContainer,
                   day.status === "half" && styles.halfDayValueContainer,
+                  day.status === "ongoing" && styles.ongoingDayValueContainer,
                 ]}
               >
                 <Text
@@ -242,6 +291,7 @@ const MonthlyTimesheet = () => {
                     day.status === "half" && styles.halfDay,
                     day.status === "absent" && styles.absentDay,
                     day.status === "weekend" && styles.weekendDay,
+                    day.status === "ongoing" && styles.ongoingDay,
                     typeof day.value === "string" && styles.specialValue,
                   ]}
                 >
@@ -255,7 +305,7 @@ const MonthlyTimesheet = () => {
         ))}
       </View>
     ));
-  };
+  }, [gridData, setChoosenDate, setIsModalVisible]);
 
   // Header with month selector
   const renderHeader = () => {
@@ -329,6 +379,11 @@ const MonthlyTimesheet = () => {
           </View>
 
           <View style={styles.legendItem}>
+            <View style={[styles.legendBadge, styles.ongoingLegend]} />
+            <Text style={styles.legendText}>Đang làm</Text>
+          </View>
+
+          <View style={styles.legendItem}>
             <View style={[styles.legendBadge, styles.weekendLegend]} />
             <Text style={styles.legendText}>Cuối tuần</Text>
           </View>
@@ -338,27 +393,35 @@ const MonthlyTimesheet = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {renderHeader()}
-        {renderSummaryAndLegend()}
+    <>
+      <TimeScheduleModal
+        visible={isModalVisible}
+        onClose={handleCloseModal}
+        selectedDate={choosenDate}
+        currentDate={currentDate}
+      />
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {renderHeader()}
+          {renderSummaryAndLegend()}
 
-        <View style={styles.calendarContainer}>
-          <View style={styles.calendarHeader}>
-            <Feather name="calendar" size={18} color="#3674B5" />
-            <Text style={styles.calendarTitle}>Bảng chấm công tháng</Text>
+          <View style={styles.calendarContainer}>
+            <View style={styles.calendarHeader}>
+              <Feather name="calendar" size={18} color="#3674B5" />
+              <Text style={styles.calendarTitle}>Bảng chấm công tháng</Text>
+            </View>
+
+            <View style={styles.weekdayRow}>{renderWeekdays()}</View>
+            <View style={styles.gridContainer}>{renderGrid()}</View>
           </View>
 
-          <View style={styles.weekdayRow}>{renderWeekdays()}</View>
-          <View style={styles.gridContainer}>{renderGrid()}</View>
-        </View>
-
-        <View style={{ height: 20 }} />
-      </ScrollView>
-    </View>
+          <View style={{ height: 20 }} />
+        </ScrollView>
+      </View>
+    </>
   );
 };
 
@@ -464,6 +527,9 @@ const styles = StyleSheet.create({
   halfLegend: {
     backgroundColor: "#FF9800",
   },
+  ongoingLegend: {
+    backgroundColor: "#FFC107",
+  },
   weekendLegend: {
     backgroundColor: "rgba(255,255,255,0.4)",
   },
@@ -541,6 +607,9 @@ const styles = StyleSheet.create({
   absentDayCell: {
     backgroundColor: "rgba(244, 67, 54, 0.05)",
   },
+  ongoingDayCell: {
+    backgroundColor: "rgba(255, 193, 7, 0.2)",
+  },
   dayNumber: {
     fontSize: 14,
     fontWeight: "600",
@@ -567,6 +636,9 @@ const styles = StyleSheet.create({
   halfDayValueContainer: {
     backgroundColor: "rgba(255, 152, 0, 0.15)",
   },
+  ongoingDayValueContainer: {
+    backgroundColor: "rgba(255, 193, 7, 0.3)",
+  },
   statusValue: {
     fontSize: 14,
     fontWeight: "600",
@@ -580,6 +652,9 @@ const styles = StyleSheet.create({
   },
   weekendDay: {
     color: "#9E9E9E",
+  },
+  ongoingDay: {
+    color: "#F57C00",
   },
   specialValue: {
     fontWeight: "bold",

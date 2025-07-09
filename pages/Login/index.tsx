@@ -41,6 +41,7 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
     const handleIsLogin = async () => {
       const userData = await AsyncStorage.getItem("userData");
 
+
       if (userData) {
         navigation.reset({
           index: 0,
