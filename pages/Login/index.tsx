@@ -65,6 +65,7 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
       // In a real app, uncomment this code
 
       const response = await loginUser({ username: userName, password });
+
       if (response.status === 201) {
         Toast.show({
           type: "success",
@@ -76,7 +77,6 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
           "userData",
           JSON.stringify(response.data.userProfile)
         );
-
         navigation.navigate("AppNavigationRoot");
       } else {
         Toast.show({
