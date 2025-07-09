@@ -7,17 +7,31 @@ import {
   ScrollView,
   TextInput,
   SafeAreaView,
-  Switch,
   Platform,
+  Modal,
+  FlatList,
+  ActivityIndicator,
 } from "react-native";
-import { AntDesign, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import DatePicker from "react-native-date-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import Toast from "react-native-toast-message";
+import { createForm } from "../../service/api";
 
 interface FormRouteParams {
   formId: string;
   formTitle: string;
 }
+
+// Common reasons users might select
+const commonReasons = [
+  "Việc cá nhân",
+  "Ốm đau",
+  "Việc gia đình",
+  "Đi khám bệnh",
+  "Đi công tác",
+  "Lý do khác",
+];
 
 const FormDetail = () => {
   const navigation = useNavigation();
@@ -27,158 +41,125 @@ const FormDetail = () => {
 
   // State cho form
   const [reason, setReason] = useState("");
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Date states
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
-  const [openStartDate, setOpenStartDate] = useState(false);
-  const [openEndDate, setOpenEndDate] = useState(false);
-  const [halfDay, setHalfDay] = useState(false);
-  const [attachmentRequired, setAttachmentRequired] = useState(false);
+  const [showStartDate, setShowStartDate] = useState(false);
+  const [showEndDate, setShowEndDate] = useState(false);
 
+  // Time states
+  const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
+  const [showStartTime, setShowStartTime] = useState(false);
+  const [showEndTime, setShowEndTime] = useState(false);
+
+  // Format helpers
   const formatDate = (date: Date) => {
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   };
 
-  const handleSubmitForm = () => {
-    // Xử lý gửi đơn
-    const formData = {
-      formId,
-      formTitle,
-      reason,
-      startDate,
-      endDate,
-      halfDay,
-      attachmentRequired,
-    };
-
-    console.log("Submitting form:", formData);
-    alert("Đã gửi đơn thành công!");
-    navigation.goBack();
+  const formatTime = (date: Date) => {
+    let hours = date.getHours();
+    let minutes = date.getMinutes();
+    return `${hours < 10 ? "0" + hours : hours}:${
+      minutes < 10 ? "0" + minutes : minutes
+    }`;
   };
 
-  // Render nội dung form dựa trên loại đơn
-  const renderFormContent = () => {
-    return (
-      <View style={styles.formContent}>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Lý do:</Text>
-          <TextInput
-            style={styles.input}
-            multiline
-            numberOfLines={4}
-            placeholder="Nhập lý do đơn..."
-            value={reason}
-            onChangeText={setReason}
-          />
-        </View>
+  // Format date to ISO 8601 for API
+  const formatDateTimeForApi = (date: Date, time: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(time.getHours()).padStart(2, "0");
+    const minutes = String(time.getMinutes()).padStart(2, "0");
+    const seconds = String(time.getSeconds()).padStart(2, "0");
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Thời gian:</Text>
-          <View style={styles.dateRow}>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setOpenStartDate(true)}
-            >
-              <AntDesign name="calendar" size={20} color="#3674B5" />
-              <Text style={styles.dateText}>
-                Từ ngày: {formatDate(startDate)}
-              </Text>
-            </TouchableOpacity>
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`;
+  };
 
-            <DatePicker
-              modal
-              open={openStartDate}
-              date={startDate}
-              onConfirm={(date) => {
-                setOpenStartDate(false);
-                setStartDate(date);
-              }}
-              onCancel={() => {
-                setOpenStartDate(false);
-              }}
-              mode="date"
-            />
-          </View>
+  // Change handlers for date/time
+  const onChangeStartDate = (event: any, selectedDate?: Date) => {
+    setShowStartDate(false);
+    if (selectedDate) {
+      setStartDate(selectedDate);
+    }
+  };
 
-          <View style={styles.dateRow}>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setOpenEndDate(true)}
-            >
-              <AntDesign name="calendar" size={20} color="#3674B5" />
-              <Text style={styles.dateText}>
-                Đến ngày: {formatDate(endDate)}
-              </Text>
-            </TouchableOpacity>
+  const onChangeEndDate = (event: any, selectedDate?: Date) => {
+    setShowEndDate(false);
+    if (selectedDate) {
+      setEndDate(selectedDate);
+    }
+  };
 
-            <DatePicker
-              modal
-              open={openEndDate}
-              date={endDate}
-              onConfirm={(date) => {
-                setOpenEndDate(false);
-                setEndDate(date);
-              }}
-              onCancel={() => {
-                setOpenEndDate(false);
-              }}
-              mode="date"
-            />
-          </View>
-        </View>
+  const onChangeStartTime = (event: any, selectedTime?: Date) => {
+    setShowStartTime(false);
+    if (selectedTime) {
+      setStartTime(selectedTime);
+    }
+  };
 
-        <View style={styles.formGroup}>
-          <View style={styles.switchRow}>
-            <Text style={styles.label}>Nửa ngày:</Text>
-            <Switch
-              value={halfDay}
-              onValueChange={setHalfDay}
-              trackColor={{ false: "#767577", true: "#bce3fb" }}
-              thumbColor={halfDay ? "#3674B5" : "#f4f3f4"}
-            />
-          </View>
-        </View>
+  const onChangeEndTime = (event: any, selectedTime?: Date) => {
+    setShowEndTime(false);
+    if (selectedTime) {
+      setEndTime(selectedTime);
+    }
+  };
 
-        <View style={styles.formGroup}>
-          <View style={styles.switchRow}>
-            <Text style={styles.label}>Yêu cầu đính kèm:</Text>
-            <Switch
-              value={attachmentRequired}
-              onValueChange={setAttachmentRequired}
-              trackColor={{ false: "#767577", true: "#bce3fb" }}
-              thumbColor={attachmentRequired ? "#3674B5" : "#f4f3f4"}
-            />
-          </View>
-        </View>
+  const handleSubmitForm = async () => {
+    if (!reason.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Vui lòng nhập lý do",
+      });
+      return;
+    }
 
-        {attachmentRequired && (
-          <View style={styles.attachmentSection}>
-            <TouchableOpacity style={styles.attachButton}>
-              <Ionicons
-                name="document-attach-outline"
-                size={24}
-                color="#3674B5"
-              />
-              <Text style={styles.attachButtonText}>Đính kèm tệp</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+    try {
+      setIsSubmitting(true);
 
-        <View style={styles.formActions}>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.cancelButtonText}>Hủy</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.submitButton}
-            onPress={handleSubmitForm}
-          >
-            <Text style={styles.submitButtonText}>Gửi đơn</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
+      // Format dates for API
+      const startTimeFormatted = formatDateTimeForApi(startDate, startTime);
+      const endTimeFormatted = formatDateTimeForApi(endDate, endTime);
+
+      const formData = {
+        reason: reason.trim(),
+        status: "PENDING", // Luôn để PENDING cho form mới
+        file: "bằng chứng đâu ní", // Giá trị mặc định cho file
+        startTime: startTimeFormatted,
+        endTime: endTimeFormatted,
+        formId: formId,
+      };
+
+      console.log("Submitting form data:", formData);
+
+      const response = await createForm(formData);
+
+      if (response.status === 201 || response.status === 200) {
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: "Đã gửi đơn thành công",
+        });
+        navigation.goBack();
+      } else {
+        throw new Error("Server responded with an error");
+      }
+    } catch (err) {
+      console.error("Error submitting form:", err);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể gửi đơn. Vui lòng thử lại sau.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -197,7 +178,184 @@ const FormDetail = () => {
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
       >
-        {renderFormContent()}
+        <View style={styles.formSection}>
+          {/* Reason field */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>
+              Lý do <Text style={styles.requiredMark}>*</Text>
+            </Text>
+            <TextInput
+              style={styles.reasonInput}
+              value={reason}
+              onChangeText={setReason}
+              placeholder="Nhập lý do của bạn"
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* Time section */}
+          <View style={styles.timeSection}>
+            <TouchableOpacity
+              style={styles.closeTimeSection}
+              onPress={() => navigation.goBack()}
+            >
+              <AntDesign name="close" size={24} color="#AAAAAA" />
+            </TouchableOpacity>
+
+            {/* From date & time */}
+            <View style={styles.timeRow}>
+              <View style={styles.timeField}>
+                <Text style={styles.fieldLabel}>
+                  Từ giờ <Text style={styles.requiredMark}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  style={styles.timeInput}
+                  onPress={() => setShowStartTime(true)}
+                >
+                  <Text style={styles.timeText}>{formatTime(startTime)}</Text>
+                  <View style={styles.timeIcon}>
+                    <AntDesign name="clockcircleo" size={20} color="#AAAAAA" />
+                  </View>
+                </TouchableOpacity>
+                {showStartTime && (
+                  <DateTimePicker
+                    testID="startTimePicker"
+                    value={startTime}
+                    mode="time"
+                    is24Hour={true}
+                    display="default"
+                    onChange={onChangeStartTime}
+                  />
+                )}
+              </View>
+
+              <View style={styles.timeField}>
+                <Text style={styles.fieldLabel}>
+                  Từ ngày <Text style={styles.requiredMark}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  style={styles.timeInput}
+                  onPress={() => setShowStartDate(true)}
+                >
+                  <Text style={styles.timeText}>{formatDate(startDate)}</Text>
+                  <View style={styles.timeIcon}>
+                    <AntDesign name="calendar" size={20} color="#AAAAAA" />
+                  </View>
+                </TouchableOpacity>
+                {showStartDate && (
+                  <DateTimePicker
+                    testID="startDatePicker"
+                    value={startDate}
+                    mode="date"
+                    display="default"
+                    onChange={onChangeStartDate}
+                  />
+                )}
+              </View>
+            </View>
+
+            {/* To date & time */}
+            <View style={styles.timeRow}>
+              <View style={styles.timeField}>
+                <Text style={styles.fieldLabel}>
+                  Đến giờ <Text style={styles.requiredMark}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  style={styles.timeInput}
+                  onPress={() => setShowEndTime(true)}
+                >
+                  <Text style={styles.timeText}>{formatTime(endTime)}</Text>
+                  <View style={styles.timeIcon}>
+                    <AntDesign name="clockcircleo" size={20} color="#AAAAAA" />
+                  </View>
+                </TouchableOpacity>
+                {showEndTime && (
+                  <DateTimePicker
+                    testID="endTimePicker"
+                    value={endTime}
+                    mode="time"
+                    is24Hour={true}
+                    display="default"
+                    onChange={onChangeEndTime}
+                  />
+                )}
+              </View>
+
+              <View style={styles.timeField}>
+                <Text style={styles.fieldLabel}>
+                  Đến ngày <Text style={styles.requiredMark}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  style={styles.timeInput}
+                  onPress={() => setShowEndDate(true)}
+                >
+                  <Text style={styles.timeText}>{formatDate(endDate)}</Text>
+                  <View style={styles.timeIcon}>
+                    <AntDesign name="calendar" size={20} color="#AAAAAA" />
+                  </View>
+                </TouchableOpacity>
+                {showEndDate && (
+                  <DateTimePicker
+                    testID="endDatePicker"
+                    value={endDate}
+                    mode="date"
+                    display="default"
+                    onChange={onChangeEndDate}
+                  />
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* Attachment section */}
+          <View style={styles.attachmentSection}>
+            <Text style={styles.sectionTitle}>Đính kèm</Text>
+            <View style={styles.attachmentOptions}>
+              <View style={styles.attachmentIconWrapper}>
+                <AntDesign
+                  name="upload"
+                  size={24}
+                  color="#3674B5"
+                  style={styles.uploadIcon}
+                />
+              </View>
+
+              <View style={styles.attachmentButtons}>
+                <TouchableOpacity style={styles.attachmentButtonPrimary}>
+                  <AntDesign name="export" size={18} color="#fff" />
+                  <Text style={styles.attachmentButtonPrimaryText}>
+                    CHỌN TỪ MÁY
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.formActions}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.cancelButtonText}>Hủy</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                isSubmitting && styles.submitButtonDisabled,
+              ]}
+              onPress={handleSubmitForm}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.submitButtonText}>Gửi đơn</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -232,74 +390,162 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     color: "#333",
   },
-  formContent: {
+  formSection: {
     padding: 16,
   },
-  formGroup: {
-    marginBottom: 20,
+  fieldContainer: {
+    marginBottom: 16,
   },
-  label: {
+  fieldLabel: {
     fontSize: 16,
-    fontWeight: "500",
+    color: "#666",
     marginBottom: 8,
-    color: "#333",
   },
-  input: {
+  requiredMark: {
+    color: "red",
+  },
+  fieldInput: {
     backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#DDD",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 100,
-    textAlignVertical: "top",
-  },
-  dateRow: {
-    marginBottom: 12,
-  },
-  dateButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-  },
-  dateText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: "#333",
-  },
-  switchRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  reasonInput: {
     backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#DDD",
     borderRadius: 8,
-    padding: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: "#333",
+    minHeight: 150,
+  },
+  fieldText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  placeholderText: {
+    color: "#AAAAAA",
+  },
+  timeSection: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 20,
+    position: "relative",
+  },
+  closeTimeSection: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    zIndex: 10,
+    padding: 4,
+  },
+  timeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  timeField: {
+    flex: 1,
+    marginRight: 12,
+  },
+  timeField2: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  timeInput: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  timeText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  timeIcon: {
+    width: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
   attachmentSection: {
+    marginBottom: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#ddd",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+  sectionTitle: {
+    fontSize: 16,
+    color: "#666",
     marginBottom: 20,
   },
-  attachButton: {
+  attachmentOptions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  attachmentIconWrapper: {
+    width: 60,
+    height: 70,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  uploadIcon: {
+    marginRight: 10,
+  },
+  attachmentButtons: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  attachmentButtonPrimary: {
+    backgroundColor: "#3674B5",
+    borderRadius: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f0f9ff",
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#3674B5",
-    borderRadius: 8,
-    padding: 16,
+    marginBottom: 12,
   },
-  attachButtonText: {
-    color: "#3674B5",
+  attachmentButtonPrimaryText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
     marginLeft: 8,
-    fontSize: 16,
-    fontWeight: "500",
+  },
+  attachmentButtonSecondary: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  attachmentButtonSecondaryText: {
+    color: "#666",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 8,
   },
   formActions: {
     marginTop: 20,
@@ -327,6 +573,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     flex: 1,
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#94b8db",
   },
   submitButtonText: {
     color: "#fff",
