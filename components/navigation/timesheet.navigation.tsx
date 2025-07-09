@@ -1,27 +1,30 @@
-import React, { useCallback, memo, useMemo } from "react";
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-  Dimensions,
-} from "react-native";
-import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
+import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { AntDesign, MaterialIcons, Feather } from "@expo/vector-icons";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useNavigation, CommonActions } from "@react-navigation/native";
-import MonthlyTimesheet from "../../pages/Timesheet/MonthlyTimesheet";
-import WeeklyTimesheet from "../../pages/Timesheet/WeeklyTimesheet";
-import StatsTimesheet from "../../pages/Timesheet/StatsTimesheet";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import {
-  TimesheetTabParamList,
+  CommonActions,
+  NavigationProp,
+  ParamListBase,
+  useNavigation,
+} from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { memo, useCallback, useMemo } from "react";
+import {
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import MonthlyTimesheet from "../../pages/Timesheet/MonthlyTimesheet";
+import StatsTimesheet from "../../pages/Timesheet/StatsTimesheet";
+import WeeklyTimesheet from "../../pages/Timesheet/WeeklyTimesheet";
+import {
   TimesheetBottomTabParamList,
-  RootStackParamList,
+  TimesheetTabParamList,
 } from "../../utils/routes";
-import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import CameraPage from "../CameraPage";
 
 const { width } = Dimensions.get("window");
@@ -176,7 +179,7 @@ const ClockInButton = memo(({ onPress, accessibilityState }: any) => {
       onPress={onPress}
       accessibilityState={accessibilityState}
       style={{
-        width: 70,
+        width: 50,
         alignItems: "center",
         justifyContent: "center",
         marginLeft: 40,
@@ -187,7 +190,7 @@ const ClockInButton = memo(({ onPress, accessibilityState }: any) => {
           position: "absolute",
           bottom: 0,
           height: 30,
-          width: 70,
+          width: 100,
           backgroundColor: "#fff",
         }}
       />
@@ -216,7 +219,9 @@ const ClockInButton = memo(({ onPress, accessibilityState }: any) => {
           fontSize: 12,
           color: "#3674B5",
           fontWeight: "500",
-          bottom: 8,
+          bottom: 20,
+          textAlign: "center",
+          width: 100,
         }}
       >
         Chấm công

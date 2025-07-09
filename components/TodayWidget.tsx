@@ -54,7 +54,6 @@ const TodayWidget = ({ todaySchedule, loadingSchedule }: TodayWidgetProps) => {
   const formatDateWithDay = (dateString: string) => {
     const date = new Date(dateString);
     const dayOfWeek = date.getDay();
-    console.log("Day of week value:", dayOfWeek, "for date:", dateString);
 
     // Trong JavaScript, getDay() trả về 0 cho Chủ nhật, 1 cho Thứ 2, ..., 6 cho Thứ 7
     const days = [
@@ -91,26 +90,8 @@ const TodayWidget = ({ todaySchedule, loadingSchedule }: TodayWidgetProps) => {
       </View>
     );
   }
-
-  const today = new Date();
-  console.log("Today's real date:", today);
-  console.log("Schedule date from API:", todaySchedule.date);
-
   // Sử dụng phương thức getCurrentDateString để lấy ngày hiện tại
   const currentDateString = getCurrentDateString();
-
-  const currentTime = today.getHours() * 60 + today.getMinutes();
-
-  // Chuyển đổi startShiftTime và endShiftTime thành phút để so sánh
-  const [startHour, startMinute] = todaySchedule.startShiftTime
-    .split(":")
-    .map(Number);
-  const [endHour, endMinute] = todaySchedule.endShiftTime
-    .split(":")
-    .map(Number);
-  const startTimeInMinutes = startHour * 60 + startMinute;
-  const endTimeInMinutes = endHour * 60 + endMinute;
-
   // Xác định trạng thái check-in
   let checkInStatus = "Chưa check-in";
   let checkInButtonText = "Check-in";
@@ -119,28 +100,44 @@ const TodayWidget = ({ todaySchedule, loadingSchedule }: TodayWidgetProps) => {
   let checkInStatusColor = "#4CAF50";
   let checkInTime = null;
   let checkOutTime = null;
-
   if (todaySchedule.checkInTime) {
-    checkInStatus = todaySchedule.checkInTime;
-    checkInButtonText = "Đã check-in";
-    checkInButtonDisabled = true;
-    checkInButtonColor = "#4CAF50";
-    checkInStatusColor = "#4CAF50";
-    checkInTime = todaySchedule.checkInTime;
+    //nếu statusTimeKeeping = late thì check-in muộn , nếu end hoàn thành , nết nocheckout thì chưa check-out
+    if (todaySchedule.statusTimeKeeping === "LATE") {
+      checkInStatus = "Check-in muộn";
+      checkInButtonDisabled = true;
+      checkInButtonColor = "#F59E0B"; // Màu cam cho check-in muộn
+      checkInStatusColor = "#F59E0B"; // Màu cam cho trạng thái check-in muộn
+    } else if (todaySchedule.statusTimeKeeping === "END") {
+      checkInStatus = "Đã hoàn thành";
+      checkInButtonDisabled = true;
+      checkInButtonColor = "#4CAF50"; // Màu xanh lá cho đã hoàn thành
+      checkInStatusColor = "#4CAF50"; // Màu xanh lá cho trạng
+      // thái đã hoàn thành
+    } else if (todaySchedule.statusTimeKeeping === "NOCHECKOUT") {
+      checkInStatus = "Chưa check-out";
+      checkInButtonDisabled = true;
+      checkInButtonColor = "#F59E0B"; // Màu cam cho chưa check-out
+      checkInStatusColor = "#F59E0B"; // Màu cam cho
+    } else {
+      checkInStatus = todaySchedule.statusTimeKeeping || "Đã check-in";
+      checkInButtonDisabled = true;
+      checkInButtonColor = "#4CAF50";
+      checkInStatusColor = "#4CAF50";
+    }
+    //chuyên đổi định dạng giờ check-in từ isotring sang vd 01:30p không hiện pm hiện 16:30
+    checkInTime = new Date(todaySchedule.checkInTime).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   }
 
   if (todaySchedule.checkOutTime) {
-    checkOutTime = todaySchedule.checkOutTime;
-  }
-
-  // Tính tổng thời gian làm việc
-  let totalWorkingHours = "00:00p";
-  let totalHoursDisplay = "0";
-
-  if (checkInTime && checkOutTime) {
-    // Nếu có cả check-in và check-out, hiển thị tổng thời gian thực tế
-    totalWorkingHours = `${todaySchedule.workingHours}:00p`;
-    totalHoursDisplay = "1"; // Hiển thị số 1 lớn như trong hình
+    checkOutTime = new Date(todaySchedule.checkOutTime).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   }
 
   return (
@@ -169,132 +166,87 @@ const TodayWidget = ({ todaySchedule, loadingSchedule }: TodayWidgetProps) => {
           >
             <Text style={styles.checkinText}>{checkInButtonText}</Text>
           </TouchableOpacity>
-          <Text style={[styles.checkinStatus, { color: checkInStatusColor }]}>
-            {checkInStatus}
-          </Text>
         </View>
       </View>
 
       <View style={styles.attendanceDetails}>
-        <View
-          style={[
-            styles.timeDetailCard,
-            checkInTime
-              ? styles.timeDetailCardChecked
-              : styles.timeDetailCardNotChecked,
-          ]}
-        >
+        <View style={[styles.timeDetailCard, styles.checkInCard]}>
           <View style={styles.timeDetailCardHeader}>
-            <Text style={styles.timeDetailCardTitle}>Giờ vào</Text>
-            <View
-              style={[
-                styles.timeDetailCardIcon,
-                checkInTime
-                  ? styles.timeDetailCardIconSuccess
-                  : styles.timeDetailCardIconWarning,
-              ]}
-            >
+            <Text style={styles.checkInTitle}>Giờ vào</Text>
+            <View style={styles.checkInIcon}>
               {checkInTime ? (
-                <AntDesign name="check" size={16} color="#4CAF50" />
+                <AntDesign name="check" size={14} color="#10B981" />
               ) : (
                 <AntDesign
                   name="exclamationcircleo"
-                  size={16}
-                  color="#F44336"
+                  size={14}
+                  color="#EF4444"
                 />
               )}
             </View>
           </View>
           {checkInTime ? (
-            <Text
-              style={[
-                styles.timeDetailCardValue,
-                styles.timeDetailCardValueSuccess,
-              ]}
-            >
-              {checkInTime}
-            </Text>
+            <Text style={styles.checkInValue}>{checkInTime}</Text>
           ) : (
-            <Text
-              style={[
-                styles.timeDetailCardDashes,
-                styles.timeDetailCardValueWarning,
-              ]}
-            >
-              --:--
-            </Text>
+            <Text style={styles.checkInDashes}>--:--</Text>
           )}
-          <Text
-            style={[
-              styles.timeDetailCardStatus,
-              checkInTime
-                ? styles.timeDetailCardStatusSuccess
-                : styles.timeDetailCardStatusWarning,
-            ]}
-          >
+          <Text style={styles.checkInStatus}>
             {checkInTime ? "Đã check-in" : "Chưa check-in"}
           </Text>
         </View>
 
-        <View
-          style={[
-            styles.timeDetailCard,
-            checkOutTime
-              ? styles.timeDetailCardChecked
-              : styles.timeDetailCardNotCheckedOut,
-          ]}
-        >
+        <View style={[styles.timeDetailCard, styles.checkOutCard]}>
           <View style={styles.timeDetailCardHeader}>
-            <Text style={styles.timeDetailCardTitle}>Giờ về</Text>
-            <View
-              style={[
-                styles.timeDetailCardIcon,
-                checkOutTime
-                  ? styles.timeDetailCardIconSuccess
-                  : styles.timeDetailCardIconPending,
-              ]}
-            >
+            <Text style={styles.checkOutTitle}>Giờ về</Text>
+            <View style={styles.checkOutIcon}>
               {checkOutTime ? (
-                <AntDesign name="check" size={16} color="#4CAF50" />
+                <AntDesign name="check" size={14} color="#F59E0B" />
               ) : (
-                <AntDesign name="clockcircleo" size={16} color="#FFC107" />
+                <AntDesign name="clockcircleo" size={14} color="#F59E0B" />
               )}
             </View>
           </View>
           {checkOutTime ? (
-            <Text
-              style={[
-                styles.timeDetailCardValue,
-                styles.timeDetailCardValueSuccess,
-              ]}
-            >
-              {checkOutTime}
-            </Text>
+            <Text style={styles.checkOutValue}>{checkOutTime}</Text>
           ) : (
-            <Text
-              style={[
-                styles.timeDetailCardDashes,
-                styles.timeDetailCardValuePending,
-              ]}
-            >
-              --:--
-            </Text>
+            <Text style={styles.checkOutDashes}>--:--</Text>
           )}
-          <Text
-            style={[
-              styles.timeDetailCardStatus,
-              checkOutTime
-                ? styles.timeDetailCardStatusSuccess
-                : styles.timeDetailCardStatusPending,
-            ]}
-          >
+          <Text style={styles.checkOutStatus}>
             {checkOutTime ? "Đã check-out" : "Chưa đến giờ"}
           </Text>
         </View>
 
-        <View style={styles.timeCardTotal}>
-          <Text style={styles.timeCardTotalNumber}>{totalHoursDisplay}</Text>
-          <Text style={styles.timeCardTotalHours}>{totalWorkingHours}</Text>
+        <View style={styles.workingHoursCard}>
+          <View style={styles.workingHoursHeader}>
+            <Text style={styles.workingHoursTitle}>Công làm</Text>
+            <View style={styles.workingHoursIcon}>
+              {checkInTime && checkOutTime ? (
+                <AntDesign name="check" size={16} color="#8B5CF6" />
+              ) : checkInTime ? (
+                <AntDesign name="clockcircleo" size={16} color="#8B5CF6" />
+              ) : (
+                <AntDesign
+                  name="exclamationcircleo"
+                  size={16}
+                  color="#8B5CF6"
+                />
+              )}
+            </View>
+          </View>
+          <View style={styles.workingHoursContent}>
+            <Text style={styles.workingHoursNumber}>
+              {checkInTime && checkOutTime
+                ? todaySchedule.workingHours
+                : "--:--"}
+            </Text>
+          </View>
+          <Text style={styles.workingHoursStatus}>
+            {checkInTime && checkOutTime
+              ? "Hoàn thành"
+              : checkInTime
+              ? "Đang làm"
+              : "Chưa bắt đầu"}
+          </Text>
         </View>
       </View>
     </View>
@@ -312,6 +264,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+  },
+  timeDetailCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
   },
   todayHeader: {
     flexDirection: "row",
@@ -396,110 +354,160 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   attendanceDetails: {
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 20,
+    paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: "#F1F5F9",
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: 10,
   },
   timeDetailCard: {
-    borderRadius: 8,
-    padding: 12,
-    width: "30%",
+    borderRadius: 16,
+    padding: 14,
+    flex: 1,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  timeDetailCardNotChecked: {
-    backgroundColor: "#FFEBEE",
+
+  // Check-in card styles (Green theme)
+  checkInCard: {
+    backgroundColor: "#ECFDF5",
+    borderWidth: 1.5,
+    borderColor: "#A7F3D0",
   },
-  timeDetailCardNotCheckedOut: {
-    backgroundColor: "#FFF8E1",
+  checkInTitle: {
+    fontSize: 12,
+    color: "#065F46",
+    fontWeight: "600",
   },
-  timeDetailCardChecked: {
-    backgroundColor: "#E8F5E9",
+  checkInIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#D1FAE5",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  timeDetailCardHeader: {
+  checkInValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#10B981",
+    marginBottom: 4,
+    paddingBottom: 6,
+  },
+  checkInDashes: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#9CA3AF",
+    marginBottom: 4,
+    paddingBottom: 6,
+  },
+  checkInStatus: {
+    fontSize: 10,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
+  // Check-out card styles (Orange theme)
+  checkOutCard: {
+    backgroundColor: "#FFFBEB",
+    borderWidth: 1.5,
+    borderColor: "#FCD34D",
+  },
+  checkOutTitle: {
+    fontSize: 12,
+    color: "#92400E",
+    fontWeight: "600",
+  },
+  checkOutIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#FEF3C7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkOutValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#F59E0B",
+    marginBottom: 4,
+    paddingBottom: 6,
+  },
+  checkOutDashes: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#9CA3AF",
+    marginBottom: 4,
+    paddingBottom: 6,
+  },
+  checkOutStatus: {
+    fontSize: 10,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
+  // Working hours card styles (Purple theme)
+  workingHoursCard: {
+    borderRadius: 16,
+    padding: 14,
+    flex: 1,
+    backgroundColor: "#FAF5FF",
+    borderWidth: 1.5,
+    borderColor: "#C4B5FD",
+    alignItems: "center",
+    elevation: 3,
+    shadowColor: "#8B5CF6",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  workingHoursHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    width: "100%",
+    marginBottom: 10,
   },
-  timeDetailCardTitle: {
-    fontSize: 14,
-    color: "#333333",
-    fontWeight: "500",
+  workingHoursTitle: {
+    fontSize: 12,
+    color: "#581C87",
+    fontWeight: "600",
   },
-  timeDetailCardIcon: {
+  workingHoursIcon: {
     width: 24,
     height: 24,
     borderRadius: 12,
+    backgroundColor: "#EDE9FE",
     alignItems: "center",
     justifyContent: "center",
   },
-  timeDetailCardIconWarning: {
-    backgroundColor: "#FFEBEE",
+  workingHoursContent: {
+    alignItems: "center",
+    marginBottom: 6,
   },
-  timeDetailCardIconPending: {
-    backgroundColor: "#FFF8E1",
+  workingHoursNumber: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#8B5CF6",
+    textAlign: "center",
+    lineHeight: 32,
   },
-  timeDetailCardIconSuccess: {
-    backgroundColor: "#E8F5E9",
-  },
-  timeDetailCardValue: {
-    fontSize: 25,
-    fontWeight: "bold",
-    marginBottom: 4,
-    textAlign: "left",
-    paddingBottom: 10,
-  },
-  timeDetailCardDashes: {
-    fontSize: 25,
-    fontWeight: "bold",
-    marginBottom: 4,
-    textAlign: "left",
-    paddingBottom: 10,
-  },
-  timeDetailCardValueWarning: {
-    color: "#F44336",
-  },
-  timeDetailCardValuePending: {
-    color: "#FFC107",
-  },
-  timeDetailCardValueSuccess: {
-    color: "#4CAF50",
-  },
-  timeDetailCardStatus: {
+  workingHoursUnit: {
     fontSize: 12,
-    textAlign: "left",
-    color: "#9E9E9E",
+    color: "#8B5CF6",
+    fontWeight: "600",
+    marginTop: -2,
   },
-  timeDetailCardStatusWarning: {
-    color: "#9E9E9E",
-  },
-  timeDetailCardStatusPending: {
-    color: "#9E9E9E",
-  },
-  timeDetailCardStatusSuccess: {
-    color: "#9E9E9E",
-  },
-  timeCardTotal: {
-    borderRadius: 8,
-    padding: 12,
-    width: "30%",
-    backgroundColor: "#E3F2FD",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  timeCardTotalNumber: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#3674B5",
+  workingHoursStatus: {
+    fontSize: 10,
+    color: "#6B7280",
     textAlign: "center",
-  },
-  timeCardTotalHours: {
-    fontSize: 16,
-    color: "#3674B5",
-    textAlign: "center",
-    marginTop: 4,
+    fontWeight: "500",
   },
 });
 

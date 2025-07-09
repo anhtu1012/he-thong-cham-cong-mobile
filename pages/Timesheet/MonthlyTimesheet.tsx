@@ -14,25 +14,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { getCurrentDateRes } from "../../utils/dateUtils";
 import TimeScheduleModal from "../../components/TimeScheduleModal";
+import { DayStatus } from "../../models/timekeeping";
 
 const { width } = Dimensions.get("window");
-
-type DayStatus = {
-  day: number;
-  status: "NOTSTARTED" | "ACTIVE" | "END" | "NOTWORK" | "weekend" | "nomal";
-  value: string | number;
-  date?: string;
-  checkInTime?: string;
-  checkOutTime?: string;
-  workingHourReal?: string;
-  workingHours?: number;
-  startShiftTime?: string; // VD: "08:30"
-  endShiftTime?: string; // VD: "17:30"
-};
 
 const MonthlyTimesheet = () => {
   const [daysInMonth, setDaysInMonth] = useState<DayStatus[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [dataWorkingSchedule, setDataWorkingSchedule] = useState<DayStatus[]>(
+    []
+  );
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [choosenDate, setChoosenDate] = useState<DayStatus>();
 
@@ -74,7 +65,7 @@ const MonthlyTimesheet = () => {
       return {
         day: i + 1,
         value: "N",
-        status: "nomal",
+        status: "normal",
         date: new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1)
           .toISOString()
           .split("T")[0],
@@ -84,19 +75,18 @@ const MonthlyTimesheet = () => {
         workingHours: undefined,
         startShiftTime: undefined,
         endShiftTime: undefined,
+        statusTimeKeeping: undefined,
       };
     });
 
     const timeScheduleRes = await getTimeSchedule(fromDate, toDate, userCode);
     let timeSchedule = timeScheduleRes.data.data;
+    setDataWorkingSchedule(timeSchedule);
     // save to local storage
     await AsyncStorage.setItem(
       "timeScheduleDate",
       JSON.stringify(timeSchedule)
     );
-
-    console.log("timeSchedule", timeSchedule);
-    console.log(getCurrentDateRes());
 
     // get current day & store to asyncStorage
     for (const time of timeSchedule) {
@@ -128,6 +118,7 @@ const MonthlyTimesheet = () => {
       day.workingHours = date.workingHours;
       day.startShiftTime = date.startShiftTime;
       day.endShiftTime = date.endShiftTime;
+      day.statusTimeKeeping = date.statusTimeKeeping;
 
       // Set status and value based on statusTimeKeeping
       if (date.status === "NOTSTARTED") {
@@ -136,12 +127,12 @@ const MonthlyTimesheet = () => {
       } else if (date.status === "ACTIVE") {
         day.status = "ACTIVE";
         day.value = "D";
-      } else if (date.status === "END") {
+      } else if (date.status === "END" && date.statusTimeKeeping !== "LATE") {
         day.status = "END";
         day.value = date.workingHours || 0;
-      } else if (date.workingHours && date.timeKeepingId) {
+      } else if (date.statusTimeKeeping === "LATE") {
         day.status = "END";
-        day.value = date.workingHours;
+        day.value = date.workingHourReal || 0;
       } else {
         day.status = "NOTWORK";
         day.value = "A";
@@ -166,40 +157,6 @@ const MonthlyTimesheet = () => {
   const handleCloseModal = () => {
     setIsModalVisible(false);
   };
-
-  // const daysInMonth: DayStatus[] = [
-  //   { day: 1, status: "normal", value: 7 },
-  //   { day: 2, status: "normal", value: "N" },
-  //   { day: 3, status: "half", value: 7.5 },
-  //   { day: 4, status: "normal", value: 7 },
-  //   { day: 5, status: "normal", value: 8 },
-  //   { day: 6, status: "weekend", value: "N" },
-  //   { day: 7, status: "weekend", value: "D" },
-  //   { day: 8, status: "normal", value: 7 },
-  //   { day: 9, status: "normal", value: "O" },
-  //   { day: 10, status: "normal", value: 0 },
-  //   { day: 11, status: "normal", value: 0 },
-  //   { day: 12, status: "normal", value: 0 },
-  //   { day: 13, status: "weekend", value: 0 },
-  //   { day: 14, status: "weekend", value: 0 },
-  //   { day: 15, status: "normal", value: 0 },
-  //   { day: 16, status: "normal", value: 0 },
-  //   { day: 17, status: "normal", value: 0 },
-  //   { day: 18, status: "normal", value: 0 },
-  //   { day: 19, status: "normal", value: 0 },
-  //   { day: 20, status: "weekend", value: 0 },
-  //   { day: 21, status: "weekend", value: 0 },
-  //   { day: 22, status: "normal", value: 0 },
-  //   { day: 23, status: "normal", value: 0 },
-  //   { day: 24, status: "normal", value: 0 },
-  //   { day: 25, status: "normal", value: 0 },
-  //   { day: 26, status: "normal", value: 0 },
-  //   { day: 27, status: "weekend", value: 0 },
-  //   { day: 28, status: "weekend", value: 0 },
-  //   { day: 29, status: "normal", value: 0 },
-  //   { day: 30, status: "normal", value: 0 },
-  //   { day: 31, status: "normal", value: 0 },
-  // ];
 
   // Render weekday headers
   const renderWeekdays = () => {
@@ -265,8 +222,6 @@ const MonthlyTimesheet = () => {
 
   // Render calendar grid
   const renderGrid = useCallback(() => {
-    console.log("render grid is always!");
-
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
 
@@ -387,9 +342,6 @@ const MonthlyTimesheet = () => {
 
   // Render summary and legend
   const renderSummaryAndLegend = () => {
-    const workDays = daysInMonth.filter(
-      (day) => day.status !== "weekend" && day.status !== "NOTSTARTED"
-    ).length;
     const presentDays = daysInMonth.filter(
       (day) => day.status === "END" || day.status === "ACTIVE"
     ).length;
@@ -404,7 +356,9 @@ const MonthlyTimesheet = () => {
         <View style={styles.summaryGrid}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Ngày làm việc</Text>
-            <Text style={styles.summaryValue}>{workDays}</Text>
+            <Text style={styles.summaryValue}>
+              {dataWorkingSchedule.length}
+            </Text>
           </View>
 
           <View style={styles.summaryDivider} />
@@ -439,9 +393,9 @@ const MonthlyTimesheet = () => {
 
           <View style={styles.legendItem}>
             <View
-              style={[styles.legendBadge, { backgroundColor: "#E0E0E0" }]}
+              style={[styles.legendBadge, { backgroundColor: "#F23542" }]}
             />
-            <Text style={styles.legendText}>Cuối tuần</Text>
+            <Text style={styles.legendText}>Nghỉ Phép</Text>
           </View>
         </View>
       </LinearGradient>
