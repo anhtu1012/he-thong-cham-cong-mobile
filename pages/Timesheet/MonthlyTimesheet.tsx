@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   ScrollView,
   Dimensions,
 } from "react-native";
-import { AntDesign, Feather, FontAwesome5 } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { getTimeSchedule } from "../../service/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -89,6 +89,11 @@ const MonthlyTimesheet = () => {
 
     const timeScheduleRes = await getTimeSchedule(fromDate, toDate, userCode);
     let timeSchedule = timeScheduleRes.data.data;
+    // save to local storage
+    await AsyncStorage.setItem(
+      "timeScheduleDate",
+      JSON.stringify(timeSchedule)
+    );
 
     console.log("timeSchedule", timeSchedule);
     console.log(getCurrentDateRes());

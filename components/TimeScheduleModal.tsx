@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { formatTime as formatTimeUtil } from "../utils/dateUtils";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { formatDate, formatTime as formatTimeUtil } from "../utils/dateUtils"
+
 
 type DayData = {
   day: number;
@@ -35,7 +37,7 @@ const TimeScheduleModal = ({
   currentDate?: Date;
 }) => {
   // Format date for display
-  const formatDate = (date?: Date, day?: number) => {
+  const formatDateToTime = (date?: Date, day?: number) => {
     if (!date || !day || day === 0) return "Thông tin chấm công";
     return `${day.toString().padStart(2, "0")}/${(date.getMonth() + 1)
       .toString()
@@ -170,7 +172,6 @@ const TimeScheduleModal = ({
                   {selectedDate?.checkOutTime ? "Giờ ra" : "Chưa ra"}
                 </Text>
               </View>
-
               <View style={[styles.timeBox, styles.workHoursBox]}>
                 <View style={styles.timeBoxHeader}>
                   <View style={styles.timeIconContainer}>

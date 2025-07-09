@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,38 +7,116 @@ import {
   TouchableOpacity,
   Dimensions,
 } from "react-native";
-import { AntDesign, Feather } from "@expo/vector-icons";
+import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
 
 const WeeklyTimesheet = () => {
   // State for the current week
   const [currentWeek, setCurrentWeek] = useState(new Date());
+  // State for timeSchedule data from AsyncStorage
+  const [timeScheduleData, setTimeScheduleData] = useState<any[]>([]);
 
-  // Sample data - replace with actual data from your API
-  const weekSummary = useMemo(
-    () => ({
-      totalHours: 40,
-      requiredHours: 40,
-      overtime: 0,
-    }),
-    []
+  // Fetch timeSchedule data from AsyncStorage when component focuses
+  useFocusEffect(
+    useCallback(() => {
+      const fetchTimeScheduleData = async () => {
+        try {
+          const storedData = await AsyncStorage.getItem("timeScheduleDate");
+          if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            setTimeScheduleData(parsedData);
+          }
+        } catch (error) {
+          console.error("Error fetching timeSchedule data:", error);
+        }
+      };
+
+      fetchTimeScheduleData();
+    }, [])
   );
 
-  // Memoize the week data to prevent recalculations on every render
-  const weekData = useMemo(
-    () => [
-      { day: "T2", date: "01/01", hours: 7, status: "normal" },
-      { day: "T3", date: "02/01", hours: 8, status: "normal" },
-      { day: "T4", date: "03/01", hours: 7.5, status: "half" },
-      { day: "T5", date: "04/01", hours: 7, status: "normal" },
-      { day: "T6", date: "05/01", hours: 8, status: "normal" },
-      { day: "T7", date: "06/01", hours: 0, status: "weekend" },
-      { day: "CN", date: "07/01", hours: 0, status: "weekend" },
-    ],
-    []
-  );
+  // Generate week data from timeSchedule data based on current week
+  const weekData = useMemo(() => {
+    if (!timeScheduleData.length) return [];
+
+    // Calculate start of week (Monday)
+    const startOfWeek = new Date(currentWeek);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+
+    // Generate 7 days starting from Monday
+    const weekDays = [];
+    const dayNames = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+
+    for (let i = 0; i < 7; i++) {
+      const currentDay = new Date(startOfWeek);
+      currentDay.setDate(startOfWeek.getDate() + i);
+
+      const dateString = currentDay.toISOString().split("T")[0];
+      const dayData = timeScheduleData.find(
+        (item) => new Date(item.date).toISOString().split("T")[0] === dateString
+      );
+
+      // Determine status and hours
+      let status = "normal";
+      let hours = 0;
+
+      if (i >= 5) {
+        // Saturday and Sunday
+        status = "weekend";
+      } else if (dayData) {
+        if (
+          dayData.statusTimeKeeping === "STARTED" &&
+          !dayData.workingHourReal
+        ) {
+          status = "ongoing";
+          hours = 0;
+        } else if (dayData.workingHourReal) {
+          const workingHours = parseFloat(
+            dayData.workingHourReal.split("h")[0]
+          );
+          hours = workingHours;
+
+          // Check if it's a half day (less than 6 hours)
+          if (workingHours > 0 && workingHours < 6) {
+            status = "half";
+          }
+        }
+      }
+
+      weekDays.push({
+        day: dayNames[i],
+        date: `${currentDay.getDate().toString().padStart(2, "0")}/${(
+          currentDay.getMonth() + 1
+        )
+          .toString()
+          .padStart(2, "0")}`,
+        hours,
+        status,
+        fullDate: dateString,
+      });
+    }
+
+    return weekDays;
+  }, [timeScheduleData, currentWeek]);
+
+  // Calculate week summary from actual data
+  const weekSummary = useMemo(() => {
+    const totalHours = weekData.reduce((sum, day) => sum + day.hours, 0);
+    const requiredHours = 40; // Standard work week
+    const overtime = Math.max(0, totalHours - requiredHours);
+
+    return {
+      totalHours,
+      requiredHours,
+      overtime,
+    };
+  }, [weekData]);
 
   // Function to navigate to previous week - wrapped in useCallback to avoid recreating on every render
   const navigatePreviousWeek = useCallback(() => {
@@ -78,7 +156,7 @@ const WeeklyTimesheet = () => {
     const endYear = endOfWeek.getFullYear();
 
     return `${startDay}/${startMonth} - ${endDay}/${endMonth}/${endYear}`;
-  }, []); // Only depend on currentWeek
+  }, [currentWeek]); // Now properly depends on currentWeek
 
   // Helper function to get the background color based on day status
   const getDayStatusColor = useCallback((status: string) => {
@@ -87,6 +165,8 @@ const WeeklyTimesheet = () => {
         return "#f5f5f5";
       case "half":
         return "#fff9c4";
+      case "ongoing":
+        return "#fff3cd";
       default:
         return "#ffffff";
     }
@@ -97,6 +177,8 @@ const WeeklyTimesheet = () => {
     switch (status) {
       case "weekend":
         return "#9e9e9e";
+      case "ongoing":
+        return "#f57c00";
       default:
         return "#333333";
     }
@@ -191,13 +273,16 @@ const WeeklyTimesheet = () => {
                   { color: getDayStatusTextColor(day.status) },
                 ]}
               >
-                {day.hours}h
+                {day.status === "ongoing" ? "Đang làm" : `${day.hours}h`}
               </Text>
               {day.status === "weekend" && (
                 <Text style={styles.statusText}>Cuối tuần</Text>
               )}
               {day.status === "half" && (
                 <Text style={styles.halfDayText}>Nửa ngày</Text>
+              )}
+              {day.status === "ongoing" && (
+                <Text style={styles.ongoingText}>Đang làm việc</Text>
               )}
             </View>
           </View>
@@ -320,6 +405,11 @@ const styles = StyleSheet.create({
   halfDayText: {
     fontSize: 12,
     color: "#ff9800",
+    fontStyle: "italic",
+  },
+  ongoingText: {
+    fontSize: 12,
+    color: "#f57c00",
     fontStyle: "italic",
   },
 });
