@@ -235,7 +235,6 @@ export default function CameraPage() {
       const payload: checkOutValues = {
         workingScheduleCode: currentTimeScheduleDate.code,
         checkOutTime: getCurrentDateRes(),
-        status: "END",
       };
 
       try {
