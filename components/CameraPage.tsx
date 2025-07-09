@@ -194,6 +194,7 @@ export default function CameraPage() {
     if (currentTimeScheduleDateStr && userStr) {
       const user = JSON.parse(userStr);
       const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
+
       const payload: checkInValues = {
         userCode: user.code,
         checkInTime: getCurrentDateRes(),
@@ -232,6 +233,7 @@ export default function CameraPage() {
     if (currentTimeScheduleDateStr) {
       const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
       const payload: checkOutValues = {
+        workingScheduleCode: currentTimeScheduleDate.code,
         checkOutTime: getCurrentDateRes(),
         status: "END",
       };

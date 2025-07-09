@@ -4,6 +4,7 @@ export interface checkInValues {
 }
 
 export interface checkOutValues {
+  workingScheduleCode: string;
   checkOutTime: string;
   status: "END";
 }

@@ -37,21 +37,21 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigation = useNavigation<NavigationProps>();
 
-  useEffect(() => {
-    const handleIsLogin = async () => {
-      const userData = await AsyncStorage.getItem("userData");
+  // useEffect(() => {
+  //   const handleIsLogin = async () => {
+  //     const userData = await AsyncStorage.getItem("userData");
 
-      if (userData) {
-        navigation.navigate("AppNavigationRoot");
+  //     if (userData) {
+  //       navigation.navigate("AppNavigationRoot");
 
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "MainAppScreen" }], // Updated name
-        });
-      }
-    };
-    handleIsLogin();
-  }, []);
+  //       navigation.reset({
+  //         index: 0,
+  //         routes: [{ name: "MainAppScreen" }], // Updated name
+  //       });
+  //     }
+  //   };
+  //   handleIsLogin();
+  // }, []);
 
   const handleEyePress = () => {
     setPasswordVisible((oldValue) => !oldValue);

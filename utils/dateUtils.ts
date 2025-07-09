@@ -13,11 +13,23 @@ dayjs.extend(timezone);
  */
 export const formatDate = (dateString?: string): string => {
   if (!dateString) return "";
-  return dayjs.utc(dateString).tz("Asia/Ho_Chi_Minh").format("DD/MM/YYYY");
+  return dayjs
+    .utc(dateString)
+    .tz("Asia/Ho_Chi_Minh")
+    .local()
+    .format("DD/MM/YYYY");
 };
 
+/**
+ * Hàm lấy thời gian hiện tại theo múi giờ Việt Nam
+ * @returns ISO string with Vietnamese timezone
+ */
 export const getCurrentDateRes = (): string => {
-  return dayjs().tz("Asia/Ho_Chi_Minh").format();
+  // Get current time in Vietnamese timezone
+  return dayjs()
+    .tz("Asia/Ho_Chi_Minh")
+    .local()
+    .format("YYYY-MM-DDTHH:mm:ss.SSSZ");
 };
 
 /**
@@ -27,5 +39,5 @@ export const getCurrentDateRes = (): string => {
  */
 export const formatTime = (timeString?: string): string => {
   if (!timeString) return "";
-  return dayjs.utc(timeString).tz("Asia/Ho_Chi_Minh").format("HH:mm");
+  return dayjs.utc(timeString).tz("Asia/Ho_Chi_Minh").local().format("HH:mm");
 };
