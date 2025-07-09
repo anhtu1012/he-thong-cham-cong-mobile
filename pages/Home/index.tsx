@@ -145,17 +145,20 @@ function HomePage() {
     try {
       setLoadingSchedule(true);
 
-      // Lấy ngày hiện tại
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      // Lấy ngày hiện tại fromDate và ngày mai toDate đầu ngày 00h đến 23h59
+      const fromData = new Date(getCurrentDateString() + "T00:00:00");
+      const toDate = new Date(getCurrentDateString() + "T23:59:59");
 
       // Sử dụng trực tiếp đối tượng Date làm tham số
       if (!userProfile?.code) {
         throw new Error("Không có thông tin mã người dùng");
       }
 
-      const response = await getTimeSchedule(today, tomorrow, userProfile.code);
+      const response = await getTimeSchedule(
+        fromData,
+        toDate,
+        userProfile.code
+      );
 
       if (
         response.data &&
@@ -200,7 +203,6 @@ function HomePage() {
   const formatDateWithDay = (dateString: string) => {
     const date = new Date(dateString);
     const dayOfWeek = date.getDay();
-    console.log("Day of week value:", dayOfWeek, "for date:", dateString);
 
     // Trong JavaScript, getDay() trả về 0 cho Chủ nhật, 1 cho Thứ 2, ..., 6 cho Thứ 7
     const days = [

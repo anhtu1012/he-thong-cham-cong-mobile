@@ -8,22 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { formatDate, formatTime as formatTimeUtil } from "../utils/dateUtils"
-
-
-type DayData = {
-  day: number;
-  status: "NOTSTARTED" | "ACTIVE" | "END" | "NOTWORK" | "weekend" | "nomal"; // Updated to include "nomal" status
-  value: string | number;
-  date?: string;
-  checkInTime?: string;
-  checkOutTime?: string;
-  workingHourReal?: string;
-  workingHours?: number; // Added to handle working hours
-  startShiftTime?: string; //VD:"08:30"
-  endShiftTime?: string; //VD:"17:30"
-};
+import { formatTime as formatTimeUtil } from "../utils/dateUtils";
+import { DayStatus } from "../models/timekeeping";
 
 const TimeScheduleModal = ({
   visible,
@@ -33,11 +19,11 @@ const TimeScheduleModal = ({
 }: {
   visible: boolean;
   onClose: () => void;
-  selectedDate?: DayData;
+  selectedDate?: DayStatus;
   currentDate?: Date;
 }) => {
   // Format date for display
-  const formatDateToTime = (date?: Date, day?: number) => {
+  const formatDate = (date?: Date, day?: number) => {
     if (!date || !day || day === 0) return "Thông tin chấm công";
     return `${day.toString().padStart(2, "0")}/${(date.getMonth() + 1)
       .toString()
@@ -74,8 +60,6 @@ const TimeScheduleModal = ({
 
     const checkInMinutes = parseTime(checkInTime);
     const startShiftMinutes = parseTime(startShiftTime);
-    console.log("checkInMinutes: ", checkInMinutes);
-    console.log("startShiftMinutes: ", startShiftMinutes);
 
     return checkInMinutes > startShiftMinutes
       ? checkInMinutes - startShiftMinutes
@@ -136,7 +120,7 @@ const TimeScheduleModal = ({
                   {selectedDate?.checkInTime ? "Giờ vào" : "Chưa vào"}
                 </Text>
                 {/* Late time indicator */}
-                {(() => {
+                {/* {(() => {
                   const lateTime = calculateLateTime(
                     selectedDate?.checkInTime,
                     selectedDate?.startShiftTime
@@ -151,7 +135,7 @@ const TimeScheduleModal = ({
                     );
                   }
                   return null;
-                })()}
+                })()} */}
               </View>
 
               <View style={[styles.timeBox, styles.checkOutBox]}>
@@ -172,6 +156,7 @@ const TimeScheduleModal = ({
                   {selectedDate?.checkOutTime ? "Giờ ra" : "Chưa ra"}
                 </Text>
               </View>
+
               <View style={[styles.timeBox, styles.workHoursBox]}>
                 <View style={styles.timeBoxHeader}>
                   <View style={styles.timeIconContainer}>

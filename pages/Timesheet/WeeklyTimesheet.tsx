@@ -1,294 +1,424 @@
-import React, { useState, useMemo, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-} from "react-native";
-import { AntDesign } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "@react-navigation/native";
-
-const { width } = Dimensions.get("window");
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Toast from "react-native-toast-message";
+import TimeScheduleModal from "../../components/TimeScheduleModal";
+import { UserProfile, WorkingSchedule } from "../../models/timekeeping";
+import { getTimeSchedule } from "../../service/api";
 
 const WeeklyTimesheet = () => {
-  // State for the current week
+  const [weeklyData, setWeeklyData] = useState<WorkingSchedule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [currentWeek, setCurrentWeek] = useState(new Date());
-  // State for timeSchedule data from AsyncStorage
-  const [timeScheduleData, setTimeScheduleData] = useState<any[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedDayData, setSelectedDayData] = useState<any>(null);
 
-  // Fetch timeSchedule data from AsyncStorage when component focuses
-  useFocusEffect(
-    useCallback(() => {
-      const fetchTimeScheduleData = async () => {
-        try {
-          const storedData = await AsyncStorage.getItem("timeScheduleDate");
-          if (storedData) {
-            const parsedData = JSON.parse(storedData);
-            setTimeScheduleData(parsedData);
-          }
-        } catch (error) {
-          console.error("Error fetching timeSchedule data:", error);
-        }
-      };
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
 
-      fetchTimeScheduleData();
-    }, [])
-  );
+  useEffect(() => {
+    if (userProfile) {
+      fetchWeeklyData();
+    }
+  }, [userProfile, currentWeek]);
 
-  // Generate week data from timeSchedule data based on current week
-  const weekData = useMemo(() => {
-    if (!timeScheduleData.length) return [];
+  const loadUserProfile = async () => {
+    try {
+      const userData = await AsyncStorage.getItem("userData");
+      if (userData) {
+        setUserProfile(JSON.parse(userData));
+      }
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+    }
+  };
 
-    // Calculate start of week (Monday)
-    const startOfWeek = new Date(currentWeek);
-    const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
-    startOfWeek.setDate(diff);
+  const fetchWeeklyData = async () => {
+    if (!userProfile) return;
 
-    // Generate 7 days starting from Monday
-    const weekDays = [];
-    const dayNames = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+    try {
+      setLoading(true);
+      const weekStart = getWeekStart(currentWeek);
+      const weekEnd = getWeekEnd(currentWeek);
 
-    for (let i = 0; i < 7; i++) {
-      const currentDay = new Date(startOfWeek);
-      currentDay.setDate(startOfWeek.getDate() + i);
-
-      const dateString = currentDay.toISOString().split("T")[0];
-      const dayData = timeScheduleData.find(
-        (item) => new Date(item.date).toISOString().split("T")[0] === dateString
+      const response = await getTimeSchedule(
+        weekStart,
+        weekEnd,
+        userProfile.code
       );
 
-      // Determine status and hours
-      let status = "normal";
-      let hours = 0;
-
-      if (i >= 5) {
-        // Saturday and Sunday
-        status = "weekend";
-      } else if (dayData) {
-        if (
-          dayData.statusTimeKeeping === "STARTED" &&
-          !dayData.workingHourReal
-        ) {
-          status = "ongoing";
-          hours = 0;
-        } else if (dayData.workingHourReal) {
-          const workingHours = parseFloat(
-            dayData.workingHourReal.split("h")[0]
-          );
-          hours = workingHours;
-
-          // Check if it's a half day (less than 6 hours)
-          if (workingHours > 0 && workingHours < 6) {
-            status = "half";
-          }
-        }
+      if (response.data && response.data.data) {
+        setWeeklyData(response.data.data);
       }
-
-      weekDays.push({
-        day: dayNames[i],
-        date: `${currentDay.getDate().toString().padStart(2, "0")}/${(
-          currentDay.getMonth() + 1
-        )
-          .toString()
-          .padStart(2, "0")}`,
-        hours,
-        status,
-        fullDate: dateString,
+    } catch (error) {
+      console.error("Error fetching weekly data:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể tải dữ liệu tuần",
       });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return weekDays;
-  }, [timeScheduleData, currentWeek]);
+  const getWeekStart = (date: Date) => {
+    const start = new Date(date);
+    const day = start.getDay();
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+    start.setDate(diff);
+    start.setHours(0, 0, 0, 0);
+    return start;
+  };
 
-  // Calculate week summary from actual data
-  const weekSummary = useMemo(() => {
-    const totalHours = weekData.reduce((sum, day) => sum + day.hours, 0);
-    const requiredHours = 40; // Standard work week
-    const overtime = Math.max(0, totalHours - requiredHours);
+  const getWeekEnd = (date: Date) => {
+    const end = getWeekStart(date);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return end;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.getDate().toString().padStart(2, "0")}/${(
+      date.getMonth() + 1
+    )
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  const formatTime = (timeString: string | null) => {
+    if (!timeString) return "--:--";
+    const date = new Date(timeString);
+    return `${date.getHours().toString().padStart(2, "0")}:${date
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  const getStatusColor = (
+    status: string | null,
+    statusTimeKeeping: string | null
+  ) => {
+    if (statusTimeKeeping === "END") return "#4CAF50";
+    if (statusTimeKeeping === "LATE") return "#F23542";
+    if (statusTimeKeeping === "NOCHECKOUT") return "#F44336";
+    if (status === "ACTIVE") return "#FFC107";
+    return "#9E9E9E";
+  };
+
+  const getStatusText = (
+    status: string | null,
+    statusTimeKeeping: string | null,
+    checkIn: string | null,
+    checkOut: string | null
+  ) => {
+    if (checkIn && checkOut && statusTimeKeeping === "END") return "Hoàn thành";
+    if (checkIn && !checkOut) return "Chưa checkout";
+    if (statusTimeKeeping === "LATE") return "Đi muộn";
+    if (status === "ACTIVE") return "Đang làm";
+    return "Chưa checkin";
+  };
+
+  const calculateOvertimeHours = (item: WorkingSchedule) => {
+    if (!item.checkInTime || !item.checkOutTime) return 0;
+
+    const standardHours = item.workingHours;
+    const actualHours = item.workingHourReal
+      ? parseFloat(item.workingHourReal)
+      : 0;
+
+    return Math.max(0, actualHours - standardHours);
+  };
+
+  const getTotalStats = () => {
+    const completedDays = weeklyData.filter(
+      (d) => d.checkInTime && d.checkOutTime
+    );
+    const totalHours = completedDays.reduce((sum, d) => {
+      const hours = d.workingHourReal
+        ? parseFloat(d.workingHourReal)
+        : d.workingHours;
+      return sum + (hours || 0);
+    }, 0);
+    const overtimeHours = completedDays.reduce(
+      (sum, d) => sum + calculateOvertimeHours(d),
+      0
+    );
+    const lateDays = weeklyData.filter(
+      (d) => d.statusTimeKeeping === "LATE"
+    ).length;
 
     return {
-      totalHours,
-      requiredHours,
-      overtime,
+      workDays: weeklyData.length,
+      completedDays: completedDays.length,
+      totalHours: Math.round(totalHours * 10) / 10,
+      overtimeHours: Math.round(overtimeHours * 10) / 10,
+      lateDays,
     };
-  }, [weekData]);
+  };
 
-  // Function to navigate to previous week - wrapped in useCallback to avoid recreating on every render
-  const navigatePreviousWeek = useCallback(() => {
-    setCurrentWeek((prevWeek) => {
-      const newDate = new Date(prevWeek);
-      newDate.setDate(newDate.getDate() - 7);
-      return newDate;
-    });
-  }, []);
+  const navigateWeek = (direction: "prev" | "next") => {
+    const newWeek = new Date(currentWeek);
+    newWeek.setDate(newWeek.getDate() + (direction === "next" ? 7 : -7));
+    setCurrentWeek(newWeek);
+  };
 
-  // Function to navigate to next week - wrapped in useCallback to avoid recreating on every render
-  const navigateNextWeek = useCallback(() => {
-    setCurrentWeek((prevWeek) => {
-      const newDate = new Date(prevWeek);
-      newDate.setDate(newDate.getDate() + 7);
-      return newDate;
-    });
-  }, []);
+  const getWeekRange = () => {
+    const start = getWeekStart(currentWeek);
+    const end = getWeekEnd(currentWeek);
+    return `${start.getDate()}/${start.getMonth() + 1} - ${end.getDate()}/${
+      end.getMonth() + 1
+    }`;
+  };
 
-  // Function to format week range display - memoize the calculation
-  const weekRangeText = useMemo(() => {
-    // Fix to ensure Monday is always day 1 regardless of locale
-    const startOfWeek = new Date(currentWeek);
-    const day = startOfWeek.getDay();
-    // Adjust for Sunday (0) to be transformed to 7, so Monday is 1, etc.
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
-    startOfWeek.setDate(diff);
+  const handleDayPress = (item: WorkingSchedule) => {
+    const dayData = {
+      day: new Date(item.date).getDate(),
+      status: item.status as any,
+      value: item.workingHourReal || item.workingHours || 0,
+      date: item.date,
+      checkInTime: item.checkInTime,
+      checkOutTime: item.checkOutTime,
+      workingHourReal: item.workingHourReal,
+      workingHours: item.workingHours,
+      startShiftTime: item.startShiftTime,
+      endShiftTime: item.endShiftTime,
+    };
+    setSelectedDayData(dayData);
+    setModalVisible(true);
+  };
 
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
-
-    const startDay = startOfWeek.getDate();
-    const startMonth = startOfWeek.getMonth() + 1;
-
-    const endDay = endOfWeek.getDate();
-    const endMonth = endOfWeek.getMonth() + 1;
-    const endYear = endOfWeek.getFullYear();
-
-    return `${startDay}/${startMonth} - ${endDay}/${endMonth}/${endYear}`;
-  }, [currentWeek]); // Now properly depends on currentWeek
-
-  // Helper function to get the background color based on day status
-  const getDayStatusColor = useCallback((status: string) => {
-    switch (status) {
-      case "weekend":
-        return "#f5f5f5";
-      case "half":
-        return "#fff9c4";
-      case "ongoing":
-        return "#fff3cd";
-      default:
-        return "#ffffff";
-    }
-  }, []);
-
-  // Helper function to get text color based on day status
-  const getDayStatusTextColor = useCallback((status: string) => {
-    switch (status) {
-      case "weekend":
-        return "#9e9e9e";
-      case "ongoing":
-        return "#f57c00";
-      default:
-        return "#333333";
-    }
-  }, []);
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3674B5" />
+        <Text style={styles.loadingText}>Đang tải dữ liệu tuần...</Text>
+      </View>
+    );
+  }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header with week navigator */}
-      <View style={styles.weekSelector}>
-        <TouchableOpacity
-          onPress={navigatePreviousWeek}
-          style={styles.weekNavButton}
-        >
-          <AntDesign name="left" size={20} color="#3674B5" />
-        </TouchableOpacity>
-
-        <View style={styles.weekDisplay}>
-          <Text style={styles.weekText}>{weekRangeText}</Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={navigateNextWeek}
-          style={styles.weekNavButton}
-        >
-          <AntDesign name="right" size={20} color="#3674B5" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Week summary */}
+    <View style={styles.container}>
       <LinearGradient
         colors={["#3674B5", "#2196F3"]}
-        style={styles.summaryContainer}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+        style={styles.headerGradient}
       >
-        <View style={styles.summaryContent}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Tổng giờ làm</Text>
-            <Text style={styles.summaryValue}>{weekSummary.totalHours}h</Text>
-          </View>
+        <View style={styles.weekNavigation}>
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={() => navigateWeek("prev")}
+          >
+            <MaterialIcons name="chevron-left" size={24} color="#fff" />
+          </TouchableOpacity>
 
-          <View style={styles.separator} />
-
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Giờ yêu cầu</Text>
-            <Text style={styles.summaryValue}>
-              {weekSummary.requiredHours}h
+          <View style={styles.weekTitleContainer}>
+            <Text style={styles.weekTitle}>Tuần {getWeekRange()}</Text>
+            <Text style={styles.weekSubtitle}>
+              Tháng {currentWeek.getMonth() + 1}, {currentWeek.getFullYear()}
             </Text>
           </View>
 
-          <View style={styles.separator} />
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={() => navigateWeek("next")}
+          >
+            <MaterialIcons name="chevron-right" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Giờ tăng ca</Text>
-            <Text style={styles.summaryValue}>{weekSummary.overtime}h</Text>
+        <View style={styles.summaryCards}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryValue}>{getTotalStats().workDays}</Text>
+            <Text style={styles.summaryLabel}>Ngày làm</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryValue}>
+              {getTotalStats().completedDays}
+            </Text>
+            <Text style={styles.summaryLabel}>Hoàn thành</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryValue}>
+              {getTotalStats().totalHours}h
+            </Text>
+            <Text style={styles.summaryLabel}>Tổng giờ</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryValue}>
+              {getTotalStats().overtimeHours}h
+            </Text>
+            <Text style={styles.summaryLabel}>Tăng ca</Text>
           </View>
         </View>
       </LinearGradient>
 
-      {/* Daily data */}
-      <View style={styles.dailyDataContainer}>
-        {weekData.map((day, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dayCard,
-              { backgroundColor: getDayStatusColor(day.status) },
-            ]}
-          >
-            <View style={styles.dayHeader}>
-              <Text
-                style={[
-                  styles.dayText,
-                  { color: getDayStatusTextColor(day.status) },
-                ]}
-              >
-                {day.day}
-              </Text>
-              <Text
-                style={[
-                  styles.dateText,
-                  { color: getDayStatusTextColor(day.status) },
-                ]}
-              >
-                {day.date}
-              </Text>
-            </View>
-            <View style={styles.dayContent}>
-              <Text
-                style={[
-                  styles.hoursText,
-                  { color: getDayStatusTextColor(day.status) },
-                ]}
-              >
-                {day.status === "ongoing" ? "Đang làm" : `${day.hours}h`}
-              </Text>
-              {day.status === "weekend" && (
-                <Text style={styles.statusText}>Cuối tuần</Text>
-              )}
-              {day.status === "half" && (
-                <Text style={styles.halfDayText}>Nửa ngày</Text>
-              )}
-              {day.status === "ongoing" && (
-                <Text style={styles.ongoingText}>Đang làm việc</Text>
-              )}
-            </View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {weeklyData.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <MaterialIcons name="event-busy" size={64} color="#E0E0E0" />
+            <Text style={styles.emptyText}>Không có dữ liệu cho tuần này</Text>
           </View>
-        ))}
-      </View>
-    </ScrollView>
+        ) : (
+          weeklyData.map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.dayCard}
+              onPress={() => handleDayPress(item)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.dayHeader}>
+                <View style={styles.dateSection}>
+                  <Text style={styles.dayDate}>{formatDate(item.date)}</Text>
+                  <Text style={styles.dayName}>
+                    {new Date(item.date).toLocaleDateString("vi-VN", {
+                      weekday: "short",
+                    })}
+                  </Text>
+                </View>
+
+                <View style={styles.shiftInfo}>
+                  <Text style={styles.shiftName}>{item.shiftName}</Text>
+                  <Text style={styles.shiftTime}>
+                    {item.startShiftTime} - {item.endShiftTime}
+                  </Text>
+                  {item.departmentName && (
+                    <Text style={styles.departmentName}>
+                      {item.departmentName}
+                    </Text>
+                  )}
+                </View>
+
+                <View
+                  style={[
+                    styles.statusBadge,
+                    {
+                      backgroundColor: getStatusColor(
+                        item.status,
+                        item.statusTimeKeeping
+                      ),
+                    },
+                  ]}
+                >
+                  <Text style={styles.statusText}>
+                    {getStatusText(
+                      item.status,
+                      item.statusTimeKeeping,
+                      item.checkInTime,
+                      item.checkOutTime
+                    )}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.timeDetails}>
+                <View style={styles.timeItem}>
+                  <View style={styles.timeIcon}>
+                    <Feather name="log-in" size={16} color="#4CAF50" />
+                  </View>
+                  <View style={styles.timeContent}>
+                    <Text style={styles.timeLabel}>Vào</Text>
+                    <Text style={styles.timeValue}>
+                      {formatTime(item.checkInTime)}
+                    </Text>
+                    {item.lateMinutes && item.lateMinutes > 0 && (
+                      <Text style={styles.lateText}>
+                        Trễ {item.lateMinutes}p
+                      </Text>
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.timeDivider} />
+
+                <View style={styles.timeItem}>
+                  <View style={styles.timeIcon}>
+                    <Feather name="log-out" size={16} color="#FF9800" />
+                  </View>
+                  <View style={styles.timeContent}>
+                    <Text style={styles.timeLabel}>Ra</Text>
+                    <Text style={styles.timeValue}>
+                      {formatTime(item.checkOutTime)}
+                    </Text>
+                    {item.earlyLeaveMinutes && item.earlyLeaveMinutes > 0 && (
+                      <Text style={styles.earlyText}>
+                        Sớm {item.earlyLeaveMinutes}p
+                      </Text>
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.timeDivider} />
+
+                <View style={styles.timeItem}>
+                  <View style={styles.timeIcon}>
+                    <Feather name="clock" size={16} color="#2196F3" />
+                  </View>
+                  <View style={styles.timeContent}>
+                    <Text style={styles.timeLabel}>Công</Text>
+                    <Text style={styles.timeValue}>
+                      {item.checkInTime && item.checkOutTime
+                        ? item.workingHourReal || `${item.workingHours}h`
+                        : "--:--"}
+                    </Text>
+                    {calculateOvertimeHours(item) > 0 && (
+                      <Text style={styles.overtimeText}>
+                        +{calculateOvertimeHours(item)}h OT
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+
+              {/* Additional info section */}
+              {(item.workLocation || item.notes) && (
+                <View style={styles.additionalInfo}>
+                  {item.workLocation && (
+                    <View style={styles.infoRow}>
+                      <Feather name="map-pin" size={12} color="#666" />
+                      <Text style={styles.infoText}>
+                        {item.workLocation === "OFFICE"
+                          ? "Văn phòng"
+                          : item.workLocation === "REMOTE"
+                          ? "Làm từ xa"
+                          : "Tại khách hàng"}
+                      </Text>
+                    </View>
+                  )}
+                  {item.notes && (
+                    <View style={styles.infoRow}>
+                      <Feather name="message-circle" size={12} color="#666" />
+                      <Text style={styles.infoText}>{item.notes}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </TouchableOpacity>
+          ))
+        )}
+
+        <View style={styles.bottomSpace} />
+      </ScrollView>
+
+      <TimeScheduleModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        selectedDate={selectedDayData}
+        currentDate={currentWeek}
+      />
+    </View>
   );
 };
 
@@ -296,121 +426,228 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-    padding: 16,
   },
-  weekSelector: {
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
+  },
+  headerGradient: {
+    paddingTop: 15,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+  },
+  weekNavigation: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  navButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  weekTitleContainer: {
+    alignItems: "center",
+  },
+  weekTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 2,
+  },
+  weekSubtitle: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.8)",
+  },
+  summaryCards: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-    backgroundColor: "#ffffff",
+    gap: 8,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 12,
     padding: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  weekNavButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: "#f0f0f0",
-  },
-  weekDisplay: {
-    flex: 1,
     alignItems: "center",
-  },
-  weekText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  summaryContainer: {
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  summaryContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 16,
-  },
-  summaryItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: "#ffffff",
-    marginBottom: 5,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
   summaryValue: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#ffffff",
+    color: "#fff",
+    marginBottom: 2,
   },
-  separator: {
-    width: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-    height: "80%",
-    alignSelf: "center",
+  summaryLabel: {
+    fontSize: 10,
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
   },
-  dailyDataContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 16,
+    textAlign: "center",
   },
   dayCard: {
-    width: (width - 40) / 2,
+    backgroundColor: "#fff",
+    borderRadius: 16,
     marginBottom: 16,
+    padding: 16,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  dayHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  dateSection: {
+    alignItems: "center",
+    marginRight: 16,
+  },
+  dayDate: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  dayName: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 2,
+  },
+  shiftInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  shiftName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 2,
+  },
+  shiftTime: {
+    fontSize: 14,
+    color: "#666",
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  timeDetails: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
     borderRadius: 12,
     padding: 12,
-    elevation: 2,
+  },
+  timeItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  timeIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+    elevation: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  dayHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
+  timeContent: {
+    flex: 1,
   },
-  dayText: {
-    fontSize: 16,
-    fontWeight: "600",
+  timeLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 2,
   },
-  dateText: {
+  timeValue: {
     fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
   },
-  dayContent: {
+  timeDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: "#e0e0e0",
+    marginHorizontal: 8,
+  },
+  bottomSpace: {
+    height: 80,
+  },
+  departmentName: {
+    fontSize: 11,
+    color: "#999",
+    marginTop: 1,
+  },
+  lateText: {
+    fontSize: 10,
+    color: "#F44336",
+    marginTop: 1,
+  },
+  earlyText: {
+    fontSize: 10,
+    color: "#FF9800",
+    marginTop: 1,
+  },
+  overtimeText: {
+    fontSize: 10,
+    color: "#4CAF50",
+    marginTop: 1,
+  },
+  additionalInfo: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  infoRow: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
+    marginBottom: 4,
   },
-  hoursText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  statusText: {
+  infoText: {
     fontSize: 12,
-    color: "#9e9e9e",
-    fontStyle: "italic",
-  },
-  halfDayText: {
-    fontSize: 12,
-    color: "#ff9800",
-    fontStyle: "italic",
-  },
-  ongoingText: {
-    fontSize: 12,
-    color: "#f57c00",
-    fontStyle: "italic",
+    color: "#666",
+    marginLeft: 6,
   },
 });
 
