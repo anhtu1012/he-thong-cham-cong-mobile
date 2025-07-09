@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
 import {
   AntDesign,
@@ -7,27 +7,157 @@ import {
   FontAwesome5,
 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
 
 const StatsTimesheet = () => {
-  // Giả lập dữ liệu thống kê chấm công
-  const monthlyStats = {
-    totalDays: 22,
-    workedDays: 18,
-    absentDays: 2,
-    lateDays: 1,
-    totalHours: 138,
-    overTime: 2,
-  };
+  // State for timeSchedule data from AsyncStorage
+  const [timeScheduleData, setTimeScheduleData] = useState<any[]>([]);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
-  // Dữ liệu biểu đồ
-  const weeklyData = [
-    { week: "Tuần 1", hours: 40, lateCount: 0 },
-    { week: "Tuần 2", hours: 36, lateCount: 1 },
-    { week: "Tuần 3", hours: 42, lateCount: 0 },
-    { week: "Tuần 4", hours: 38, lateCount: 0 },
-  ];
+  // Fetch timeSchedule data from AsyncStorage when component focuses
+  useFocusEffect(
+    useCallback(() => {
+      const fetchTimeScheduleData = async () => {
+        try {
+          const storedData = await AsyncStorage.getItem("timeScheduleDate");
+          if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            setTimeScheduleData(parsedData);
+          }
+        } catch (error) {
+          console.error("Error fetching timeSchedule data:", error);
+        }
+      };
+
+      fetchTimeScheduleData();
+    }, [])
+  );
+
+  // Calculate monthly statistics from real data
+  const monthlyStats = useMemo(() => {
+    if (!timeScheduleData.length) {
+      return {
+        totalDays: 0,
+        workedDays: 0,
+        absentDays: 0,
+        lateDays: 0,
+        totalHours: 0,
+        overTime: 0,
+      };
+    }
+
+    // Get current month data
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+
+    // Filter data for current month
+    const monthData = timeScheduleData.filter((item) => {
+      const itemDate = new Date(item.date);
+      return (
+        itemDate.getMonth() === currentMonth &&
+        itemDate.getFullYear() === currentYear
+      );
+    });
+
+    // Calculate total working days (excluding weekends)
+    const totalDays = monthData.filter((item) => {
+      const itemDate = new Date(item.date);
+      const dayOfWeek = itemDate.getDay();
+      return dayOfWeek !== 0 && dayOfWeek !== 6; // Exclude Sunday (0) and Saturday (6)
+    }).length;
+
+    // Calculate worked days (days with actual working hours)
+    const workedDays = monthData.filter(
+      (item) =>
+        item.workingHourReal &&
+        parseFloat(item.workingHourReal.split("h")[0]) > 0
+    ).length;
+
+    // Calculate absent days
+    const absentDays = totalDays - workedDays;
+
+    // Calculate late days (this would need additional data from API, for now set to 0)
+    const lateDays = 0;
+
+    // Calculate total hours
+    const totalHours = monthData.reduce((sum, item) => {
+      if (item.workingHourReal) {
+        const hours = parseFloat(item.workingHourReal.split("h")[0]);
+        return sum + (isNaN(hours) ? 0 : hours);
+      }
+      return sum;
+    }, 0);
+
+    // Calculate overtime (assuming standard 8 hours per day)
+    const standardHours = workedDays * 8;
+    const overTime = Math.max(0, totalHours - standardHours);
+
+    return {
+      totalDays,
+      workedDays,
+      absentDays,
+      lateDays,
+      totalHours: Math.round(totalHours),
+      overTime: Math.round(overTime),
+    };
+  }, [timeScheduleData, currentDate]);
+
+  // Calculate weekly data from real timeSchedule data
+  const weeklyData = useMemo(() => {
+    if (!timeScheduleData.length) return [];
+
+    // Get current month data
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+
+    const monthData = timeScheduleData.filter((item) => {
+      const itemDate = new Date(item.date);
+      return (
+        itemDate.getMonth() === currentMonth &&
+        itemDate.getFullYear() === currentYear
+      );
+    });
+
+    // Group data by weeks
+    const weeks: { [key: number]: any[] } = {};
+
+    monthData.forEach((item) => {
+      const itemDate = new Date(item.date);
+      // Calculate week number of the month
+      const firstDay = new Date(currentYear, currentMonth, 1);
+      const weekNumber = Math.ceil(
+        (itemDate.getDate() + firstDay.getDay()) / 7
+      );
+
+      if (!weeks[weekNumber]) {
+        weeks[weekNumber] = [];
+      }
+      weeks[weekNumber].push(item);
+    });
+
+    // Calculate hours for each week
+    return Object.keys(weeks)
+      .map((weekNum) => {
+        const weekData = weeks[parseInt(weekNum)];
+        const hours = weekData.reduce((sum, item) => {
+          if (item.workingHourReal) {
+            const workingHours = parseFloat(item.workingHourReal.split("h")[0]);
+            return sum + (isNaN(workingHours) ? 0 : workingHours);
+          }
+          return sum;
+        }, 0);
+
+        return {
+          week: `Tuần ${weekNum}`,
+          hours: Math.round(hours),
+          lateCount: 0, // Would need additional data from API
+        };
+      })
+      .slice(0, 4); // Limit to 4 weeks for display
+  }, [timeScheduleData, currentDate]);
 
   // Render thông tin tổng quan
   const renderOverview = () => {
@@ -40,7 +170,11 @@ const StatsTimesheet = () => {
           style={styles.headerCard}
         >
           <View style={styles.headerRow}>
-            <Text style={styles.headerTitle}>Tổng quan tháng 01/2024</Text>
+            <Text style={styles.headerTitle}>
+              Tổng quan tháng{" "}
+              {(currentDate.getMonth() + 1).toString().padStart(2, "0")}/
+              {currentDate.getFullYear()}
+            </Text>
           </View>
 
           <View style={styles.statsGrid}>
@@ -136,7 +270,21 @@ const StatsTimesheet = () => {
 
   // Render biểu đồ từng tuần
   const renderWeeklyChart = () => {
-    const maxHours = Math.max(...weeklyData.map((week) => week.hours));
+    if (!weeklyData.length) {
+      return (
+        <View style={styles.chartContainer}>
+          <View style={styles.chartHeader}>
+            <Feather name="bar-chart-2" size={18} color="#3674B5" />
+            <Text style={styles.chartTitle}>Thống kê giờ làm theo tuần</Text>
+          </View>
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>Chưa có dữ liệu chấm công</Text>
+          </View>
+        </View>
+      );
+    }
+
+    const maxHours = Math.max(...weeklyData.map((week) => week.hours), 1); // Ensure at least 1 to avoid division by 0
 
     return (
       <View style={styles.chartContainer}>
@@ -429,6 +577,16 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 12,
     color: "#666",
+  },
+  noDataContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 170,
+  },
+  noDataText: {
+    fontSize: 14,
+    color: "#666",
+    fontStyle: "italic",
   },
 });
 
