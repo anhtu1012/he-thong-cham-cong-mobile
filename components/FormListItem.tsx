@@ -9,6 +9,52 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 
+// Collection of vibrant colors for default case
+const vibrantColors = {
+  backgrounds: [
+    "#FFF5F5", // Light red
+    "#F3F0FF", // Light purple
+    "#E6FFFA", // Light teal
+    "#FFFBEB", // Light yellow
+    "#F0FFF4", // Light green
+    "#EBF8FF", // Light blue
+    "#FFF5F7", // Light pink
+    "#FFFAF0", // Light orange
+  ],
+  icons: [
+    "#FF6B6B", // Coral red
+    "#6A5ACD", // Slate blue
+    "#4ECDC4", // Turquoise
+    "#FFD166", // Amber yellow
+    "#06D6A0", // Mint green
+    "#118AB2", // Ocean blue
+    "#FF9F1C", // Orange
+    "#FF85A2", // Pink
+  ],
+};
+
+// AntDesign icons for default case
+const antdIcons = [
+  "star",
+  "heart",
+  "checkcircleo",
+  "clockcircleo",
+  "calendar",
+  "appstore1",
+  "tags",
+  "notification",
+  "gift",
+  "like2",
+  "flag",
+  "layout",
+];
+
+// Helper function to get a random element from an array
+const getRandomElement = <T,>(array: T[]): T => {
+  const randomIndex = Math.floor(Math.random() * array.length);
+  return array[randomIndex];
+};
+
 interface FormItemProps {
   id: string;
   title: string;
@@ -68,15 +114,20 @@ const FormListItem: React.FC<FormItemProps> = ({
           color: "#fee2e2",
         };
       default:
+        // Generate a random style for forms without specific mapping
+        const randomIconName = getRandomElement(antdIcons);
+        const randomColor = getRandomElement(vibrantColors.backgrounds);
+        const randomIconColor = getRandomElement(vibrantColors.icons);
+
         return {
           icon: (
-            <MaterialCommunityIcons
-              name="file-document-outline"
+            <AntDesign
+              name={randomIconName as any}
               size={24}
-              color="#6b7280"
+              color={randomIconColor}
             />
           ),
-          color: "#f9fafb",
+          color: randomColor,
         };
     }
   };

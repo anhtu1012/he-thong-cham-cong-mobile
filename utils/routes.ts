@@ -2,15 +2,27 @@
 export type RootStackParamList = {
   // Main app screens (root level)
   Login: undefined;
-  MainAppScreen: undefined; // Renamed from AppNavigationRoot for the root level
+  // MainAppScreen: undefined; // Renamed from AppNavigationRoot for the root level
+  Home: undefined;
+  Profile: undefined;
+  Timesheet: undefined;
+  Salary: undefined;
+  CreateForm: undefined;
+  FormDetail: { formId: string; formTitle: string };
+  FormList: undefined;
+  FormDetailView: { formId: string };
+  TimesheetNav: undefined;
+  Chat: undefined;
+  AppNavigationRoot: undefined;
+  MainAppScreen: undefined;
   DrawerHomeScreen: undefined; // Added for drawer home screen
 
   // Root level screens (second level)
   HomePage: undefined;
   ChatAppScreen: undefined;
   ProfileScreen: undefined;
-  TimesheetNav: undefined;
-  FormDetail: { formId: string; formTitle: string };
+  // TimesheetNav: undefined;
+  // FormDetail: { formId: string; formTitle: string };
 
   // BottomTab screens with unique names
   HomeTab: undefined;
