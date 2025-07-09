@@ -66,9 +66,10 @@ export default function CameraPage() {
                 if (currentTimeScheduleDate.status === "NOTSTARTED") {
                   console.log("checkIn");
                   handleCheckIn();
-                } else if (currentTimeScheduleDate.status === "ACTIVE")
-                  console.log("checkIn");
-                handleCheckOut();
+                } else if (currentTimeScheduleDate.status === "ACTIVE") {
+                  console.log("checkOut");
+                  handleCheckOut();
+                }
               }
 
               Toast.show({
@@ -189,6 +190,7 @@ export default function CameraPage() {
     const currentTimeScheduleDateStr = await AsyncStorage.getItem(
       "currentTimeScheduleDate"
     );
+    console.log("currentTimeScheduleDateStrAAAA: ", currentTimeScheduleDateStr);
     const userStr = await AsyncStorage.getItem("userData");
 
     if (currentTimeScheduleDateStr && userStr) {
@@ -205,6 +207,8 @@ export default function CameraPage() {
           currentTimeScheduleDate.id,
           payload
         );
+        console.log("Check-in response: ", res.status);
+
         if (res.status === 200) {
           Toast.show({
             type: "success",

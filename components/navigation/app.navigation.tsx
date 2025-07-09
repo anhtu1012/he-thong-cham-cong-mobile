@@ -32,6 +32,7 @@ import { DrawerParamList, TabParamList } from "../../utils/routes";
 import TimesheetNavigator from "./timesheet.navigation";
 import FormListPage from "../FormListPage";
 import FormDetailView from "../FormDetailView";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type AppStackParamList = {
   Login: undefined;
@@ -502,12 +503,26 @@ function AppNavigation() {
   const RootStack = createNativeStackNavigator<RootStackParamList>();
 
   // Xử lý logout - memoized
-  const handleLogout = useCallback(() => {
-    const resetAction = CommonActions.reset({
-      index: 0,
-      routes: [{ name: "Login" }],
-    });
-    navigation.dispatch(resetAction);
+  const handleLogout = useCallback(async () => {
+    try {
+      // Clear AsyncStorage
+      await AsyncStorage.clear();
+
+      // Reset navigation to Login screen
+      const resetAction = CommonActions.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+      navigation.dispatch(resetAction);
+    } catch (error) {
+      console.error("Error clearing AsyncStorage during logout:", error);
+      // Still navigate to login even if clearing storage fails
+      const resetAction = CommonActions.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+      navigation.dispatch(resetAction);
+    }
   }, [navigation]);
 
   // Custom drawer content - memoized
