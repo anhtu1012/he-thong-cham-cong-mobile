@@ -19,12 +19,15 @@ const { width } = Dimensions.get("window");
 
 type DayStatus = {
   day: number;
-  status: "normal" | "half" | "absent" | "weekend" | "empty" | "ongoing";
+  status: "NOTSTARTED" | "ACTIVE" | "END" | "NOTWORK" | "weekend" | "nomal";
   value: string | number;
   date?: string;
   checkInTime?: string;
   checkOutTime?: string;
   workingHourReal?: string;
+  workingHours?: number;
+  startShiftTime?: string; // VD: "08:30"
+  endShiftTime?: string; // VD: "17:30"
 };
 
 const MonthlyTimesheet = () => {
@@ -70,14 +73,17 @@ const MonthlyTimesheet = () => {
 
       return {
         day: i + 1,
-        value: currentDay == 0 || currentDay == 6 ? "N" : 0,
-        status: currentDay == 0 || currentDay == 6 ? "weekend" : "normal",
+        value: "N",
+        status: "nomal",
         date: new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1)
           .toISOString()
           .split("T")[0],
         checkInTime: undefined,
         checkOutTime: undefined,
         workingHourReal: undefined,
+        workingHours: undefined,
+        startShiftTime: undefined,
+        endShiftTime: undefined,
       };
     });
 
@@ -104,27 +110,38 @@ const MonthlyTimesheet = () => {
         console.error("Error processing timeSchedule item:", err);
       }
     }
-    // add status and value to daysInMonth
-    timeSchedule = timeSchedule.map((date: any) => {
-      const currentDate = new Date(date.date);
-      const day = days[currentDate.getDate() - 1];
+
+    // Process timeSchedule data
+    for (const date of timeSchedule) {
+      const currentDateObj = new Date(date.date);
+      const day = days[currentDateObj.getDate() - 1];
 
       // Store additional data
       day.checkInTime = date.checkInTime;
       day.checkOutTime = date.checkOutTime;
       day.workingHourReal = date.workingHourReal;
+      day.workingHours = date.workingHours;
+      day.startShiftTime = date.startShiftTime;
+      day.endShiftTime = date.endShiftTime;
 
-      // Set status based on statusTimeKeeping
-      if (date.statusTimeKeeping === "STARTED" && !date.workingHourReal) {
-        day.status = "ongoing";
-        day.value = "D";
-      } else if (date.workingHourReal && date.timeKeepingId) {
-        day.value = date.workingHourReal.split("h")[0];
-      } else {
+      // Set status and value based on statusTimeKeeping
+      if (date.status === "NOTSTARTED") {
+        day.status = "NOTSTARTED";
         day.value = 0;
+      } else if (date.status === "ACTIVE") {
+        day.status = "ACTIVE";
+        day.value = "D";
+      } else if (date.status === "END") {
+        day.status = "END";
+        day.value = date.workingHours || 0;
+      } else if (date.workingHours && date.timeKeepingId) {
+        day.status = "END";
+        day.value = date.workingHours;
+      } else {
+        day.status = "NOTWORK";
+        day.value = "A";
       }
-    });
-    // console.log("daysInMonth", days);
+    }
 
     setDaysInMonth(days);
   };
@@ -145,7 +162,6 @@ const MonthlyTimesheet = () => {
     setIsModalVisible(false);
   };
 
-  // Giả lập dữ liệu chấm công tháng hiện tại
   // const daysInMonth: DayStatus[] = [
   //   { day: 1, status: "normal", value: 7 },
   //   { day: 2, status: "normal", value: "N" },
@@ -210,7 +226,7 @@ const MonthlyTimesheet = () => {
       for (let i = 0; i < firstDay - 1; i++) {
         days.unshift({
           day: 0,
-          status: "empty",
+          status: "NOTSTARTED",
           value: 0,
         });
       }
@@ -218,7 +234,7 @@ const MonthlyTimesheet = () => {
       for (let i = 0; i < 6; i++) {
         days.unshift({
           day: 0,
-          status: "empty",
+          status: "NOTSTARTED",
           value: 0,
         });
       }
@@ -228,7 +244,7 @@ const MonthlyTimesheet = () => {
     while (days.length % 7 !== 0) {
       days.push({
         day: 0,
-        status: "empty",
+        status: "NOTSTARTED",
         value: 0,
       });
     }
@@ -246,66 +262,96 @@ const MonthlyTimesheet = () => {
   const renderGrid = useCallback(() => {
     console.log("render grid is always!");
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+
     return gridData.map((week, weekIndex) => (
       <View key={`week-${weekIndex}`} style={styles.weekRow}>
-        {week.map((day, dayIndex) => (
-          <TouchableOpacity
-            key={`day-${dayIndex}`}
-            style={[
-              styles.dayCell,
-              day.status === "weekend" && styles.weekendCell,
-              day.status === "half" && styles.halfDayCell,
-              day.status === "absent" && styles.absentDayCell,
-              day.status === "ongoing" && styles.ongoingDayCell,
-            ]}
-            activeOpacity={0.7}
-            onPress={() => {
-              if (day.day !== 0) {
-                setChoosenDate(day);
-                setIsModalVisible(true);
-              }
-            }}
-          >
-            <Text
-              style={[
-                styles.dayNumber,
-                day.status === "weekend" && styles.weekendText,
-                day.day < 10 && styles.singleDigitDay,
-              ]}
-            >
-              {day.day == 0 ? " " : day.day}
-            </Text>
+        {week.map((day, dayIndex) => {
+          // Check if this day is in the future
+          const dayDate = new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth(),
+            day.day
+          );
+          const isFutureDate = dayDate > today && day.day !== 0;
 
-            {day.status !== "empty" && (
-              <View
+          // Check if this day is the current date
+          const isCurrentDate =
+            dayDate.getTime() === today.getTime() && day.day !== 0;
+
+          return (
+            <TouchableOpacity
+              key={`day-${dayIndex}`}
+              style={[
+                styles.dayCell,
+                day.status === "weekend" && styles.weekendCell,
+                day.status === "ACTIVE" && styles.activeDayCell,
+                day.status === "END" && styles.endDayCell,
+                day.status === "NOTWORK" && styles.notWorkDayCell,
+                day.status === "NOTSTARTED" && styles.notStartedDayCell,
+                isCurrentDate &&
+                  day.status === "NOTSTARTED" &&
+                  styles.currentDateNotStartedCell,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => {
+                if (day.day !== 0) {
+                  setChoosenDate(day);
+                  setIsModalVisible(true);
+                }
+              }}
+            >
+              <Text
                 style={[
-                  styles.valueContainer,
-                  typeof day.value === "string" && styles.specialValueContainer,
-                  day.status === "half" && styles.halfDayValueContainer,
-                  day.status === "ongoing" && styles.ongoingDayValueContainer,
+                  styles.dayNumber,
+                  day.status === "weekend" && styles.weekendText,
+                  day.day < 10 && styles.singleDigitDay,
                 ]}
               >
-                <Text
+                {day.day == 0 ? " " : day.day}
+              </Text>
+
+              {day.day !== 0 && (
+                <View
                   style={[
-                    styles.statusValue,
-                    day.status === "half" && styles.halfDay,
-                    day.status === "absent" && styles.absentDay,
-                    day.status === "weekend" && styles.weekendDay,
-                    day.status === "ongoing" && styles.ongoingDay,
-                    typeof day.value === "string" && styles.specialValue,
+                    styles.valueContainer,
+                    day.status === "ACTIVE" && styles.activeValueContainer,
+                    day.status === "END" && styles.endValueContainer,
+                    day.status === "NOTWORK" && styles.notWorkValueContainer,
+                    day.status === "weekend" && styles.weekendValueContainer,
+                    day.status === "NOTSTARTED" &&
+                      styles.notStartedValueContainer,
+                    isCurrentDate &&
+                      day.status === "NOTSTARTED" &&
+                      styles.currentDateNotStartedValueContainer,
+                    isFutureDate && styles.futureDateValueContainer,
                   ]}
                 >
-                  {day.value}
-                </Text>
-              </View>
-            )}
-
-            {day.status === "half" && <View style={styles.halfDayIndicator} />}
-          </TouchableOpacity>
-        ))}
+                  <Text
+                    style={[
+                      styles.statusValue,
+                      day.status === "ACTIVE" && styles.activeValue,
+                      day.status === "END" && styles.endValue,
+                      day.status === "NOTWORK" && styles.notWorkValue,
+                      day.status === "weekend" && styles.weekendValue,
+                      day.status === "NOTSTARTED" && styles.notStartedValue,
+                      isCurrentDate &&
+                        day.status === "NOTSTARTED" &&
+                        styles.currentDateNotStartedValue,
+                      isFutureDate && styles.futureDateValue,
+                    ]}
+                  >
+                    {day.value}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     ));
-  }, [gridData, setChoosenDate, setIsModalVisible]);
+  }, [gridData, setChoosenDate, setIsModalVisible, currentDate]);
 
   // Header with month selector
   const renderHeader = () => {
@@ -337,12 +383,11 @@ const MonthlyTimesheet = () => {
   // Render summary and legend
   const renderSummaryAndLegend = () => {
     const workDays = daysInMonth.filter(
-      (day) => day.status === "normal"
+      (day) => day.status !== "weekend" && day.status !== "NOTSTARTED"
     ).length;
     const presentDays = daysInMonth.filter(
-      (day) => day.value !== 0 && day.status === "normal"
+      (day) => day.status === "END" || day.status === "ACTIVE"
     ).length;
-    const halfDays = daysInMonth.filter((day) => day.status === "half").length;
 
     return (
       <LinearGradient
@@ -361,30 +406,36 @@ const MonthlyTimesheet = () => {
 
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Đã chấm công</Text>
-            <Text style={styles.summaryValue}>
-              {presentDays + halfDays * 0.5}
-            </Text>
+            <Text style={styles.summaryValue}>{presentDays}</Text>
           </View>
         </View>
 
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendBadge, styles.normalLegend]} />
-            <Text style={styles.legendText}>Đủ công</Text>
+            <View
+              style={[styles.legendBadge, { backgroundColor: "#4CAF50" }]}
+            />
+            <Text style={styles.legendText}>Hoàn thành</Text>
           </View>
 
           <View style={styles.legendItem}>
-            <View style={[styles.legendBadge, styles.halfLegend]} />
-            <Text style={styles.legendText}>Nửa ngày</Text>
-          </View>
-
-          <View style={styles.legendItem}>
-            <View style={[styles.legendBadge, styles.ongoingLegend]} />
+            <View
+              style={[styles.legendBadge, { backgroundColor: "#FFC107" }]}
+            />
             <Text style={styles.legendText}>Đang làm</Text>
           </View>
 
           <View style={styles.legendItem}>
-            <View style={[styles.legendBadge, styles.weekendLegend]} />
+            <View
+              style={[styles.legendBadge, { backgroundColor: "#9E9E9E" }]}
+            />
+            <Text style={styles.legendText}>Chưa làm</Text>
+          </View>
+
+          <View style={styles.legendItem}>
+            <View
+              style={[styles.legendBadge, { backgroundColor: "#E0E0E0" }]}
+            />
             <Text style={styles.legendText}>Cuối tuần</Text>
           </View>
         </View>
@@ -639,6 +690,9 @@ const styles = StyleSheet.create({
   ongoingDayValueContainer: {
     backgroundColor: "rgba(255, 193, 7, 0.3)",
   },
+  futureDateValueContainer: {
+    backgroundColor: "#E0E0E0",
+  },
   statusValue: {
     fontSize: 14,
     fontWeight: "600",
@@ -659,6 +713,9 @@ const styles = StyleSheet.create({
   specialValue: {
     fontWeight: "bold",
   },
+  futureDateValue: {
+    color: "#BDBDBD",
+  },
   halfDayIndicator: {
     position: "absolute",
     top: 0,
@@ -671,6 +728,63 @@ const styles = StyleSheet.create({
     borderTopWidth: 15,
     borderRightColor: "transparent",
     borderTopColor: "#FF9800",
+  },
+  activeDayCell: {
+    backgroundColor: "rgba(255, 193, 7, 0.1)",
+  },
+  endDayCell: {
+    backgroundColor: "rgba(76, 175, 80, 0.1)",
+  },
+  notWorkDayCell: {
+    backgroundColor: "rgba(158, 158, 158, 0.1)",
+  },
+  notStartedDayCell: {
+    backgroundColor: "rgba(189, 189, 189, 0.1)",
+  },
+  activeValueContainer: {
+    backgroundColor: "#FFC107", // Yellow for ACTIVE
+  },
+  endValueContainer: {
+    backgroundColor: "#4CAF50", // Green for END
+  },
+  notWorkValueContainer: {
+    backgroundColor: "#9E9E9E", // Gray for NOTWORK
+  },
+  weekendValueContainer: {
+    backgroundColor: "#E0E0E0", // Light gray for weekend
+  },
+  notStartedValueContainer: {
+    backgroundColor: "#BDBDBD", // Light gray for NOTSTARTED
+  },
+  activeValue: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+  },
+  endValue: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+  },
+  notWorkValue: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+  },
+  weekendValue: {
+    color: "#757575",
+    fontWeight: "bold",
+  },
+  notStartedValue: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+  },
+  currentDateNotStartedCell: {
+    backgroundColor: "rgba(255, 152, 0, 0.1)",
+  },
+  currentDateNotStartedValueContainer: {
+    backgroundColor: "#FF9800", // Orange for current date with NOTSTARTED status
+  },
+  currentDateNotStartedValue: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
   },
 });
 
