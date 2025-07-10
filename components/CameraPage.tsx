@@ -1,3 +1,4 @@
+import * as Location from "expo-location";
 import {
   CameraMode,
   CameraType,
@@ -23,6 +24,8 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   compareFace,
+  getAddress,
+  getBranchDetail,
   getUserFaceImg,
   timeKeepingCheckIn,
   timeKeepingCheckOut,
@@ -112,6 +115,7 @@ export default function CameraPage() {
                 const currentTimeScheduleDate = JSON.parse(
                   currentTimeScheduleDateStr
                 );
+                await handleCheckAddress();
                 if (currentTimeScheduleDate.status === "NOTSTARTED") {
                   console.log("checkIn");
                   handleCheckIn();
@@ -127,11 +131,11 @@ export default function CameraPage() {
                 text1Style: { textAlign: "center", fontSize: 16 },
               });
               navigation.navigate("DrawerHomeScreen");
-            } catch (error) {
-              console.error("Error processing face recognition result:", error);
+            } catch (error: any) {
               Toast.show({
                 type: "error",
-                text1: "Có lỗi xảy ra khi xử lý dữ liệu!",
+                text1: `${error.message}` || "Có lỗi xảy ra khi xử lý dữ liệu!",
+
                 text1Style: { textAlign: "center", fontSize: 16 },
               });
             }
@@ -241,11 +245,51 @@ export default function CameraPage() {
     }
   };
 
+  const handleCheckAddress = async () => {
+    // get current date data
+    const currentTimeScheduleDateStr = await AsyncStorage.getItem(
+      "currentTimeScheduleDate"
+    );
+    if (currentTimeScheduleDateStr) {
+      // get current date's branch code
+      const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
+
+      // get branch detail
+      try {
+        // Request permission
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          throw new Error("Location permission denied");
+        }
+
+        // Get current position
+        const location = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = location.coords;
+        // get address detail from latitude and longitude
+        const addressRes = await getAddress({
+          longitude: longitude.toString(),
+          latitude: latitude.toString(),
+        });
+        const address = addressRes.data;
+
+        // compare address line with current date address line
+        const addressLine = address.results[0].formatted_address;
+        const currentDateAddressLine = currentTimeScheduleDate.addressLine;
+
+        if (addressLine !== currentDateAddressLine) {
+          throw new Error("Địa chỉ chấm công không khớp");
+        } else {
+        }
+      } catch (error) {
+        throw error;
+      }
+    }
+  };
+
   const handleCheckIn = async () => {
     const currentTimeScheduleDateStr = await AsyncStorage.getItem(
       "currentTimeScheduleDate"
     );
-    console.log("currentTimeScheduleDateStrAAAA: ", currentTimeScheduleDateStr);
     const userStr = await AsyncStorage.getItem("userData");
 
     if (currentTimeScheduleDateStr && userStr) {
@@ -264,22 +308,11 @@ export default function CameraPage() {
         );
         console.log("Check-in response: ", res.status);
 
-        if (res.status === 200) {
-          Toast.show({
-            type: "success",
-            text1: "Chấm công thành công!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-          navigation.navigate("TimesheetNav");
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Chấm công thất bại!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
+        if (res.status !== 200) {
+          throw new Error("Chấm công thất bại");
         }
       } catch (err) {
-        console.log("Error: ", err);
+        throw err;
       }
     }
   };
@@ -301,22 +334,11 @@ export default function CameraPage() {
           currentTimeScheduleDate.timeKeepingId,
           payload
         );
-        if (res.status === 200) {
-          Toast.show({
-            type: "success",
-            text1: "Chấm công thành công!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-          navigation.navigate("TimesheetNav");
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Chấm công thất bại!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
+        if (res.status !== 200) {
+          throw new Error("Chấm công thất bại");
         }
       } catch (err) {
-        console.log("Error: ", err);
+        throw err;
       }
     }
   };

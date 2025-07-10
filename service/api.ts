@@ -78,10 +78,10 @@ export const createForm = async (formData: {
   formId: string;
 }) => {
   try {
-    const response = await api.post('/form-description', formData);
+    const response = await api.post("/form-description", formData);
     return response;
   } catch (error) {
-    console.error('Error creating form:', error);
+    console.error("Error creating form:", error);
     throw error;
   }
 };
@@ -93,10 +93,27 @@ export const getFormDescriptions = async (params: {
   formId?: string;
 }) => {
   try {
-    const response = await api.get('/form-description/filter', { params });
+    const response = await api.get("/form-description/filter", { params });
     return response;
   } catch (error) {
-    console.error('Error fetching form descriptions:', error);
+    console.error("Error fetching form descriptions:", error);
     throw error;
   }
+};
+
+export const getAddress = async (payload: {
+  longitude: string;
+  latitude: string;
+}) => {
+  return axios.get(
+    `${process.env.EXPO_PUBLIC_GOONG_URL}/Geocode?latlng=${payload.latitude},${payload.longitude}&api_key=${process.env.EXPO_PUBLIC_GOONG_KEY}`
+  );
+};
+
+export const getBranchDetail = async (branchCode: string) => {
+  return api.get("/branch", {
+    params: {
+      quickSearch: branchCode,
+    },
+  });
 };

@@ -82,6 +82,7 @@ const MonthlyTimesheet = () => {
     const timeScheduleRes = await getTimeSchedule(fromDate, toDate, userCode);
     let timeSchedule = timeScheduleRes.data.data;
     setDataWorkingSchedule(timeSchedule);
+
     // save to local storage
     await AsyncStorage.setItem(
       "timeScheduleDate",
