@@ -116,6 +116,8 @@ const WeeklyTimesheet = () => {
     if (statusTimeKeeping === "LATE") return "#F23542";
     if (statusTimeKeeping === "NOCHECKOUT") return "#F44336";
     if (status === "ACTIVE") return "#FFC107";
+    if (status === "FORGET") return "#FF9800";
+    if (status === "NOTWORK") return "#be1515ff";
     return "#9E9E9E";
   };
 
@@ -129,6 +131,8 @@ const WeeklyTimesheet = () => {
     if (checkIn && !checkOut) return "Chưa checkout";
     if (statusTimeKeeping === "LATE") return "Đi muộn";
     if (status === "ACTIVE") return "Đang làm";
+    if (status === "FORGET") return "Hoan thành (QCC)";
+    if (status === "NOTWORK") return "Vắng mặt";
     return "Chưa checkin";
   };
 

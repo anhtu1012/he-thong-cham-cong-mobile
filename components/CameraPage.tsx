@@ -230,58 +230,65 @@ export default function CameraPage() {
   };
 
   const handleCheckAddress = async () => {
-    // get current date data
-    const currentTimeScheduleDateStr = await AsyncStorage.getItem(
-      "currentTimeScheduleDate"
-    );
-    if (currentTimeScheduleDateStr) {
-      // get current date's branch code
-      const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
+    setIsProcessing(true); // Bắt đầu loading
+    try {
+      // get current date data
+      const currentTimeScheduleDateStr = await AsyncStorage.getItem(
+        "currentTimeScheduleDate"
+      );
+      if (currentTimeScheduleDateStr) {
+        // get current date's branch code
+        const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
 
-      // get branch detail
-      try {
-        // Request permission
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          throw new Error("Location permission denied");
+        // get branch detail
+        try {
+          // Request permission
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== "granted") {
+            throw new Error("Location permission denied");
+          }
+
+          // Get current position
+          const location = await Location.getCurrentPositionAsync({});
+          const { latitude, longitude } = location.coords;
+          // get address detail from latitude and longitude
+          const addressRes = await getAddress({
+            longitude: longitude.toString(),
+            latitude: latitude.toString(),
+          });
+          const address = addressRes.data;
+
+          // compare address line with current date address line
+          const addressLine = address.results[0].formatted_address;
+          const currentDateAddressLine = currentTimeScheduleDate.addressLine;
+
+          // set location modal props
+          setLocationModalProps({
+            visible: true,
+            place1: addressLine,
+            place2: currentDateAddressLine,
+            onContinue: handleTimekeeping,
+            onGoBack: () => {
+              navigation.navigate("AttendanceTab");
+              setLocationModalProps((prev) => ({
+                ...prev,
+                visible: false,
+              }));
+            },
+          });
+
+          if (addressLine !== currentDateAddressLine) {
+            throw new Error("Địa chỉ chấm công không khớp");
+          } else {
+          }
+        } catch (error) {
+          throw error;
         }
-
-        // Get current position
-        const location = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = location.coords;
-        // get address detail from latitude and longitude
-        const addressRes = await getAddress({
-          longitude: longitude.toString(),
-          latitude: latitude.toString(),
-        });
-        const address = addressRes.data;
-
-        // compare address line with current date address line
-        const addressLine = address.results[0].formatted_address;
-        const currentDateAddressLine = currentTimeScheduleDate.addressLine;
-
-        // set location modal props
-        setLocationModalProps({
-          visible: true,
-          place1: addressLine,
-          place2: currentDateAddressLine,
-          onContinue: handleTimekeeping,
-          onGoBack: () => {
-            navigation.navigate("AttendanceTab");
-            setLocationModalProps((prev) => ({
-              ...prev,
-              visible: false,
-            }));
-          },
-        });
-
-        if (addressLine !== currentDateAddressLine) {
-          throw new Error("Địa chỉ chấm công không khớp");
-        } else {
-        }
-      } catch (error) {
-        throw error;
       }
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsProcessing(false); // Kết thúc loading
     }
   };
 

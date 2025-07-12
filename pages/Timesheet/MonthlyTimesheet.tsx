@@ -128,7 +128,10 @@ const MonthlyTimesheet = () => {
       } else if (date.status === "ACTIVE") {
         day.status = "ACTIVE";
         day.value = "D";
-      } else if (date.status === "END" && date.statusTimeKeeping !== "LATE") {
+      } else if (
+        (date.status === "END" || date.status === "FORGET") &&
+        date.statusTimeKeeping !== "LATE"
+      ) {
         day.status = "END";
         day.value = date.workingHours || 0;
       } else if (date.statusTimeKeeping === "LATE") {
@@ -696,7 +699,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(76, 175, 80, 0.1)",
   },
   notWorkDayCell: {
-    backgroundColor: "rgba(158, 158, 158, 0.1)",
+    backgroundColor: "rgba(224, 26, 26, 0.1)",
   },
   notStartedDayCell: {
     backgroundColor: "rgba(189, 189, 189, 0.1)",
@@ -708,7 +711,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#4CAF50", // Green for END
   },
   notWorkValueContainer: {
-    backgroundColor: "#9E9E9E", // Gray for NOTWORK
+    backgroundColor: "#e10909ff", // Gray for NOTWORK
   },
   weekendValueContainer: {
     backgroundColor: "#E0E0E0", // Light gray for weekend
