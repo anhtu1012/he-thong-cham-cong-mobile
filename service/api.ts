@@ -117,3 +117,19 @@ export const getBranchDetail = async (branchCode: string) => {
     },
   });
 };
+
+export const getUserContract = async (userCode: string) => {
+  return api.get(`/business/by-user-code/${userCode}`);
+};
+
+export const cancelForm = async (formDescriptionId: string) => {
+  try {
+    const response = await api.put(`/form-description/${formDescriptionId}`, {
+      status: "CANCELED"
+    });
+    return response;
+  } catch (error) {
+    console.error("Error canceling form:", error);
+    throw error;
+  }
+};
