@@ -103,7 +103,14 @@ export interface WeeklySummary {
 // Day status for calendar view
 export interface DayStatus {
   day: number;
-  status: "NOTSTARTED" | "ACTIVE" | "END" | "NOTWORK" | "weekend" | "normal";
+  status:
+    | "NOTSTARTED"
+    | "ACTIVE"
+    | "END"
+    | "NOTWORK"
+    | "weekend"
+    | "normal"
+    | "FORGET";
   statusTimeKeeping?: "STARTED" | "LATE" | "END" | "NOCHECKOUT";
   value: string | number;
   date?: string;

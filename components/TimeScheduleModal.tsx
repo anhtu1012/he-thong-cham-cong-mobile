@@ -79,7 +79,17 @@ const TimeScheduleModal = ({
   };
 
   // Get status text
-  const getStatusText = (checkInTime?: string, checkOutTime?: string) => {
+  const getStatusText = (
+    status?: string,
+    checkInTime?: string,
+    checkOutTime?: string
+  ) => {
+    if (
+      !checkInTime &&
+      !checkOutTime &&
+      (status === "END" || status === "FORGET")
+    )
+      return "Hoàn thành (Quên chấm công)";
     if (!checkInTime && !checkOutTime) return "Chưa chấm công";
     if (checkInTime && !checkOutTime) return "Đang làm việc";
     if (checkInTime && checkOutTime) return "Hoàn thành";
@@ -244,7 +254,14 @@ const TimeScheduleModal = ({
               <View style={styles.detailRow}>
                 <Ionicons name="hourglass" size={16} color="#6B7280" />
                 <Text style={styles.detailText}>
-                  Tổng giờ làm: {selectedDate?.workingHourReal || "0h"}
+                  Tổng giờ làm:{" "}
+                  {selectedDate?.workingHourReal ||
+                    `${
+                      selectedDate?.status === "END" ||
+                      selectedDate?.status === "FORGET"
+                        ? selectedDate?.workingHours
+                        : 0
+                    }h`}
                 </Text>
               </View>
 
@@ -253,6 +270,7 @@ const TimeScheduleModal = ({
                 <Text style={styles.detailText}>
                   Trạng thái:{" "}
                   {getStatusText(
+                    selectedDate?.status,
                     selectedDate?.checkInTime,
                     selectedDate?.checkOutTime
                   )}
