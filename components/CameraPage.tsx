@@ -1,3 +1,4 @@
+import * as Location from "expo-location";
 import {
   CameraMode,
   CameraType,
@@ -23,6 +24,8 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   compareFace,
+  getAddress,
+  getBranchDetail,
   getUserFaceImg,
   timeKeepingCheckIn,
   timeKeepingCheckOut,
@@ -34,18 +37,29 @@ import { NavigationProps } from "../pages/Login";
 import Toast from "react-native-toast-message";
 import * as FileSystem from "expo-file-system";
 import { getCurrentDateRes } from "../utils/dateUtils";
+import LocationModal from "./LocationModal";
 
 export default function CameraPage() {
   const [permission, requestPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
   const [uri, setUri] = useState<string | null>(null);
-  const [faceRecognitionResult, setFaceRecognitionResult] = useState<
-    boolean | null
-  >(null);
   const [mode, setMode] = useState<CameraMode>("picture");
   const [facing, setFacing] = useState<CameraType>("front");
   const [recording, setRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [locationModalProps, setLocationModalProps] = useState<{
+    visible: boolean;
+    place1: string;
+    place2: string;
+    onContinue?: () => void;
+    onGoBack?: () => void;
+  }>({
+    visible: false,
+    place1: "",
+    place2: "",
+    onContinue: undefined,
+    onGoBack: undefined,
+  });
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const cornerAnim = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation<NavigationProps>();
@@ -92,66 +106,6 @@ export default function CameraPage() {
     return () => cornerAnimation.stop();
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      console.log("CameraPage focused", faceRecognitionResult);
-
-      const processFaceRecognition = async () => {
-        if (faceRecognitionResult !== null) {
-          if (faceRecognitionResult) {
-            try {
-              const currentTimeScheduleDateStr = await AsyncStorage.getItem(
-                "currentTimeScheduleDate"
-              );
-              console.log(
-                "currentTimeScheduleDateStr: ",
-                currentTimeScheduleDateStr
-              );
-
-              if (currentTimeScheduleDateStr) {
-                const currentTimeScheduleDate = JSON.parse(
-                  currentTimeScheduleDateStr
-                );
-                if (currentTimeScheduleDate.status === "NOTSTARTED") {
-                  console.log("checkIn");
-                  handleCheckIn();
-                } else if (currentTimeScheduleDate.status === "ACTIVE") {
-                  console.log("checkOut");
-                  handleCheckOut();
-                }
-              }
-
-              Toast.show({
-                type: "success",
-                text1: "Chấm công thành công",
-                text1Style: { textAlign: "center", fontSize: 16 },
-              });
-              navigation.navigate("DrawerHomeScreen");
-            } catch (error) {
-              console.error("Error processing face recognition result:", error);
-              Toast.show({
-                type: "error",
-                text1: "Có lỗi xảy ra khi xử lý dữ liệu!",
-                text1Style: { textAlign: "center", fontSize: 16 },
-              });
-            }
-          } else {
-            Toast.show({
-              type: "error",
-              text1: "Khuôn mặt không trùng khớp!",
-              text1Style: { textAlign: "center", fontSize: 16 },
-            });
-          }
-        }
-      };
-
-      processFaceRecognition();
-
-      // This effect should run whenever faceRecognitionResult changes
-      // and the screen is focused
-    }, [faceRecognitionResult])
-  );
-
   if (!permission) {
     return null;
   }
@@ -189,6 +143,38 @@ export default function CameraPage() {
 
   const toggleFacing = () => {
     setFacing((prev) => (prev === "back" ? "front" : "back"));
+  };
+
+  const handleTimekeeping = async () => {
+    try {
+      const currentTimeScheduleDateStr = await AsyncStorage.getItem(
+        "currentTimeScheduleDate"
+      );
+
+      if (currentTimeScheduleDateStr) {
+        const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
+
+        await handleFaceRecognition();
+        if (currentTimeScheduleDate.status === "NOTSTARTED") {
+          await handleCheckIn();
+        } else if (currentTimeScheduleDate.status === "ACTIVE") {
+          await handleCheckOut();
+        }
+      }
+
+      Toast.show({
+        type: "success",
+        text1: "Chấm công thành công",
+        text1Style: { textAlign: "center", fontSize: 16 },
+      });
+      navigation.navigate("DrawerHomeScreen");
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: `${error.message}` || "Có lỗi xảy ra khi xử lý dữ liệu!",
+        text1Style: { textAlign: "center", fontSize: 16 },
+      });
+    }
   };
 
   const handleFaceRecognition = async () => {
@@ -233,19 +219,78 @@ export default function CameraPage() {
 
       const res = await compareFace(formData);
       const data = res.data;
-      setFaceRecognitionResult(data.matched);
+      if (!data.matched) {
+        throw new Error("Khuôn mặt không trùng khớp");
+      }
     } catch (err) {
-      console.log("Upload error:", err);
+      throw err;
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleCheckIn = async () => {
+  const handleCheckAddress = async () => {
+    // get current date data
     const currentTimeScheduleDateStr = await AsyncStorage.getItem(
       "currentTimeScheduleDate"
     );
-    console.log("currentTimeScheduleDateStrAAAA: ", currentTimeScheduleDateStr);
+    if (currentTimeScheduleDateStr) {
+      // get current date's branch code
+      const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
+
+      // get branch detail
+      try {
+        // Request permission
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          throw new Error("Location permission denied");
+        }
+
+        // Get current position
+        const location = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = location.coords;
+        // get address detail from latitude and longitude
+        const addressRes = await getAddress({
+          longitude: longitude.toString(),
+          latitude: latitude.toString(),
+        });
+        const address = addressRes.data;
+
+        // compare address line with current date address line
+        const addressLine = address.results[0].formatted_address;
+        const currentDateAddressLine = currentTimeScheduleDate.addressLine;
+
+        // set location modal props
+        setLocationModalProps({
+          visible: true,
+          place1: addressLine,
+          place2: currentDateAddressLine,
+          onContinue: handleTimekeeping,
+          onGoBack: () => {
+            navigation.navigate("AttendanceTab");
+            setLocationModalProps((prev) => ({
+              ...prev,
+              visible: false,
+            }));
+          },
+        });
+
+        if (addressLine !== currentDateAddressLine) {
+          throw new Error("Địa chỉ chấm công không khớp");
+        } else {
+        }
+      } catch (error) {
+        throw error;
+      }
+    }
+  };
+
+  const handleCheckIn = async () => {
+    console.log("handleCheckIn called");
+
+    const currentTimeScheduleDateStr = await AsyncStorage.getItem(
+      "currentTimeScheduleDate"
+    );
     const userStr = await AsyncStorage.getItem("userData");
 
     if (currentTimeScheduleDateStr && userStr) {
@@ -264,27 +309,17 @@ export default function CameraPage() {
         );
         console.log("Check-in response: ", res.status);
 
-        if (res.status === 200) {
-          Toast.show({
-            type: "success",
-            text1: "Chấm công thành công!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-          navigation.navigate("TimesheetNav");
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Chấm công thất bại!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
+        if (res.status !== 200) {
+          throw new Error("Chấm công thất bại");
         }
       } catch (err) {
-        console.log("Error: ", err);
+        throw err;
       }
     }
   };
 
   const handleCheckOut = async () => {
+    console.log("handleCheckOut called");
     const currentTimeScheduleDateStr = await AsyncStorage.getItem(
       "currentTimeScheduleDate"
     );
@@ -301,22 +336,11 @@ export default function CameraPage() {
           currentTimeScheduleDate.timeKeepingId,
           payload
         );
-        if (res.status === 200) {
-          Toast.show({
-            type: "success",
-            text1: "Chấm công thành công!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-          navigation.navigate("TimesheetNav");
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Chấm công thất bại!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
+        if (res.status !== 200) {
+          throw new Error("Chấm công thất bại");
         }
       } catch (err) {
-        console.log("Error: ", err);
+        throw err;
       }
     }
   };
@@ -376,7 +400,7 @@ export default function CameraPage() {
 
           <Pressable
             style={[styles.actionButton, styles.confirmButton]}
-            onPress={() => handleFaceRecognition()}
+            onPress={() => handleCheckAddress()}
             disabled={isProcessing}
           >
             {({ pressed }) => (
@@ -577,9 +601,12 @@ export default function CameraPage() {
   };
 
   return (
-    <View style={styles.container}>
-      {uri ? renderPicture() : renderCamera()}
-    </View>
+    <>
+      <LocationModal {...locationModalProps}></LocationModal>
+      <View style={styles.container}>
+        {uri ? renderPicture() : renderCamera()}
+      </View>
+    </>
   );
 }
 
