@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -20,24 +20,263 @@ import {
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import FaceRegisterPage from "../../components/FaceRegisterPage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getUserContract, getFormDescriptions } from "../../service/api";
+import FormItemCard from "../../components/FormItemCard";
+import Toast from "react-native-toast-message";
 
 const { width } = Dimensions.get("window");
+
+interface UserData {
+  name: string;
+  position: string;
+  department: string;
+  status: string;
+  employeeId: string;
+  email: string;
+  phone: string;
+  joinDate: string;
+  address: string;
+  faceImg?: string;
+  baseSalary?: number;
+  contractTitle?: string;
+  contractDescription?: string;
+  contractEndTime?: string;
+  managedBy?: string;
+  contractCode?: string;
+  contractId?: string;
+  contractDuration?: string;
+  positionCode?: string;
+  branchCodes?: string[];
+}
+
+type FormStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELED";
+
+interface FormDescription {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  code: string;
+  reason: string;
+  status: FormStatus;
+  file: string;
+  startTime: string;
+  endTime: string;
+  approvedTime?: string;
+  formTitle: string;
+  submittedBy: string;
+  approvedBy?: string;
+  response?: string;
+}
 
 const ProfilePage = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("thongTinChung");
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [forms, setForms] = useState<FormDescription[]>([]);
+  const [formsLoading, setFormsLoading] = useState(false);
+  const [formStats, setFormStats] = useState({
+    total: 0,
+    approved: 0,
+    rejected: 0,
+    canceled: 0,
+    pending: 0,
+  });
+  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [selectedFormTitle, setSelectedFormTitle] = useState<string>("ALL");
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showFormTitleDropdown, setShowFormTitleDropdown] = useState(false);
+  const [filteredForms, setFilteredForms] = useState<FormDescription[]>([]);
+  const [formTitleOptions, setFormTitleOptions] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
 
-  // Mock user data
-  const userData = {
-    name: "Phạm Anh Tú Nè",
-    position: "Nhân viên thường/Fulltime",
-    department: "CHI NHÁNH 1 QUANG TRUNG",
-    status: "Đang làm việc",
-    employeeId: "001541",
-    email: "fpt@gmail.com",
-    phone: "0912345678",
-    joinDate: "01/01/2023",
-    address: "123 Nguyễn Văn Linh, Quận 7, TP.HCM",
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  useEffect(() => {
+    if (userData && activeTab === "lichSuDon") {
+      fetchForms();
+    }
+  }, [userData, activeTab]);
+
+  const loadUserData = async () => {
+    try {
+      setLoading(true);
+
+      // Lấy dữ liệu user từ AsyncStorage
+      const userProfileData = await AsyncStorage.getItem("userData");
+
+      if (userProfileData) {
+        const userProfile = JSON.parse(userProfileData);
+
+        // Gọi API để lấy thông tin hợp đồng/công việc
+        const contractResponse = await getUserContract(userProfile.code);
+
+        if (contractResponse.status === 200) {
+          const contractData = contractResponse.data;
+          console.log(contractData);
+
+          // Mapping dữ liệu
+          const mappedUserData = {
+            name: userProfile.fullName,
+            position: contractData.positionName,
+            department: contractData.branchNames,
+            status:
+              contractData.status === "ACTIVE"
+                ? "Đang làm việc"
+                : "Không hoạt động",
+            employeeId: userProfile.code,
+            email: userProfile.email,
+            phone: userProfile.phone,
+            joinDate: new Date(contractData.startTime).toLocaleDateString(
+              "vi-VN"
+            ),
+            address: userProfile.addressCode,
+            faceImg: userProfile.faceImg,
+            baseSalary: contractData.baseSalary,
+            contractTitle: contractData.title,
+            contractDescription: contractData.description,
+            contractEndTime: contractData.endTime,
+            managedBy: contractData.fullNameManager,
+            contractCode: contractData.code,
+            contractId: contractData.id,
+            contractDuration: contractData.duration,
+            positionCode: contractData.positionCode,
+            branchCodes: contractData.branchCodes,
+          };
+
+          setUserData(mappedUserData);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateFormStats = (formList: FormDescription[]) => {
+    const stats = {
+      total: formList.length,
+      approved: formList.filter((form) => form.status === "APPROVED").length,
+      rejected: formList.filter((form) => form.status === "REJECTED").length,
+      canceled: formList.filter((form) => form.status === "CANCELED").length,
+      pending: formList.filter((form) => form.status === "PENDING").length,
+    };
+    setFormStats(stats);
+  };
+
+  const fetchForms = async () => {
+    try {
+      setFormsLoading(true);
+      const response = await getFormDescriptions({});
+      if (response.data && response.data.data) {
+        // Lọc đơn từ của người dùng hiện tại
+        const userForms = response.data.data.filter(
+          (form: FormDescription) => form.submittedBy === userData?.name
+        );
+
+        // Sắp xếp theo thời gian tạo mới nhất
+        const sortedForms = userForms.sort(
+          (a: FormDescription, b: FormDescription) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        setForms(sortedForms);
+        calculateFormStats(sortedForms);
+
+        // Tạo danh sách formTitle options từ dữ liệu
+        const uniqueFormTitles: string[] = Array.from(
+          new Set(sortedForms.map((form: FormDescription) => form.formTitle))
+        );
+
+        if (uniqueFormTitles.length > 0) {
+          const formTitleOpts = [
+            { value: "ALL", label: "Tất cả loại đơn" },
+            ...uniqueFormTitles
+              .sort()
+              .map((title: string) => ({ value: title, label: title })),
+          ];
+          setFormTitleOptions(formTitleOpts);
+        } else {
+          // Khi chưa có đơn từ nào
+          setFormTitleOptions([{ value: "ALL", label: "Chưa có đơn từ nào" }]);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching forms:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể lấy danh sách đơn từ",
+      });
+    } finally {
+      setFormsLoading(false);
+    }
+  };
+
+  const statusOptions = [
+    { value: "ALL", label: "Tất cả" },
+    { value: "PENDING", label: "Chờ duyệt" },
+    { value: "APPROVED", label: "Đã duyệt" },
+    { value: "REJECTED", label: "Từ chối" },
+    { value: "CANCELED", label: "Đã hủy" },
+  ];
+
+  const filterAndSortForms = (formList: FormDescription[]) => {
+    let filtered = [...formList];
+
+    // Filter by status
+    if (selectedStatus !== "ALL") {
+      filtered = filtered.filter((form) => form.status === selectedStatus);
+    }
+
+    // Filter by formTitle
+    if (selectedFormTitle !== "ALL") {
+      filtered = filtered.filter(
+        (form) => form.formTitle === selectedFormTitle
+      );
+    }
+
+    // Sort forms by date (newest first)
+    filtered.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    setFilteredForms(filtered);
+  };
+
+  useEffect(() => {
+    filterAndSortForms(forms);
+  }, [forms, selectedStatus, selectedFormTitle]);
+
+  const handleStatusSelect = (status: string) => {
+    setSelectedStatus(status);
+    setShowStatusDropdown(false);
+  };
+
+  const handleFormTitleSelect = (formTitle: string) => {
+    setSelectedFormTitle(formTitle);
+    setShowFormTitleDropdown(false);
+  };
+
+  const handleStatusDropdownToggle = () => {
+    setShowStatusDropdown(!showStatusDropdown);
+    setShowFormTitleDropdown(false);
+  };
+
+  const handleFormTitleDropdownToggle = () => {
+    setShowFormTitleDropdown(!showFormTitleDropdown);
+    setShowStatusDropdown(false);
+  };
+
+  // Format date to DD/MM/YYYY
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   };
 
   // Mock attendance data
@@ -145,6 +384,24 @@ const ProfilePage = () => {
   };
 
   const renderTabContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+        </View>
+      );
+    }
+
+    if (!userData) {
+      return (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>
+            Không thể tải dữ liệu người dùng
+          </Text>
+        </View>
+      );
+    }
+
     switch (activeTab) {
       case "thongTinChung":
         return (
@@ -153,18 +410,20 @@ const ProfilePage = () => {
             <View style={styles.profileCard}>
               <Image
                 source={{
-                  uri: "https://randomuser.me/api/portraits/women/32.jpg",
+                  uri:
+                    userData?.faceImg ||
+                    "https://randomuser.me/api/portraits/women/32.jpg",
                 }}
                 style={styles.profileImage}
               />
               <View style={styles.profileInfo}>
-                <Text style={styles.profileName}>{userData.name}</Text>
-                <Text style={styles.profilePosition}>{userData.position}</Text>
+                <Text style={styles.profileName}>{userData?.name}</Text>
+                <Text style={styles.profilePosition}>{userData?.position}</Text>
                 <Text style={styles.profileDepartment}>
-                  {userData.department}
+                  {userData?.department}
                 </Text>
                 <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>{userData.status}</Text>
+                  <Text style={styles.statusText}>{userData?.status}</Text>
                 </View>
               </View>
             </View>
@@ -179,7 +438,7 @@ const ProfilePage = () => {
                 </View>
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Email</Text>
-                  <Text style={styles.infoValue}>{userData.email}</Text>
+                  <Text style={styles.infoValue}>{userData?.email}</Text>
                 </View>
               </View>
 
@@ -189,7 +448,7 @@ const ProfilePage = () => {
                 </View>
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Điện thoại</Text>
-                  <Text style={styles.infoValue}>{userData.phone}</Text>
+                  <Text style={styles.infoValue}>{userData?.phone}</Text>
                 </View>
               </View>
 
@@ -199,7 +458,7 @@ const ProfilePage = () => {
                 </View>
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Ngày vào làm</Text>
-                  <Text style={styles.infoValue}>{userData.joinDate}</Text>
+                  <Text style={styles.infoValue}>{userData?.joinDate}</Text>
                 </View>
               </View>
 
@@ -209,9 +468,162 @@ const ProfilePage = () => {
                 </View>
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Địa chỉ</Text>
-                  <Text style={styles.infoValue}>{userData.address}</Text>
+                  <Text style={styles.infoValue}>{userData?.address}</Text>
                 </View>
               </View>
+            </View>
+          </View>
+        );
+
+      case "hopDong":
+        return (
+          <View style={styles.tabContent}>
+            {/* Contract Header Card */}
+            <LinearGradient
+              colors={["#3674B5", "#2196F3"]}
+              style={styles.contractHeaderCard}
+            >
+              <View style={styles.contractHeaderContent}>
+                <View style={styles.contractIconContainer}>
+                  <Feather name="file-text" size={32} color="#fff" />
+                </View>
+                <View style={styles.contractHeaderInfo}>
+                  <Text style={styles.contractTitle}>
+                    {userData?.contractTitle || "HỢP ĐỒNG LAO ĐỘNG"}
+                  </Text>
+                  <Text style={styles.contractCode}>
+                    Mã hợp đồng: {userData?.contractCode || "N/A"}
+                  </Text>
+                </View>
+              </View>
+            </LinearGradient>
+
+            {/* Employee Information */}
+            <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Thông tin nhân viên</Text>
+
+              <View style={styles.contractInfoGrid}>
+                <View style={styles.contractInfoItem}>
+                  <Text style={styles.contractInfoLabel}>Nhân viên:</Text>
+                  <Text style={styles.contractInfoValue}>{userData?.name}</Text>
+                </View>
+
+                <View style={styles.contractInfoItem}>
+                  <Text style={styles.contractInfoLabel}>Chức vụ:</Text>
+                  <Text style={styles.contractInfoValue}>
+                    {userData?.position}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.contractInfoGrid}>
+                <View style={styles.contractInfoItem}>
+                  <Text style={styles.contractInfoLabel}>Ngày bắt đầu:</Text>
+                  <Text style={styles.contractInfoValue}>
+                    {userData?.joinDate}
+                  </Text>
+                </View>
+
+                <View style={styles.contractInfoItem}>
+                  <Text style={styles.contractInfoLabel}>Ngày kết thúc:</Text>
+                  <Text style={styles.contractInfoValue}>
+                    {userData?.contractEndTime
+                      ? new Date(userData.contractEndTime).toLocaleDateString(
+                          "vi-VN"
+                        )
+                      : "N/A"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.contractInfoGrid}>
+                <View style={styles.contractInfoItem}>
+                  <Text style={styles.contractInfoLabel}>Thời hạn:</Text>
+                  <Text style={styles.contractInfoValue}>
+                    {userData?.contractDuration || "N/A"}
+                  </Text>
+                </View>
+
+                <View style={styles.contractInfoItem}>
+                  <Text style={styles.contractInfoLabel}>Quản lý bởi:</Text>
+                  <Text style={styles.contractInfoValue}>
+                    {userData?.managedBy || "N/A"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Work Details */}
+            <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Chi tiết hợp đồng</Text>
+
+              <View style={styles.infoItem}>
+                <View style={[styles.infoIcon, { backgroundColor: "#e8f5e9" }]}>
+                  <Feather name="dollar-sign" size={18} color="#4CAF50" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Lương cơ bản</Text>
+                  <Text style={styles.contractSalaryValue}>
+                    {userData?.baseSalary
+                      ? `${userData.baseSalary.toLocaleString("vi-VN")} VND`
+                      : "N/A"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.infoItem}>
+                <View style={[styles.infoIcon, { backgroundColor: "#e3f2fd" }]}>
+                  <Feather name="map-pin" size={18} color="#2196F3" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Chi nhánh làm việc</Text>
+                  <Text style={styles.infoValue}>
+                    {userData?.department || "N/A"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.infoItem}>
+                <View style={[styles.infoIcon, { backgroundColor: "#fff8e1" }]}>
+                  <Feather name="calendar" size={18} color="#FFC107" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Trạng thái</Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color:
+                          userData?.status === "Đang làm việc"
+                            ? "#4CAF50"
+                            : "#F44336",
+                        fontWeight: "600",
+                      },
+                    ]}
+                  >
+                    {userData?.status || "N/A"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Contract Description */}
+            <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Mô tả</Text>
+              <View style={styles.contractDescriptionContainer}>
+                <Text style={styles.contractDescriptionText}>
+                  {userData?.contractDescription ||
+                    "Hợp đồng lao động được lập thành 02 bản, người lao động giữ 01 bản, đơn vị sử dụng lao động giữ 01 bản."}
+                </Text>
+              </View>
+            </View>
+
+            {/* Contract Actions */}
+            <View style={styles.contractActionsContainer}>
+              <TouchableOpacity style={styles.contractActionButton}>
+                <Feather name="download" size={18} color="#3674B5" />
+                <Text style={styles.contractActionText}>Tải hợp đồng</Text>
+              </TouchableOpacity>
             </View>
           </View>
         );
@@ -330,6 +742,53 @@ const ProfilePage = () => {
                 </View>
               </View>
             </LinearGradient>
+
+            {/* Contract Details */}
+            <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Thông tin hợp đồng</Text>
+
+              <View style={styles.infoItem}>
+                <View style={[styles.infoIcon, { backgroundColor: "#e8f5e9" }]}>
+                  <Feather name="file-text" size={18} color="#4CAF50" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Tiêu đề hợp đồng</Text>
+                  <Text style={styles.infoValue}>
+                    {userData?.contractTitle}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.infoItem}>
+                <View style={[styles.infoIcon, { backgroundColor: "#e3f2fd" }]}>
+                  <Feather name="file-text" size={18} color="#2196F3" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Mô tả công việc</Text>
+                  <Text style={styles.infoValue}>
+                    {userData?.contractDescription}
+                  </Text>
+                </View>
+              </View>
+
+              {userData?.contractEndTime && (
+                <View style={styles.infoItem}>
+                  <View
+                    style={[styles.infoIcon, { backgroundColor: "#fff8e1" }]}
+                  >
+                    <Feather name="calendar" size={18} color="#FFC107" />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Ngày kết thúc hợp đồng</Text>
+                    <Text style={styles.infoValue}>
+                      {new Date(userData.contractEndTime).toLocaleDateString(
+                        "vi-VN"
+                      )}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
 
             {/* Salary Details Cards */}
             <View style={styles.salaryDetailsGrid}>
@@ -553,217 +1012,140 @@ const ProfilePage = () => {
           <View style={styles.tabContent}>
             <View style={styles.formStatsContainer}>
               <View style={styles.formStatsItem}>
-                <Text style={styles.formStatsValue}>24</Text>
+                <Text style={styles.formStatsValue}>{formStats.total}</Text>
                 <Text style={styles.formStatsLabel}>Tất cả</Text>
               </View>
               <View style={styles.formStatsItem}>
-                <Text style={styles.formStatsValue}>4</Text>
-                <Text style={styles.formStatsLabel}>Công việc</Text>
-              </View>
-              <View style={styles.formStatsItem}>
-                <Text style={styles.formStatsValue}>20</Text>
+                <Text style={styles.formStatsValue}>{formStats.approved}</Text>
                 <Text style={styles.formStatsLabel}>Duyệt</Text>
               </View>
               <View style={styles.formStatsItem}>
-                <Text style={styles.formStatsValue}>3</Text>
+                <Text style={styles.formStatsValue}>{formStats.rejected}</Text>
                 <Text style={styles.formStatsLabel}>Từ chối</Text>
+              </View>
+              <View style={styles.formStatsItem}>
+                <Text style={styles.formStatsValue}>{formStats.canceled}</Text>
+                <Text style={styles.formStatsLabel}>Hủy</Text>
+              </View>
+              <View style={styles.formStatsItem}>
+                <Text style={styles.formStatsValue}>{formStats.pending}</Text>
+                <Text style={styles.formStatsLabel}>Chờ duyệt</Text>
               </View>
             </View>
 
             <View style={styles.formFilterContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.formFilterTab,
-                  { borderBottomColor: "#3674B5", borderBottomWidth: 2 },
-                ]}
-              >
-                <Text style={[styles.formFilterText, { color: "#3674B5" }]}>
-                  Tất cả (24)
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.formFilterTab}>
-                <Text style={styles.formFilterText}>Công việc (4)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.formFilterTab}>
-                <Text style={styles.formFilterText}>Duyệt (20)</Text>
-              </TouchableOpacity>
+              <View style={styles.filterDropdown}>
+                <TouchableOpacity
+                  style={[
+                    styles.filterDropdownButton,
+                    forms.length === 0 && styles.filterDropdownDisabled,
+                  ]}
+                  onPress={
+                    forms.length > 0 ? handleStatusDropdownToggle : undefined
+                  }
+                  disabled={forms.length === 0}
+                >
+                  <Text
+                    style={[
+                      styles.filterDropdownText,
+                      forms.length === 0 && styles.filterDropdownTextDisabled,
+                    ]}
+                  >
+                    {statusOptions.find((opt) => opt.value === selectedStatus)
+                      ?.label || "Tất cả"}
+                  </Text>
+                  <AntDesign
+                    name="down"
+                    size={12}
+                    color={forms.length === 0 ? "#ccc" : "#666"}
+                  />
+                </TouchableOpacity>
+                {showStatusDropdown && forms.length > 0 && (
+                  <View style={styles.dropdownOptions}>
+                    {statusOptions.map((opt) => (
+                      <TouchableOpacity
+                        key={opt.value}
+                        style={styles.dropdownOption}
+                        onPress={() => handleStatusSelect(opt.value)}
+                      >
+                        <Text style={styles.dropdownOptionText}>
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.filterDropdown}>
+                <TouchableOpacity
+                  style={[
+                    styles.filterDropdownButton,
+                    forms.length === 0 && styles.filterDropdownDisabled,
+                  ]}
+                  onPress={
+                    forms.length > 0 ? handleFormTitleDropdownToggle : undefined
+                  }
+                  disabled={forms.length === 0}
+                >
+                  <Text
+                    style={[
+                      styles.filterDropdownText,
+                      forms.length === 0 && styles.filterDropdownTextDisabled,
+                    ]}
+                  >
+                    {formTitleOptions.find(
+                      (opt) => opt.value === selectedFormTitle
+                    )?.label ||
+                      (forms.length === 0
+                        ? "Chưa có đơn từ nào"
+                        : "Tất cả loại đơn")}
+                  </Text>
+                  <AntDesign
+                    name="down"
+                    size={12}
+                    color={forms.length === 0 ? "#ccc" : "#666"}
+                  />
+                </TouchableOpacity>
+                {showFormTitleDropdown && forms.length > 0 && (
+                  <View style={styles.dropdownOptions}>
+                    {formTitleOptions.map((opt) => (
+                      <TouchableOpacity
+                        key={opt.value}
+                        style={styles.dropdownOption}
+                        onPress={() => handleFormTitleSelect(opt.value)}
+                      >
+                        <Text style={styles.dropdownOptionText}>
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
             </View>
 
             <View style={styles.formList}>
-              {formHistory.map((form) => (
-                <View key={form.id} style={styles.formCard}>
-                  <View style={styles.formCardHeader}>
-                    <View style={styles.formTypeContainer}>
-                      <View
-                        style={[
-                          styles.formTypeIcon,
-                          {
-                            backgroundColor: form.type.includes("nghỉ")
-                              ? "#E3F2FD"
-                              : form.type.includes("tăng ca")
-                              ? "#E8F5E9"
-                              : "#FFF8E1",
-                          },
-                        ]}
-                      >
-                        <Feather
-                          name={
-                            form.type.includes("nghỉ")
-                              ? "calendar"
-                              : form.type.includes("tăng ca")
-                              ? "clock"
-                              : form.type.includes("muộn")
-                              ? "alert-circle"
-                              : "file-text"
-                          }
-                          size={16}
-                          color={
-                            form.type.includes("nghỉ")
-                              ? "#2196F3"
-                              : form.type.includes("tăng ca")
-                              ? "#4CAF50"
-                              : form.type.includes("muộn")
-                              ? "#FF9800"
-                              : "#3674B5"
-                          }
-                        />
-                      </View>
-                      <Text style={styles.formTypeName}>{form.type}</Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.formStatusBadge,
-                        {
-                          backgroundColor: getStatusColor(form.status) + "22",
-                          borderColor: getStatusColor(form.status),
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.formStatusText,
-                          { color: getStatusColor(form.status) },
-                        ]}
-                      >
-                        {form.status}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.formDetailsContainer}>
-                    <View style={styles.formDetail}>
-                      <Text style={styles.formDetailLabel}>Ngày tạo:</Text>
-                      <Text style={styles.formDetailValue}>
-                        {form.createdDate}
-                      </Text>
-                    </View>
-
-                    {form.status === "Đã duyệt" && (
-                      <View style={styles.formDetail}>
-                        <Text style={styles.formDetailLabel}>Ngày duyệt:</Text>
-                        <Text style={styles.formDetailValue}>
-                          {form.approvedDate}
-                        </Text>
-                      </View>
-                    )}
-
-                    {form.status === "Từ chối" && (
-                      <View style={styles.formDetail}>
-                        <Text style={styles.formDetailLabel}>
-                          Ngày từ chối:
-                        </Text>
-                        <Text style={styles.formDetailValue}>
-                          {form.rejectDate}
-                        </Text>
-                      </View>
-                    )}
-
-                    {form.leaveDate && (
-                      <View style={styles.formDetail}>
-                        <Text style={styles.formDetailLabel}>Ngày nghỉ:</Text>
-                        <Text style={styles.formDetailValue}>
-                          {form.leaveDate}
-                        </Text>
-                      </View>
-                    )}
-
-                    {form.workDate && (
-                      <View style={styles.formDetail}>
-                        <Text style={styles.formDetailLabel}>Ngày làm:</Text>
-                        <Text style={styles.formDetailValue}>
-                          {form.workDate}
-                        </Text>
-                      </View>
-                    )}
-
-                    {form.delayDate && (
-                      <View style={styles.formDetail}>
-                        <Text style={styles.formDetailLabel}>
-                          Ngày đi muộn:
-                        </Text>
-                        <Text style={styles.formDetailValue}>
-                          {form.delayDate}
-                        </Text>
-                      </View>
-                    )}
-
-                    {form.duration && (
-                      <View style={styles.formDetail}>
-                        <Text style={styles.formDetailLabel}>Thời gian:</Text>
-                        <Text style={styles.formDetailValue}>
-                          {form.duration}
-                        </Text>
-                      </View>
-                    )}
-
-                    <View style={styles.formDetail}>
-                      <Text style={styles.formDetailLabel}>Lý do:</Text>
-                      <Text style={styles.formDetailValue}>{form.reason}</Text>
-                    </View>
-
-                    {form.rejectReason && (
-                      <View style={styles.formDetail}>
-                        <Text style={styles.formDetailLabel}>
-                          Lý do từ chối:
-                        </Text>
-                        <Text
-                          style={[styles.formDetailValue, { color: "#F44336" }]}
-                        >
-                          {form.rejectReason}
-                        </Text>
-                      </View>
-                    )}
-
-                    <View style={styles.formDetail}>
-                      <Text style={styles.formDetailLabel}>Người duyệt:</Text>
-                      <Text style={styles.formDetailValue}>
-                        {form.approver}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.formActions}>
-                    <TouchableOpacity style={styles.formActionButton}>
-                      <Text style={styles.formActionText}>Chi tiết</Text>
-                    </TouchableOpacity>
-
-                    {form.status === "Chờ duyệt" && (
-                      <TouchableOpacity
-                        style={[
-                          styles.formActionButton,
-                          { backgroundColor: "#FFEBEE" },
-                        ]}
-                      >
-                        <Text
-                          style={[styles.formActionText, { color: "#F44336" }]}
-                        >
-                          Hủy đơn
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
+              {formsLoading ? (
+                <View style={styles.loadingContainer}>
+                  <Text style={styles.loadingText}>
+                    Đang tải danh sách đơn từ...
+                  </Text>
                 </View>
-              ))}
+              ) : filteredForms.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>Không có đơn từ nào</Text>
+                </View>
+              ) : (
+                filteredForms.map((form) => (
+                  <FormItemCard
+                    key={form.id}
+                    form={form}
+                    formatDate={formatDate}
+                    onFormUpdate={fetchForms}
+                  />
+                ))
+              )}
             </View>
           </View>
         );
@@ -818,6 +1200,23 @@ const ProfilePage = () => {
               ]}
             >
               Thông tin chung
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.tabItem,
+              activeTab === "hopDong" && styles.activeTab,
+            ]}
+            onPress={() => setActiveTab("hopDong")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "hopDong" && styles.activeTabText,
+              ]}
+            >
+              Hợp đồng
             </Text>
           </TouchableOpacity>
 
@@ -1369,8 +1768,8 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   formStatsItem: {
-    flex: 1,
     alignItems: "center",
+    flex: 1,
   },
   formStatsValue: {
     fontSize: 18,
@@ -1384,111 +1783,205 @@ const styles = StyleSheet.create({
   },
   formFilterContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  filterDropdown: {
+    position: "relative",
+    minWidth: "30%",
+    flex: 1,
+  },
+  filterDropdownButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    elevation: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
   },
-  formFilterTab: {
-    flex: 1,
+  filterDropdownText: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "500",
+  },
+  filterDropdownDisabled: {
+    backgroundColor: "#f5f5f5",
+    borderColor: "#e0e0e0",
+    opacity: 0.6,
+  },
+  filterDropdownTextDisabled: {
+    color: "#999",
+  },
+  dropdownOptions: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    marginTop: 4,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    zIndex: 1000,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  dropdownOption: {
     paddingVertical: 12,
-    alignItems: "center",
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
-  formFilterText: {
-    fontSize: 13,
-    color: "#666",
+  dropdownOptionText: {
+    fontSize: 14,
+    color: "#333",
   },
   formList: {
     marginBottom: 16,
   },
-  formCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    overflow: "hidden",
+  bottomSpace: {
+    height: 30,
   },
-  formCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  formTypeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  formTypeIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  loadingContainer: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8,
+    paddingVertical: 20,
   },
-  formTypeName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-  },
-  formStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  formStatusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  formDetailsContainer: {
-    padding: 12,
-  },
-  formDetail: {
-    flexDirection: "row",
-    marginBottom: 8,
-  },
-  formDetailLabel: {
-    fontSize: 13,
+  loadingText: {
+    fontSize: 16,
     color: "#666",
-    width: 100,
+    marginTop: 10,
   },
-  formDetailValue: {
-    fontSize: 13,
-    color: "#333",
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+  },
+  contractHeaderCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  contractHeaderContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  contractIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+  contractHeaderInfo: {
     flex: 1,
   },
-  formActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+  contractTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 4,
   },
-  formActionButton: {
+  contractCode: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.8)",
+  },
+  contractStatusContainer: {
+    alignSelf: "flex-start",
+  },
+  contractStatusBadge: {
+    backgroundColor: "rgba(255,255,255,0.2)",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 4,
-    backgroundColor: "#E3F2FD",
-    marginLeft: 8,
+    borderRadius: 16,
   },
-  formActionText: {
-    fontSize: 12,
+  contractStatusText: {
+    fontSize: 14,
     fontWeight: "600",
-    color: "#3674B5",
+    color: "#fff",
   },
-  bottomSpace: {
-    height: 80,
+  contractInfoGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  contractInfoItem: {
+    flex: 1,
+    marginRight: 10,
+  },
+  contractInfoLabel: {
+    fontSize: 13,
+    color: "#666",
+    marginBottom: 4,
+  },
+  contractInfoValue: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#333",
+  },
+  contractSalaryValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  contractDescriptionContainer: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+  },
+  contractDescriptionText: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 22,
+  },
+  contractActionsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  contractActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#E3F2FD",
+  },
+  contractActionSecondary: {
+    backgroundColor: "#f5f5f5",
+  },
+  contractActionText: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 8,
   },
 });
 

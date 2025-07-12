@@ -1,4 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
 import {
   View,
   Text,
@@ -16,7 +21,11 @@ import {
   MaterialCommunityIcons,
   Feather,
 } from "@expo/vector-icons";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
+import {
+  useNavigation,
+  NavigationProp,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { RootStackParamList } from "../../utils/routes";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getFormDescriptions, getTimeSchedule } from "../../service/api";
@@ -87,16 +96,18 @@ function HomePage() {
   );
   const [loadingSchedule, setLoadingSchedule] = useState(true);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     loadUserProfile();
   }, []);
 
-  useEffect(() => {
-    if (userProfile) {
+  useFocusEffect(
+    useCallback(() => {
       fetchForms();
-      fetchTodaySchedule();
-    }
-  }, [userProfile]);
+      if (userProfile) {
+        fetchTodaySchedule();
+      }
+    }, [userProfile])
+  );
 
   const loadUserProfile = async () => {
     try {
@@ -116,16 +127,13 @@ function HomePage() {
       const response = await getFormDescriptions({});
       if (response.data && response.data.data) {
         // Lọc đơn từ của người dùng hiện tại
-        const userForms = response.data.data.filter(
-          (form: FormDescription) => form.submittedBy === userProfile?.fullName
-        );
-
+        const userForms = response.data.data;
         // Sắp xếp theo thời gian tạo mới nhất
         const sortedForms = userForms.sort(
           (a: FormDescription, b: FormDescription) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-
+        console.log("sortedForms");
         // Lấy 3 đơn gần nhất
         setForms(sortedForms.slice(0, 3));
       }
@@ -293,6 +301,7 @@ function HomePage() {
           forms={forms}
           loading={loading}
           formatDate={formatDate}
+          onFormUpdate={fetchForms}
         />
 
         {/* Upcoming Events */}
