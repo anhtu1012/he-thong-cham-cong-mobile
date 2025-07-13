@@ -96,7 +96,6 @@ const MonthlyTimesheet = () => {
         const timeDate = new Date(time.date);
 
         if (timeDate.getDate() === today.getDate()) {
-          console.log("It's today!!!");
           await AsyncStorage.setItem(
             "currentTimeScheduleDate",
             JSON.stringify(time)

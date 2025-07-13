@@ -1,195 +1,104 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-  SafeAreaView,
-  ActivityIndicator,
-} from "react-native";
-import {
-  AntDesign,
-  MaterialIcons,
-  Ionicons,
-  Feather,
-  FontAwesome5,
-} from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import { LineChart } from "react-native-chart-kit";
+import { AntDesign, Feather, Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import SalaryCriteria from "./SalaryCriteria";
+import Details from "./Details";
+import Summary from "./Summary";
+import { formatCurrency } from "../../utils/string";
+import { getBangLuong } from "../../service/salaryPage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { UserProfile } from "../../models/timekeeping";
+import { Salary } from "../../models/salary";
+import History from "./History";
 
 const { width } = Dimensions.get("window");
 
 const SalaryPage = () => {
   const navigation = useNavigation();
-  const [selectedMonth, setSelectedMonth] = useState("07/2024");
-  const [activeTab, setActiveTab] = useState("summary"); // summary, details, history, dailyLog
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date()
+      .toLocaleDateString("en-GB", {
+        month: "2-digit",
+        year: "numeric",
+      })
+      .replace(/\//g, "/")
+      .split(" ")
+      .reverse()
+      .join("/")
+  );
+  const [activeTab, setActiveTab] = useState("summary"); // summary, details, history, SalaryCriteria
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [monthPickerVisible, setMonthPickerVisible] = useState(false); // Thêm state cho modal chọn tháng/năm
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [salaryData, setSalaryData] = useState<Salary>();
+  const [salaryHistory, setSalaryHistory] = useState<Salary[]>([]);
 
-  // Mock data for daily attendance
-  const currentDate = new Date();
-  const currentDay = currentDate.getDate();
-
-  // Generate daily attendance data for the current month
-  const dailyAttendanceData = Array.from({ length: 31 }, (_, i) => {
-    const day = i + 1;
-    const date = new Date(2024, 6, day); // July 2024
-    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-    const isPast = day <= 22; // Assume current day is 22nd
-
-    if (isWeekend) {
-      return {
-        day,
-        date: `${day}/07/2024`,
-        isWeekend: true,
-        status: "Cuối tuần",
-        checkIn: null,
-        checkOut: null,
-        hoursWorked: 0,
-        isToday: day === currentDay,
-      };
-    }
-
-    if (!isPast) {
-      return {
-        day,
-        date: `${day}/07/2024`,
-        isWeekend: false,
-        status: "Chưa đến",
-        checkIn: null,
-        checkOut: null,
-        hoursWorked: 0,
-        isToday: day === currentDay,
-      };
-    }
-
-    // For past weekdays, generate random check-in/out times
-    const isPresent = Math.random() > 0.1; // 10% chance of absence
-
-    if (!isPresent) {
-      return {
-        day,
-        date: `${day}/07/2024`,
-        isWeekend: false,
-        status: "Vắng mặt",
-        checkIn: null,
-        checkOut: null,
-        hoursWorked: 0,
-        isToday: day === currentDay,
-      };
-    }
-
-    // Generate random check-in time between 7:45 and 8:15
-    const checkInHour = 7 + (Math.random() > 0.7 ? 1 : 0);
-    const checkInMinute =
-      Math.floor(Math.random() * 30) + (checkInHour === 7 ? 45 : 0);
-    const checkInTime = `${checkInHour
-      .toString()
-      .padStart(2, "0")}:${checkInMinute.toString().padStart(2, "0")}`;
-
-    // Generate random check-out time between 17:00 and 18:00
-    const checkOutHour = 17 + (Math.random() > 0.5 ? 0 : 1);
-    const checkOutMinute = Math.floor(Math.random() * 60);
-    const checkOutTime = `${checkOutHour
-      .toString()
-      .padStart(2, "0")}:${checkOutMinute.toString().padStart(2, "0")}`;
-
-    // Calculate hours worked
-    const checkInMinutes = checkInHour * 60 + checkInMinute;
-    const checkOutMinutes = checkOutHour * 60 + checkOutMinute;
-    const hoursWorked = ((checkOutMinutes - checkInMinutes) / 60).toFixed(2);
-
-    // Determine status
-    let status = "Đúng giờ";
-    if (checkInHour > 8 || (checkInHour === 8 && checkInMinute > 5)) {
-      status = "Đi muộn";
-    } else if (
-      checkOutHour < 17 ||
-      (checkOutHour === 17 && checkOutMinute < 0)
-    ) {
-      status = "Về sớm";
-    }
-
-    return {
-      day,
-      date: `${day}/07/2024`,
-      isWeekend: false,
-      status,
-      checkIn: checkInTime,
-      checkOut: checkOutTime,
-      hoursWorked,
-      isToday: day === currentDay,
-    };
-  });
-
-  // Calculate attendance summary
-  const attendanceSummary = {
-    totalWorkDays: dailyAttendanceData.filter((d) => !d.isWeekend).length,
-    daysPresent: dailyAttendanceData.filter((d) => d.checkIn !== null).length,
-    daysAbsent: dailyAttendanceData.filter(
-      (d) => !d.isWeekend && d.checkIn === null && d.status === "Vắng mặt"
-    ).length,
-    lateDays: dailyAttendanceData.filter((d) => d.status === "Đi muộn").length,
-    earlyDays: dailyAttendanceData.filter((d) => d.status === "Về sớm").length,
-    totalHours: dailyAttendanceData
-      .reduce((total, day) => {
-        const hours =
-          typeof day.hoursWorked === "string"
-            ? parseFloat(day.hoursWorked || "0")
-            : day.hoursWorked || 0;
-        return total + hours;
-      }, 0)
-      .toFixed(2),
+  const salaryCriteriaData = {
+    id: "6",
+    createdAt: "2025-06-19T15:42:19.296Z",
+    updatedAt: "2025-06-19T15:42:19.296Z",
+    code: "POS2506190006",
+    positionName: "Nhân viên Hỗ trợ khách hàng",
+    role: "R4",
+    description: "Staff",
+    baseSalary: 80000,
+    allowance: 1000000,
+    overtimeSalary: 100000,
+    lateFine: 50000,
   };
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
 
-  // Mock data
-  const salaryData = {
-    baseSalary: 15000000,
-    contractHours: 176, // 22 days x 8 hours
-    hourlyRate: 85227, // base salary / contract hours
-    actualWorkDays: 22,
-    actualHours: 176,
-    overtimeHours: 18,
-    overtimeRate: 1.5,
-    overtimePay: 1500000,
-    workingDayAllowance: 1100000,
-    mealAllowance: 880000, // 40k per day x 22 days
-    transportAllowance: 500000,
-    phoneAllowance: 300000,
-    otherAllowance: 0,
-    totalAllowances: 2780000,
-    socialInsurance: 1350000, // 9% of base salary
-    healthInsurance: 225000, // 1.5% of base salary
-    unemploymentInsurance: 150000, // 1% of base salary
-    personalIncomeTax: 800000,
-    totalDeductions: 2525000,
-    netSalary: 16755000,
-    currency: "VND",
-    paymentDate: "12/07/2024",
-    paymentStatus: "Đã thanh toán",
+  useFocusEffect(
+    useCallback(() => {
+      if (userProfile) {
+        fetchBangLuong(selectedMonth);
+      }
+    }, [userProfile, selectedMonth])
+  );
+
+  const loadUserProfile = async () => {
+    try {
+      const userData = await AsyncStorage.getItem("userData");
+      if (userData) {
+        const parsedUserData = JSON.parse(userData);
+        setUserProfile(parsedUserData);
+      }
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+    }
   };
-
-  const salaryHistory = [
-    { month: "02/2024", amount: 16200000 },
-    { month: "03/2024", amount: 16300000 },
-    { month: "04/2024", amount: 16500000 },
-    { month: "05/2024", amount: 16400000 },
-    { month: "06/2024", amount: 16600000 },
-    { month: "07/2024", amount: 16755000 },
-  ];
-
-  const formatCurrency = (amount: number): string => {
-    return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const fetchBangLuong = async (selectedMonth: string) => {
+    if (!userProfile) return;
+    try {
+      const res = await getBangLuong(userProfile.code, selectedMonth);
+      const resHistory = await getBangLuong(userProfile.code);
+      setSalaryHistory(resHistory.data.data);
+      setSalaryData(res.data.data[0]);
+    } catch (error) {}
   };
 
   const chartData = {
     labels: salaryHistory.map((item) => item.month.split("/")[0]),
     datasets: [
       {
-        data: salaryHistory.map((item) => item.amount / 1000000),
+        data: salaryHistory.map((item) => item.totalSalary / 1000000),
         color: (opacity = 1) => `rgba(54, 116, 181, ${opacity})`,
         strokeWidth: 2,
       },
@@ -199,9 +108,6 @@ const SalaryPage = () => {
   // Function to update attendance data in real-time
   const updateAttendanceData = () => {
     setRefreshing(true);
-    // In a real app, you would fetch updated data from an API here
-    // For this demo, we'll just simulate a refresh by setting refreshing to true
-    // and then false after a delay
     setTimeout(() => {
       setRefreshing(false);
       setIsLoading(false);
@@ -211,23 +117,12 @@ const SalaryPage = () => {
   // Effect to auto-update data when component mounts
   useEffect(() => {
     updateAttendanceData();
-
-    // Set up a periodic refresh every 5 minutes when in dailyLog tab
+    // Set up a periodic refresh every 5 minutes when in SalaryCriteria tab
     let intervalId: NodeJS.Timeout | undefined;
-    if (activeTab === "dailyLog") {
-      intervalId = setInterval(updateAttendanceData, 5 * 60 * 1000);
-    }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [activeTab]);
-
-  // Effect to update when tab changes to dailyLog
-  useEffect(() => {
-    if (activeTab === "dailyLog") {
-      updateAttendanceData();
-    }
   }, [activeTab]);
 
   // Add a useEffect to recalculate totalAllowances whenever values change
@@ -240,6 +135,31 @@ const SalaryPage = () => {
       }, 500);
     }
   }, [activeTab, refreshing]);
+
+  // Hàm chuyển đổi tháng
+  const changeMonth = (direction: "prev" | "next") => {
+    const [month, year] = selectedMonth.split("/").map(Number);
+    let newMonth = month + (direction === "next" ? 1 : -1);
+    let newYear = year;
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear -= 1;
+    }
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear += 1;
+    }
+    setSelectedMonth(`${newMonth.toString().padStart(2, "0")}/${newYear}`);
+  };
+
+  // Danh sách tháng/năm để chọn
+  const monthsList = Array.from({ length: 24 }, (_, i) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - (23 - i));
+    const m = (date.getMonth() + 1).toString().padStart(2, "0");
+    const y = date.getFullYear();
+    return `${m}/${y}`;
+  });
 
   // Render tab navigation UI
   const renderTabNavigation = () => (
@@ -287,16 +207,19 @@ const SalaryPage = () => {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tabItem, activeTab === "dailyLog" && styles.activeTab]}
-        onPress={() => setActiveTab("dailyLog")}
+        style={[
+          styles.tabItem,
+          activeTab === "SalaryCriteria" && styles.activeTab,
+        ]}
+        onPress={() => setActiveTab("SalaryCriteria")}
       >
         <Text
           style={[
             styles.tabText,
-            activeTab === "dailyLog" && styles.activeTabText,
+            activeTab === "SalaryCriteria" && styles.activeTabText,
           ]}
         >
-          Chấm công
+          Tiêu chí lương
         </Text>
       </TouchableOpacity>
     </View>
@@ -320,10 +243,16 @@ const SalaryPage = () => {
       </View>
 
       <View style={styles.monthSelector}>
-        <TouchableOpacity style={styles.monthArrow}>
+        <TouchableOpacity
+          style={styles.monthArrow}
+          onPress={() => changeMonth("prev")}
+        >
           <Ionicons name="chevron-back" size={20} color="#fff" />
         </TouchableOpacity>
-        <View style={styles.selectedMonthContainer}>
+        <TouchableOpacity
+          style={styles.selectedMonthContainer}
+          onPress={() => setMonthPickerVisible(true)}
+        >
           <Text style={styles.selectedMonthText}>{selectedMonth}</Text>
           <AntDesign
             name="caretdown"
@@ -331,12 +260,84 @@ const SalaryPage = () => {
             color="#fff"
             style={{ marginLeft: 5 }}
           />
-        </View>
-        <TouchableOpacity style={styles.monthArrow}>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.monthArrow}
+          onPress={() => changeMonth("next")}
+        >
           <Ionicons name="chevron-forward" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
-
+      {/* Modal chọn tháng/năm */}
+      <Modal
+        visible={monthPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMonthPickerVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setMonthPickerVisible(false)}>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.3)",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 12,
+                padding: 16,
+                width: 260,
+                maxHeight: 400,
+              }}
+            >
+              <Text
+                style={{
+                  fontWeight: "bold",
+                  fontSize: 16,
+                  marginBottom: 12,
+                  textAlign: "center",
+                }}
+              >
+                Chọn tháng/năm
+              </Text>
+              <FlatList
+                data={monthsList.reverse()}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={{
+                      paddingVertical: 10,
+                      alignItems: "center",
+                      backgroundColor:
+                        item === selectedMonth ? "#e3f2fd" : "#fff",
+                      borderRadius: 8,
+                      marginBottom: 2,
+                    }}
+                    onPress={() => {
+                      setSelectedMonth(item);
+                      setMonthPickerVisible(false);
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        color: "#3674B5",
+                        fontWeight: item === selectedMonth ? "bold" : "normal",
+                      }}
+                    >
+                      {item}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
       {renderTabNavigation()}
     </View>
   );
@@ -353,514 +354,39 @@ const SalaryPage = () => {
 
     switch (activeTab) {
       case "summary":
-        return (
-          <>
-            {/* Salary Summary */}
-            <LinearGradient
-              colors={["#3674B5", "#2196F3"]}
-              style={styles.gradientSummaryContainer}
-            >
-              <Text style={styles.summaryTitle}>Tổng thu nhập</Text>
-              <View style={styles.netSalaryContainer}>
-                <Text style={styles.netSalaryValue}>
-                  {formatCurrency(salaryData.netSalary)}
-                </Text>
-                <Text style={styles.currencyText}>{salaryData.currency}</Text>
-              </View>
-              <View style={styles.statusContainer}>
-                <View style={styles.statusIndicator} />
-                <Text style={styles.statusText}>
-                  {salaryData.paymentStatus} ({salaryData.paymentDate})
-                </Text>
-              </View>
-
-              <View style={styles.quickInfoContainer}>
-                <View style={styles.quickInfoItem}>
-                  <Text style={styles.quickInfoLabel}>Lương cơ bản</Text>
-                  <Text style={styles.quickInfoValue}>
-                    {formatCurrency(salaryData.baseSalary)} đ
-                  </Text>
-                </View>
-                <View style={styles.quickInfoDivider} />
-                <View style={styles.quickInfoItem}>
-                  <Text style={styles.quickInfoLabel}>Ngày công</Text>
-                  <Text style={styles.quickInfoValue}>
-                    {salaryData.actualWorkDays} ngày
-                  </Text>
-                </View>
-              </View>
-            </LinearGradient>
-
-            {/* Main Components */}
-            <View style={styles.componentsContainer}>
-              <Text style={styles.sectionTitle}>Thành phần lương</Text>
-
-              <View style={styles.componentRow}>
-                <View style={styles.componentIcon}>
-                  <Feather name="briefcase" size={20} color="#3674B5" />
-                </View>
-                <View style={styles.componentInfo}>
-                  <Text style={styles.componentLabel}>Lương cơ bản</Text>
-                  <Text style={styles.componentDescription}>
-                    {salaryData.actualWorkDays} ngày × 8 giờ ×{" "}
-                    {formatCurrency(salaryData.hourlyRate)} đ/giờ
-                  </Text>
-                </View>
-                <Text style={styles.componentValue}>
-                  {formatCurrency(salaryData.baseSalary)} đ
-                </Text>
-              </View>
-
-              <View style={styles.componentRow}>
-                <View style={styles.componentIcon}>
-                  <Feather name="clock" size={20} color="#FF9800" />
-                </View>
-                <View style={styles.componentInfo}>
-                  <Text style={styles.componentLabel}>Lương làm thêm</Text>
-                  <Text style={styles.componentDescription}>
-                    {salaryData.overtimeHours} giờ ×{" "}
-                    {formatCurrency(
-                      Math.round(
-                        salaryData.hourlyRate * salaryData.overtimeRate
-                      )
-                    )}{" "}
-                    đ/giờ
-                  </Text>
-                </View>
-                <Text style={styles.componentValue}>
-                  {formatCurrency(salaryData.overtimePay)} đ
-                </Text>
-              </View>
-
-              <View style={styles.componentRow}>
-                <View style={styles.componentIcon}>
-                  <Feather name="plus-circle" size={20} color="#4CAF50" />
-                </View>
-                <View style={styles.componentInfo}>
-                  <Text style={styles.componentLabel}>Tổng phụ cấp</Text>
-                  <Text style={styles.componentDescription}>
-                    Ăn trưa, đi lại, điện thoại, ngày công
-                  </Text>
-                </View>
-                <Text style={styles.componentValue}>
-                  {formatCurrency(salaryData.totalAllowances)} đ
-                </Text>
-              </View>
-
-              <View style={styles.componentRow}>
-                <View style={styles.componentIcon}>
-                  <Feather name="minus-circle" size={20} color="#F44336" />
-                </View>
-                <View style={styles.componentInfo}>
-                  <Text style={styles.componentLabel}>Khấu trừ</Text>
-                  <Text style={styles.componentDescription}>
-                    BHXH, BHYT, BHTN, Thuế TNCN
-                  </Text>
-                </View>
-                <Text style={[styles.componentValue, { color: "#F44336" }]}>
-                  -{formatCurrency(salaryData.totalDeductions)} đ
-                </Text>
-              </View>
-
-              <View style={styles.netSalaryRow}>
-                <Text style={styles.netSalaryLabel}>LƯƠNG THỰC LÃNH</Text>
-                <Text style={styles.netSalaryAmount}>
-                  {formatCurrency(salaryData.netSalary)} đ
-                </Text>
-              </View>
-            </View>
-
-            {/* Salary Chart */}
-            <View style={styles.chartContainer}>
-              <Text style={styles.sectionTitle}>
-                Biểu đồ lương 6 tháng gần nhất
-              </Text>
-              <LineChart
-                data={chartData}
-                width={width - 32}
-                height={180}
-                chartConfig={{
-                  backgroundColor: "#fff",
-                  backgroundGradientFrom: "#fff",
-                  backgroundGradientTo: "#fff",
-                  decimalPlaces: 1,
-                  color: (opacity = 1) => `rgba(54, 116, 181, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  style: {
-                    borderRadius: 16,
-                  },
-                  propsForDots: {
-                    r: "4",
-                    strokeWidth: "2",
-                    stroke: "#3674B5",
-                  },
-                  propsForLabels: {
-                    fontSize: 10,
-                  },
-                }}
-                bezier
-                style={styles.chart}
-              />
-            </View>
-          </>
+        return salaryData ? (
+          <Summary
+            salaryData={salaryData}
+            chartData={chartData}
+            width={width}
+            styles={styles}
+          />
+        ) : (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Không có dữ liệu lương.</Text>
+          </View>
         );
-
       case "details":
-        return (
-          <>
-            {/* Detailed Breakdown */}
-            <View style={styles.detailsContainer}>
-              {refreshing && (
-                <View style={styles.refreshingIndicator}>
-                  <Text style={styles.refreshingText}>Đang cập nhật...</Text>
-                </View>
-              )}
-
-              {/* Summary Card */}
-              <LinearGradient
-                colors={["#3674B5", "#2196F3"]}
-                style={styles.detailsSummaryCard}
-              >
-                <View style={styles.detailsSummaryRow}>
-                  <View style={styles.detailsSummaryItem}>
-                    <Text style={styles.detailsSummaryLabel}>Lương cơ bản</Text>
-                    <Text style={styles.detailsSummaryValue}>
-                      {formatCurrency(salaryData.baseSalary)} đ
-                    </Text>
-                  </View>
-                  <View style={styles.detailsSummaryDivider} />
-                  <View style={styles.detailsSummaryItem}>
-                    <Text style={styles.detailsSummaryLabel}>Thực lãnh</Text>
-                    <Text style={styles.detailsSummaryValue}>
-                      {formatCurrency(salaryData.netSalary)} đ
-                    </Text>
-                  </View>
-                </View>
-              </LinearGradient>
-
-              {/* Allowances Section */}
-              <View style={styles.detailSectionCard}>
-                <View style={styles.detailSectionHeader}>
-                  <FontAwesome5
-                    name="money-bill-wave"
-                    size={18}
-                    color="#3674B5"
-                  />
-                  <Text style={styles.sectionTitle}>Các khoản phụ cấp</Text>
-                </View>
-
-                <View style={styles.detailItemCard}>
-                  <View style={styles.detailItem}>
-                    <View style={styles.detailItemIconContainer}>
-                      <Feather name="calendar" size={16} color="#4CAF50" />
-                    </View>
-                    <Text style={styles.detailItemLabel}>
-                      Phụ cấp ngày công
-                    </Text>
-                    <Text style={styles.detailItemValue}>
-                      {formatCurrency(salaryData.workingDayAllowance)} đ
-                    </Text>
-                  </View>
-
-                  <View style={styles.detailItem}>
-                    <View style={styles.detailItemIconContainer}>
-                      <Feather name="coffee" size={16} color="#FF9800" />
-                    </View>
-                    <Text style={styles.detailItemLabel}>Phụ cấp ăn trưa</Text>
-                    <Text style={styles.detailItemValue}>
-                      {formatCurrency(salaryData.mealAllowance)} đ
-                    </Text>
-                  </View>
-
-                  <View style={styles.detailItem}>
-                    <View style={styles.detailItemIconContainer}>
-                      <Feather name="truck" size={16} color="#9C27B0" />
-                    </View>
-                    <Text style={styles.detailItemLabel}>Phụ cấp đi lại</Text>
-                    <Text style={styles.detailItemValue}>
-                      {formatCurrency(salaryData.transportAllowance)} đ
-                    </Text>
-                  </View>
-
-                  <View style={styles.detailItem}>
-                    <View style={styles.detailItemIconContainer}>
-                      <Feather name="phone" size={16} color="#2196F3" />
-                    </View>
-                    <Text style={styles.detailItemLabel}>
-                      Phụ cấp điện thoại
-                    </Text>
-                    <Text style={styles.detailItemValue}>
-                      {formatCurrency(salaryData.phoneAllowance)} đ
-                    </Text>
-                  </View>
-
-                  <View style={styles.detailItemTotal}>
-                    <Text style={styles.detailItemTotalLabel}>
-                      Tổng phụ cấp
-                    </Text>
-                    <Text style={styles.detailItemTotalValue}>
-                      {formatCurrency(salaryData.totalAllowances)} đ
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Deductions Section */}
-              <View style={styles.detailSectionCard}>
-                <View style={styles.detailSectionHeader}>
-                  <FontAwesome5
-                    name="hand-holding-usd"
-                    size={18}
-                    color="#F44336"
-                  />
-                  <Text style={styles.sectionTitle}>Các khoản khấu trừ</Text>
-                </View>
-
-                <View style={[styles.detailItemCard, styles.deductionCard]}>
-                  <View style={styles.detailItem}>
-                    <View
-                      style={[
-                        styles.detailItemIconContainer,
-                        { backgroundColor: "#ffebee" },
-                      ]}
-                    >
-                      <Feather name="shield" size={16} color="#F44336" />
-                    </View>
-                    <Text style={styles.detailItemLabel}>
-                      Bảo hiểm xã hội (9%)
-                    </Text>
-                    <Text
-                      style={[styles.detailItemValue, { color: "#F44336" }]}
-                    >
-                      -{formatCurrency(salaryData.socialInsurance)} đ
-                    </Text>
-                  </View>
-
-                  <View style={styles.detailItem}>
-                    <View
-                      style={[
-                        styles.detailItemIconContainer,
-                        { backgroundColor: "#ffebee" },
-                      ]}
-                    >
-                      <Feather name="heart" size={16} color="#F44336" />
-                    </View>
-                    <Text style={styles.detailItemLabel}>
-                      Bảo hiểm y tế (1.5%)
-                    </Text>
-                    <Text
-                      style={[styles.detailItemValue, { color: "#F44336" }]}
-                    >
-                      -{formatCurrency(salaryData.healthInsurance)} đ
-                    </Text>
-                  </View>
-
-                  <View style={styles.detailItem}>
-                    <View
-                      style={[
-                        styles.detailItemIconContainer,
-                        { backgroundColor: "#ffebee" },
-                      ]}
-                    >
-                      <Feather name="briefcase" size={16} color="#F44336" />
-                    </View>
-                    <Text style={styles.detailItemLabel}>
-                      Bảo hiểm thất nghiệp (1%)
-                    </Text>
-                    <Text
-                      style={[styles.detailItemValue, { color: "#F44336" }]}
-                    >
-                      -{formatCurrency(salaryData.unemploymentInsurance)} đ
-                    </Text>
-                  </View>
-
-                  <View style={styles.detailItem}>
-                    <View
-                      style={[
-                        styles.detailItemIconContainer,
-                        { backgroundColor: "#ffebee" },
-                      ]}
-                    >
-                      <FontAwesome5
-                        name="file-invoice-dollar"
-                        size={16}
-                        color="#F44336"
-                      />
-                    </View>
-                    <Text style={styles.detailItemLabel}>
-                      Thuế thu nhập cá nhân
-                    </Text>
-                    <Text
-                      style={[styles.detailItemValue, { color: "#F44336" }]}
-                    >
-                      -{formatCurrency(salaryData.personalIncomeTax)} đ
-                    </Text>
-                  </View>
-
-                  <View style={styles.detailItemTotal}>
-                    <Text style={styles.detailItemTotalLabel}>
-                      Tổng khấu trừ
-                    </Text>
-                    <Text
-                      style={[
-                        styles.detailItemTotalValue,
-                        { color: "#F44336" },
-                      ]}
-                    >
-                      -{formatCurrency(salaryData.totalDeductions)} đ
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.netSalaryCard}>
-                <Text style={styles.netSalaryCardLabel}>LƯƠNG THỰC LÃNH</Text>
-                <Text style={styles.netSalaryCardValue}>
-                  {formatCurrency(salaryData.netSalary)} đ
-                </Text>
-              </View>
-            </View>
-          </>
+        return salaryData ? (
+          <Details
+            salaryData={salaryData}
+            refreshing={refreshing}
+            styles={styles}
+          />
+        ) : (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Không có dữ liệu lương.</Text>
+          </View>
         );
-
       case "history":
         return (
-          <View style={styles.historyContainer}>
-            <View style={styles.filterContainer}>
-              <Text style={styles.filterLabel}>Lọc theo</Text>
-              <TouchableOpacity style={styles.filterButton}>
-                <Text style={styles.filterButtonText}>2024</Text>
-                <AntDesign name="down" size={12} color="#3674B5" />
-              </TouchableOpacity>
-            </View>
-
-            {salaryHistory.map((item, index) => (
-              <TouchableOpacity key={index} style={styles.historyItem}>
-                <View style={styles.historyItemLeft}>
-                  <View style={styles.historyIconContainer}>
-                    <MaterialIcons name="payments" size={24} color="#3674B5" />
-                  </View>
-                  <View>
-                    <Text style={styles.historyMonth}>
-                      Tháng {item.month.split("/")[0]}
-                    </Text>
-                    <Text style={styles.historyDate}>{item.month}</Text>
-                  </View>
-                </View>
-                <View style={styles.historyRight}>
-                  <Text style={styles.historyAmount}>
-                    {formatCurrency(item.amount)} đ
-                  </Text>
-                  <AntDesign name="right" size={16} color="#999" />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <History
+            salaryHistory={salaryHistory}
+            formatCurrency={formatCurrency}
+          />
         );
-
-      case "dailyLog":
-        return (
-          <View style={styles.dailyLogContainer}>
-            <View style={styles.dailyLogSummary}>
-              <View style={styles.dailyLogSummaryItem}>
-                <Text style={styles.dailyLogSummaryLabel}>Tổng công</Text>
-                <Text style={styles.dailyLogSummaryValue}>
-                  {attendanceSummary.totalWorkDays}
-                </Text>
-              </View>
-              <View style={styles.dailyLogSummaryItem}>
-                <Text style={styles.dailyLogSummaryLabel}>Đi làm</Text>
-                <Text style={styles.dailyLogSummaryValue}>
-                  {attendanceSummary.daysPresent}
-                </Text>
-              </View>
-              <View style={styles.dailyLogSummaryItem}>
-                <Text style={styles.dailyLogSummaryLabel}>Vắng mặt</Text>
-                <Text style={styles.dailyLogSummaryValue}>
-                  {attendanceSummary.daysAbsent}
-                </Text>
-              </View>
-              <View style={styles.dailyLogSummaryItem}>
-                <Text style={styles.dailyLogSummaryLabel}>Đi muộn</Text>
-                <Text style={styles.dailyLogSummaryValue}>
-                  {attendanceSummary.lateDays}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.dailyLogTitle}>
-              Bảng chấm công tháng {selectedMonth}
-            </Text>
-
-            {dailyAttendanceData.map((item) => (
-              <View key={item.day} style={styles.attendanceItem}>
-                <View
-                  style={[
-                    styles.attendanceDay,
-                    item.isWeekend && styles.weekendDay,
-                    item.isToday && styles.currentDay,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.attendanceDayText,
-                      item.isWeekend && styles.weekendDayText,
-                    ]}
-                  >
-                    {item.day}
-                  </Text>
-                </View>
-
-                <View style={styles.attendanceContent}>
-                  <Text style={styles.attendanceDate}>{item.date}</Text>
-                  <View
-                    style={[
-                      styles.attendanceStatus,
-                      item.status === "Đi muộn" && styles.lateStatus,
-                      item.status === "Về sớm" && styles.earlyStatus,
-                      item.status === "Vắng mặt" && styles.absentStatus,
-                      item.status === "Cuối tuần" && styles.weekendStatus,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.attendanceStatusText,
-                        item.status === "Đi muộn" && styles.lateStatusText,
-                        item.status === "Về sớm" && styles.earlyStatusText,
-                        item.status === "Vắng mặt" && styles.absentStatusText,
-                        item.status === "Cuối tuần" && styles.weekendStatusText,
-                      ]}
-                    >
-                      {item.status}
-                    </Text>
-                  </View>
-                </View>
-
-                {item.checkIn ? (
-                  <View style={styles.attendanceTime}>
-                    <View style={styles.timeRow}>
-                      <Text style={styles.timeLabel}>Vào:</Text>
-                      <Text style={styles.timeValue}>{item.checkIn}</Text>
-                    </View>
-                    <View style={styles.timeRow}>
-                      <Text style={styles.timeLabel}>Ra:</Text>
-                      <Text style={styles.timeValue}>{item.checkOut}</Text>
-                    </View>
-                    <View style={styles.timeRow}>
-                      <Text style={styles.timeLabel}>Giờ làm:</Text>
-                      <Text style={styles.hoursValue}>{item.hoursWorked}h</Text>
-                    </View>
-                  </View>
-                ) : (
-                  <View style={styles.attendanceTime}>
-                    <Text style={styles.noTimeData}>Không có dữ liệu</Text>
-                  </View>
-                )}
-              </View>
-            ))}
-          </View>
-        );
-
+      case "SalaryCriteria":
+        return <SalaryCriteria salaryCriteriaData={salaryCriteriaData} />;
       default:
         return <View />;
     }
@@ -888,6 +414,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+    paddingBottom: 30, // Add padding at the bottom to avoid overlap with tab navigation
   },
   headerGradient: {
     borderBottomLeftRadius: 0,
@@ -1329,13 +856,13 @@ const styles = StyleSheet.create({
     color: "#333",
     marginRight: 8,
   },
-  dailyLogContainer: {
+  SalaryCriteriaContainer: {
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
   },
-  dailyLogSummary: {
+  SalaryCriteriaSummary: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 20,
@@ -1343,21 +870,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 10,
   },
-  dailyLogSummaryItem: {
+  SalaryCriteriaSummaryItem: {
     alignItems: "center",
     flex: 1,
   },
-  dailyLogSummaryLabel: {
+  SalaryCriteriaSummaryLabel: {
     fontSize: 12,
     color: "#666",
     marginBottom: 4,
   },
-  dailyLogSummaryValue: {
+  SalaryCriteriaSummaryValue: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#3674B5",
   },
-  dailyLogTitle: {
+  SalaryCriteriaTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
