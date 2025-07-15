@@ -51,12 +51,14 @@ export default function CameraPage() {
     visible: boolean;
     place1: string;
     place2: string;
+    isInTheSameZone: boolean;
     onContinue?: () => void;
     onGoBack?: () => void;
   }>({
     visible: false,
     place1: "",
     place2: "",
+    isInTheSameZone: false,
     onContinue: undefined,
     onGoBack: undefined,
   });
@@ -240,8 +242,17 @@ export default function CameraPage() {
         // get current date's branch code
         const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
 
-        // get branch detail
         try {
+          // get branch detail
+          const branchDetailRes = await getBranchDetail(
+            currentTimeScheduleDate.branchCode
+          );
+          const branchDetail = branchDetailRes.data.data[0];
+
+          // get lat and long from branch detail
+          const { lat: branchLat, long: branchLong } = branchDetail;
+          console.log("Branch Location: ", branchLat, branchLong);
+
           // Request permission
           const { status } = await Location.requestForegroundPermissionsAsync();
           if (status !== "granted") {
@@ -250,23 +261,37 @@ export default function CameraPage() {
 
           // Get current position
           const location = await Location.getCurrentPositionAsync({});
-          const { latitude, longitude } = location.coords;
-          // get address detail from latitude and longitude
-          const addressRes = await getAddress({
-            longitude: longitude.toString(),
-            latitude: latitude.toString(),
-          });
-          const address = addressRes.data;
+          const { latitude: currLat, longitude: currLong } = location.coords;
+          console.log("Current Location: ", currLat, currLong);
 
+          //------------------------ old code ------------------------
+          // get address detail from latitude and longitude
+          // const addressRes = await getAddress({
+          //   longitude: longitude.toString(),
+          //   latitude: latitude.toString(),
+          // });
+          // const address = addressRes.data;
           // compare address line with current date address line
-          const addressLine = address.results[0].formatted_address;
+          // const addressLine = address.results[0].formatted_address;
+          //------------------------ old code ------------------------
+
+          // check if current location is within 100m of the branch
+          const sameZoneCheckResult = isTheSameZone(
+            branchLat,
+            branchLong,
+            currLat,
+            currLong
+          );
+          console.log("Location check result: ", sameZoneCheckResult);
+
           const currentDateAddressLine = currentTimeScheduleDate.addressLine;
 
           // set location modal props
           setLocationModalProps({
             visible: true,
-            place1: addressLine,
+            place1: `${currLat}, ${currLong}`,
             place2: currentDateAddressLine,
+            isInTheSameZone: sameZoneCheckResult,
             onContinue: handleTimekeeping,
             onGoBack: () => {
               navigation.navigate("AttendanceTab");
@@ -277,7 +302,7 @@ export default function CameraPage() {
             },
           });
 
-          if (addressLine !== currentDateAddressLine) {
+          if (!sameZoneCheckResult) {
             throw new Error("Địa chỉ chấm công không khớp");
           } else {
           }
