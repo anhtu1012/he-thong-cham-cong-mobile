@@ -38,6 +38,7 @@ import Toast from "react-native-toast-message";
 import * as FileSystem from "expo-file-system";
 import { getCurrentDateRes } from "../utils/dateUtils";
 import LocationModal from "./LocationModal";
+import { isTheSameZone } from "../utils/distanceUtils";
 
 export default function CameraPage() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -276,13 +277,13 @@ export default function CameraPage() {
           //------------------------ old code ------------------------
 
           // check if current location is within 100m of the branch
-          const sameZoneCheckResult = isTheSameZone(
+          const result = isTheSameZone(
             branchLat,
             branchLong,
             currLat,
             currLong
           );
-          console.log("Location check result: ", sameZoneCheckResult);
+          console.log("Location check result: ", result);
 
           const currentDateAddressLine = currentTimeScheduleDate.addressLine;
 
@@ -291,7 +292,7 @@ export default function CameraPage() {
             visible: true,
             place1: `${currLat}, ${currLong}`,
             place2: currentDateAddressLine,
-            isInTheSameZone: sameZoneCheckResult,
+            isInTheSameZone: result,
             onContinue: handleTimekeeping,
             onGoBack: () => {
               navigation.navigate("AttendanceTab");
@@ -302,7 +303,7 @@ export default function CameraPage() {
             },
           });
 
-          if (!sameZoneCheckResult) {
+          if (!result) {
             throw new Error("Địa chỉ chấm công không khớp");
           } else {
           }

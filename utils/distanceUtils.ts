@@ -19,7 +19,7 @@ const haversine = (
   return R * c;
 };
 
-const isTheSameZone = (
+export const isTheSameZone = (
   lat1: number,
   lon1: number,
   lat2: number,
