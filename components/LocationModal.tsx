@@ -6,6 +6,7 @@ interface LocationModalProps {
   visible: boolean;
   place1: string;
   place2: string;
+  isInTheSameZone: boolean;
   onContinue?: () => void;
   onGoBack?: () => void;
 }
@@ -14,10 +15,11 @@ const LocationModal = ({
   visible,
   place1,
   place2,
+  isInTheSameZone,
   onContinue,
   onGoBack,
 }: LocationModalProps) => {
-  const isMatch = place1.toLowerCase() === place2.toLowerCase();
+  const isMatch = isInTheSameZone;
 
   return (
     <Modal animationType="slide" transparent={true} visible={visible}>

@@ -4,6 +4,7 @@
 .expo/
 dist/
 web-build/
+.env
 
 # Native
 /ios/
