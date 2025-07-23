@@ -53,6 +53,7 @@ export default function CameraPage() {
     place1: string;
     place2: string;
     isInTheSameZone: boolean;
+    loading?: boolean;
     onContinue?: () => void;
     onGoBack?: () => void;
   }>({
@@ -60,6 +61,7 @@ export default function CameraPage() {
     place1: "",
     place2: "",
     isInTheSameZone: false,
+    loading: false,
     onContinue: undefined,
     onGoBack: undefined,
   });
@@ -149,6 +151,12 @@ export default function CameraPage() {
   };
 
   const handleTimekeeping = async () => {
+    // Set loading to true when starting
+    setLocationModalProps((prev) => ({
+      ...prev,
+      loading: true,
+    }));
+
     try {
       const currentTimeScheduleDateStr = await AsyncStorage.getItem(
         "currentTimeScheduleDate"
@@ -170,8 +178,22 @@ export default function CameraPage() {
         text1: "Chấm công thành công",
         text1Style: { textAlign: "center", fontSize: 16 },
       });
+      
+      // Hide modal and reset loading
+      setLocationModalProps((prev) => ({
+        ...prev,
+        visible: false,
+        loading: false,
+      }));
+      
       navigation.navigate("DrawerHomeScreen");
     } catch (error: any) {
+      // Reset loading on error
+      setLocationModalProps((prev) => ({
+        ...prev,
+        loading: false,
+      }));
+      
       Toast.show({
         type: "error",
         text1: `${error.message}` || "Có lỗi xảy ra khi xử lý dữ liệu!",
@@ -293,12 +315,14 @@ export default function CameraPage() {
             place1: `${currLat}, ${currLong}`,
             place2: currentDateAddressLine,
             isInTheSameZone: result,
+            loading: false,
             onContinue: handleTimekeeping,
             onGoBack: () => {
               navigation.navigate("AttendanceTab");
               setLocationModalProps((prev) => ({
                 ...prev,
                 visible: false,
+                loading: false,
               }));
             },
           });

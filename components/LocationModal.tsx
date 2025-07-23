@@ -1,4 +1,4 @@
-import { View, Text, Modal, StyleSheet, Pressable } from "react-native";
+import { View, Text, Modal, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -7,6 +7,7 @@ interface LocationModalProps {
   place1: string;
   place2: string;
   isInTheSameZone: boolean;
+  loading?: boolean;
   onContinue?: () => void;
   onGoBack?: () => void;
 }
@@ -16,6 +17,7 @@ const LocationModal = ({
   place1,
   place2,
   isInTheSameZone,
+  loading = false,
   onContinue,
   onGoBack,
 }: LocationModalProps) => {
@@ -56,17 +58,23 @@ const LocationModal = ({
             style={[
               styles.button,
               isMatch ? styles.continueButton : styles.goBackButton,
+              (loading && isMatch) ? styles.buttonDisabled : null,
             ]}
             onPress={isMatch ? onContinue : onGoBack}
+            disabled={loading && isMatch}
           >
-            <Ionicons
-              name={isMatch ? "arrow-forward" : "arrow-back"}
-              size={20}
-              color="white"
-              style={styles.buttonIcon}
-            />
+            {loading && isMatch ? (
+              <ActivityIndicator size="small" color="white" style={styles.buttonIcon} />
+            ) : (
+              <Ionicons
+                name={isMatch ? "arrow-forward" : "arrow-back"}
+                size={20}
+                color="white"
+                style={styles.buttonIcon}
+              />
+            )}
             <Text style={styles.buttonText}>
-              {isMatch ? "Tiếp tục" : "Quay lại"}
+              {loading && isMatch ? "Đang xử lý..." : (isMatch ? "Tiếp tục" : "Quay lại")}
             </Text>
           </Pressable>
         </View>
@@ -150,6 +158,9 @@ const styles = StyleSheet.create({
   },
   goBackButton: {
     backgroundColor: "#F44336",
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonText: {
     color: "white",
