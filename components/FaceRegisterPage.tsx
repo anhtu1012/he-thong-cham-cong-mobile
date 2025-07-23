@@ -128,7 +128,7 @@ export default function FaceRegisterPage() {
       const user = JSON.parse(userDataStr);
       try {
         const formData = new FormData();
-        formData.append("key", `${user.userName}.jpg`);
+        formData.append("key", `face/${user.userName}.jpg`);
         formData.append("userCode", user.code);
         formData.append("file", {
           uri,

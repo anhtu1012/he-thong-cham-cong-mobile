@@ -195,7 +195,7 @@ export default function CameraPage() {
       const user = JSON.parse(userDataStr);
 
       // Binary image response
-      const userImgRes = await getUserFaceImg(`${user.userName}.jpg`);
+      const userImgRes = await getUserFaceImg(`face/${user.userName}.jpg`);
       const binary = userImgRes.data;
 
       //  Convert binary to base64

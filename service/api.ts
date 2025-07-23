@@ -125,7 +125,7 @@ export const getUserContract = async (userCode: string) => {
 export const cancelForm = async (formDescriptionId: string) => {
   try {
     const response = await api.put(`/form-description/${formDescriptionId}`, {
-      status: "CANCELED"
+      status: "CANCELED",
     });
     return response;
   } catch (error) {
