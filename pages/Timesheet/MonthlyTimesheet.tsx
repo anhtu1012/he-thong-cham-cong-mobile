@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  RefreshControl,
 } from "react-native";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -26,6 +27,7 @@ const MonthlyTimesheet = () => {
   );
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [choosenDate, setChoosenDate] = useState<DayStatus>();
+  const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -160,6 +162,18 @@ const MonthlyTimesheet = () => {
   const handleCloseModal = () => {
     setIsModalVisible(false);
   };
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await handleGetTimeSchedule();
+    } catch (error) {
+      console.error("Error refreshing timesheet data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   // Render weekday headers
   const renderWeekdays = () => {
@@ -417,6 +431,9 @@ const MonthlyTimesheet = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           {renderHeader()}
           {renderSummaryAndLegend()}

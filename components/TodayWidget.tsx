@@ -1,12 +1,12 @@
+import { AntDesign } from "@expo/vector-icons";
 import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { AntDesign } from "@expo/vector-icons";
 
 interface WorkingSchedule {
   id: string;
@@ -125,19 +125,22 @@ const TodayWidget = ({ todaySchedule, loadingSchedule }: TodayWidgetProps) => {
       checkInStatusColor = "#4CAF50";
     }
     //chuyên đổi định dạng giờ check-in từ isotring sang vd 01:30p không hiện pm hiện 16:30
-    checkInTime = new Date(todaySchedule.checkInTime).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
+    checkInTime  =new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
       hour12: false,
-    });
+      timeZone: 'UTC'
+    }).format(new Date(todaySchedule.checkInTime));
+    
   }
 
   if (todaySchedule.checkOutTime) {
-    checkOutTime = new Date(todaySchedule.checkOutTime).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
+    checkOutTime = new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
       hour12: false,
-    });
+      timeZone: 'UTC'
+    }).format(new Date(todaySchedule.checkOutTime));
   }
 
   return (

@@ -128,6 +128,15 @@ const FormDetailView = () => {
     return `${formatDate(dateString)} ${hours}:${minutes}`;
   };
 
+  // utc to local time
+  const utcToLocalTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+    const hours = String(localDate.getHours()).padStart(2, "0");
+    const minutes = String(localDate.getMinutes()).padStart(2, "0");
+    return `${formatDate(localDate.toISOString())} ${hours}:${minutes}`;
+  };
+
   // Map API status to display string
   const getFormStatusText = (status: FormStatus): string => {
     switch (status) {
@@ -287,7 +296,7 @@ const FormDetailView = () => {
                 <View style={styles.timeContent}>
                   <Text style={styles.timeLabel}>Từ</Text>
                   <Text style={styles.timeValue}>
-                    {formatDateTime(form.startTime)}
+                    {utcToLocalTime(form.startTime)}
                   </Text>
                 </View>
               </View>
@@ -301,7 +310,7 @@ const FormDetailView = () => {
                 <View style={styles.timeContent}>
                   <Text style={styles.timeLabel}>Đến</Text>
                   <Text style={styles.timeValue}>
-                    {formatDateTime(form.endTime)}
+                    {utcToLocalTime(form.endTime)}
                   </Text>
                 </View>
               </View>
@@ -645,7 +654,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   timeValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
     color: "#333",
   },

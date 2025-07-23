@@ -45,7 +45,7 @@ function ChatAppPage({ onClose }: ChatAppPageProps) {
     return {
       role: "assistant",
       content:
-        "Xin chào! Tôi là trợ lý tâm lý AI. Bạn có thể chia sẻ với tôi bất cứ điều gì đang khiến bạn trăn trở. Tôi luôn ở đây để lắng nghe và hỗ trợ bạn 😊",
+        "Xin chào! Tôi là trợ lý AI. Bạn có thể chia sẻ với tôi bất cứ điều gì đang khiến bạn trăn trở. Tôi luôn ở đây để lắng nghe và hỗ trợ bạn 😊",
       timestamp: Date.now(),
     };
   }, []);
@@ -320,7 +320,7 @@ function ChatAppPage({ onClose }: ChatAppPageProps) {
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Trợ lý tâm lý AI</Text>
+        <Text style={styles.title}>Trợ lý AI</Text>
         <TouchableOpacity style={styles.newChatButton} onPress={startNewChat}>
           <MaterialIcons name="add" size={24} color="#fff" />
         </TouchableOpacity>

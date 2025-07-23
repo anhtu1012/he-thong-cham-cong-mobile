@@ -14,6 +14,7 @@ import {
   Image,
   SafeAreaView,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import {
   AntDesign,
@@ -95,18 +96,29 @@ function HomePage() {
     null
   );
   const [loadingSchedule, setLoadingSchedule] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Load initial data when component mounts
+  const loadInitialData = async () => {
+    await loadUserProfile();
+    await fetchForms();
+  };
 
   useLayoutEffect(() => {
-    loadUserProfile();
+    loadInitialData();
   }, []);
+
+  // Load today schedule khi userProfile được set lần đầu
+  useEffect(() => {
+    if (userProfile?.code) {
+      fetchTodaySchedule(userProfile.code);
+    }
+  }, [userProfile]);
 
   useFocusEffect(
     useCallback(() => {
       fetchForms();
-      if (userProfile) {
-        fetchTodaySchedule();
-      }
-    }, [userProfile])
+    }, [])
   );
 
   const loadUserProfile = async () => {
@@ -149,7 +161,7 @@ function HomePage() {
     }
   };
 
-  const fetchTodaySchedule = async () => {
+  const fetchTodaySchedule = async (userCode?: string) => {
     try {
       setLoadingSchedule(true);
 
@@ -157,15 +169,16 @@ function HomePage() {
       const fromData = new Date(getCurrentDateString() + "T00:00:00");
       const toDate = new Date(getCurrentDateString() + "T23:59:59");
 
-      // Sử dụng trực tiếp đối tượng Date làm tham số
-      if (!userProfile?.code) {
+      // Sử dụng userCode từ parameter hoặc từ state
+      const codeToUse = userCode || userProfile?.code;
+      if (!codeToUse) {
         throw new Error("Không có thông tin mã người dùng");
       }
 
       const response = await getTimeSchedule(
         fromData,
         toDate,
-        userProfile.code
+        codeToUse
       );
 
       if (
@@ -191,6 +204,31 @@ function HomePage() {
     }
   };
 
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Load user profile trước
+      await loadUserProfile();
+      
+      // Fetch forms
+      await fetchForms();
+      
+      // Chỉ fetch schedule nếu có userProfile
+      const userData = await AsyncStorage.getItem("userData");
+      if (userData) {
+        const parsedUserData = JSON.parse(userData);
+        if (parsedUserData?.code) {
+          await fetchTodaySchedule(parsedUserData.code);
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
   // Lấy ngày hiện tại theo định dạng chuẩn
   const getCurrentDateString = () => {
     const today = new Date();
@@ -205,30 +243,6 @@ function HomePage() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-  };
-
-  // Format date to Thứ X, DD/MM/YYYY
-  const formatDateWithDay = (dateString: string) => {
-    const date = new Date(dateString);
-    const dayOfWeek = date.getDay();
-
-    // Trong JavaScript, getDay() trả về 0 cho Chủ nhật, 1 cho Thứ 2, ..., 6 cho Thứ 7
-    const days = [
-      "Chủ nhật",
-      "Thứ 2",
-      "Thứ 3",
-      "Thứ 4",
-      "Thứ 5",
-      "Thứ 6",
-      "Thứ 7",
-    ];
-
-    // Lấy thứ từ mảng days dựa vào dayOfWeek
-    const day = days[dayOfWeek];
-
-    return `${day}, ${date.getDate()}/${
-      date.getMonth() + 1
-    }/${date.getFullYear()}`;
   };
 
   const upcomingEvents = [
@@ -262,7 +276,13 @@ function HomePage() {
         </View>
       </View>
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Summary Widget */}
         <View style={styles.summaryContainer}>
           <Text style={styles.sectionTitle}>Tóm tắt tháng này</Text>

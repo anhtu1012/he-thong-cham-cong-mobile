@@ -5,7 +5,7 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import {
   Button,
   Platform,
@@ -40,6 +40,48 @@ import { getCurrentDateRes } from "../utils/dateUtils";
 import LocationModal from "./LocationModal";
 import { isTheSameZone } from "../utils/distanceUtils";
 
+
+// Toast utility functions for better performance and consistency
+const showSuccessToast = (message: string) => {
+  Toast.show({
+    type: "success",
+    text1: message,
+    text1Style: { 
+      textAlign: "center", 
+      fontSize: 16,
+      lineHeight: 22,
+    },
+    position: "top",
+    topOffset: 60,
+    visibilityTime: 3000,
+  });
+};
+
+const showErrorToast = (title: string, message: string) => {
+  Toast.show({
+    type: "error",
+    text1: title,
+    text2: message,
+    text1Style: { 
+      textAlign: "center", 
+      fontSize: 16,
+      fontWeight: "800",
+      lineHeight: 22,
+    },
+    text2Style: {
+      textAlign: "center",
+      flexWrap: "wrap",
+      fontSize: 14,
+      lineHeight: 20,
+      marginTop: 4,
+    },
+    position: "top",
+    topOffset: 60,
+    visibilityTime: 4000,
+    autoHide: true,
+  });
+};
+
 export default function CameraPage() {
   const [permission, requestPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
@@ -54,20 +96,146 @@ export default function CameraPage() {
     place2: string;
     isInTheSameZone: boolean;
     loading?: boolean;
+    isCheckingIn?: boolean;
+    checkInResult?: {
+      success: boolean;
+      message: string;
+    };
     onContinue?: () => void;
     onGoBack?: () => void;
+    onDismiss?: () => void;
+    onRetry?: () => void;
   }>({
     visible: false,
     place1: "",
     place2: "",
     isInTheSameZone: false,
     loading: false,
+    isCheckingIn: false,
+    checkInResult: undefined,
     onContinue: undefined,
     onGoBack: undefined,
+    onDismiss: undefined,
+    onRetry: undefined,
   });
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const cornerAnim = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation<NavigationProps>();
+  
+
+
+  // Memoized callbacks for better performance
+  const handleLocationModalDismiss = useCallback(() => {
+    // Navigate to MonthlyTimesheet instead of closing
+    navigation.navigate("AttendanceTab");
+    setLocationModalProps((prev) => ({
+      ...prev,
+      visible: false,
+      loading: false,
+      isCheckingIn: false,
+      checkInResult: undefined,
+    }));
+  }, [navigation]);
+
+  const handleLocationModalGoBack = useCallback(() => {
+    navigation.navigate("AttendanceTab");
+    setLocationModalProps((prev) => ({
+      ...prev,
+      visible: false,
+      loading: false,
+      isCheckingIn: false,
+      checkInResult: undefined,
+    }));
+  }, [navigation]);
+
+  // Main timekeeping function (moved up to fix function hoisting issue)
+  const handleTimekeeping = useCallback(async () => {
+         // Check if we have captured image
+     if (!uri) {
+       setLocationModalProps((prev) => ({
+         ...prev,
+         visible: false,
+         isCheckingIn: false,
+         checkInResult: undefined,
+       }));
+       
+       // Show error toast and navigate back to camera
+       showErrorToast("Lỗi ảnh", "Không có ảnh để xác thực. Vui lòng chụp lại ảnh.");
+       return;
+     }
+
+    // Set checking in state
+    setLocationModalProps((prev) => ({
+      ...prev,
+      loading: false,
+      isCheckingIn: true,
+      checkInResult: undefined,
+    }));
+
+    try {
+      const currentTimeScheduleDateStr = await AsyncStorage.getItem(
+        "currentTimeScheduleDate"
+      );
+
+      if (currentTimeScheduleDateStr) {
+        const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
+
+        // Step 1: Face recognition first
+        await handleFaceRecognition();
+        
+        // Step 2: Finally checkin/out
+        if (currentTimeScheduleDate.status === "NOTSTARTED") {
+          await handleCheckIn();
+        } else if (currentTimeScheduleDate.status === "ACTIVE") {
+          await handleCheckOut();
+        }
+      }
+      
+      // Show success result in the same modal
+      setLocationModalProps((prev) => ({
+        ...prev,
+        isCheckingIn: false,
+        checkInResult: {
+          success: true,
+          message: "Thông tin chấm công của bạn đã được ghi nhận thành công.",
+        },
+      }));
+    } catch (error: any) {
+      // Standardized error handling
+      const errorMessage = error?.response?.data?.message || error?.message || "Có lỗi xảy ra khi xử lý dữ liệu!";
+      
+      // Show error result in the same modal
+      setLocationModalProps((prev) => ({
+        ...prev,
+        isCheckingIn: false,
+        checkInResult: {
+          success: false,
+          message: errorMessage,
+        },
+      }));
+    }
+  }, [uri]); // Add uri as dependency
+
+  // Handler for retrying check-in from location modal
+  const handleLocationModalRetry = useCallback(() => {
+    setLocationModalProps((prev) => ({
+      ...prev,
+      isCheckingIn: true,
+      checkInResult: undefined,
+    }));
+    
+    // Trigger the check-in process again
+    setTimeout(() => {
+      handleTimekeeping();
+    }, 300);
+  }, [handleTimekeeping]);
+
+  // Memoized modal configuration
+  const memoizedLocationModalProps = useMemo(() => ({
+    ...locationModalProps,
+    onDismiss: locationModalProps.onDismiss || handleLocationModalDismiss,
+    onRetry: locationModalProps.onRetry || handleLocationModalRetry,
+  }), [locationModalProps, handleLocationModalDismiss, handleLocationModalRetry]);
 
   // Pulse animation for shutter button
   useEffect(() => {
@@ -150,57 +318,6 @@ export default function CameraPage() {
     setFacing((prev) => (prev === "back" ? "front" : "back"));
   };
 
-  const handleTimekeeping = async () => {
-    // Set loading to true when starting
-    setLocationModalProps((prev) => ({
-      ...prev,
-      loading: true,
-    }));
-
-    try {
-      const currentTimeScheduleDateStr = await AsyncStorage.getItem(
-        "currentTimeScheduleDate"
-      );
-
-      if (currentTimeScheduleDateStr) {
-        const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
-
-        await handleFaceRecognition();
-        if (currentTimeScheduleDate.status === "NOTSTARTED") {
-          await handleCheckIn();
-        } else if (currentTimeScheduleDate.status === "ACTIVE") {
-          await handleCheckOut();
-        }
-      }
-
-      Toast.show({
-        type: "success",
-        text1: "Chấm công thành công",
-        text1Style: { textAlign: "center", fontSize: 16 },
-      });
-      
-      // Hide modal and reset loading
-      setLocationModalProps((prev) => ({
-        ...prev,
-        visible: false,
-        loading: false,
-      }));
-      
-      navigation.navigate("DrawerHomeScreen");
-    } catch (error: any) {
-      // Reset loading on error
-      setLocationModalProps((prev) => ({
-        ...prev,
-        loading: false,
-      }));
-      
-      Toast.show({
-        type: "error",
-        text1: `${error.message}` || "Có lỗi xảy ra khi xử lý dữ liệu!",
-        text1Style: { textAlign: "center", fontSize: 16 },
-      });
-    }
-  };
 
   const handleFaceRecognition = async () => {
     if (!uri) return;
@@ -247,8 +364,9 @@ export default function CameraPage() {
       if (!data.matched) {
         throw new Error("Khuôn mặt không trùng khớp");
       }
-    } catch (err) {
-      throw err;
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || "Lỗi xác nhận khuôn mặt";
+      throw new Error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -305,7 +423,7 @@ export default function CameraPage() {
             currLat,
             currLong
           );
-          console.log("Location check result: ", result);
+          // console.log("Location check result: ", result);
 
           const currentDateAddressLine = currentTimeScheduleDate.addressLine;
 
@@ -316,15 +434,12 @@ export default function CameraPage() {
             place2: currentDateAddressLine,
             isInTheSameZone: result,
             loading: false,
+            isCheckingIn: false,
+            checkInResult: undefined,
             onContinue: handleTimekeeping,
-            onGoBack: () => {
-              navigation.navigate("AttendanceTab");
-              setLocationModalProps((prev) => ({
-                ...prev,
-                visible: false,
-                loading: false,
-              }));
-            },
+            onGoBack: handleLocationModalGoBack,
+            onDismiss: handleLocationModalDismiss,
+            onRetry: handleLocationModalRetry,
           });
 
           if (!result) {
@@ -343,7 +458,7 @@ export default function CameraPage() {
   };
 
   const handleCheckIn = async () => {
-    console.log("handleCheckIn called");
+    // console.log("handleCheckIn called");
 
     const currentTimeScheduleDateStr = await AsyncStorage.getItem(
       "currentTimeScheduleDate"
@@ -364,13 +479,14 @@ export default function CameraPage() {
           currentTimeScheduleDate.id,
           payload
         );
-        console.log("Check-in response: ", res.status);
+        // console.log("Check-in response: ", res.status);
 
         if (res.status !== 200) {
           throw new Error("Chấm công thất bại");
         }
-      } catch (err) {
-        throw err;
+      } catch (err: any) {
+        const errorMessage = err?.response?.data?.message || err?.message || "Lỗi check-in";
+        throw new Error(errorMessage);
       }
     }
   };
@@ -387,17 +503,23 @@ export default function CameraPage() {
         workingScheduleCode: currentTimeScheduleDate.code,
         checkOutTime: getCurrentDateRes(),
       };
+      console.log("payload: ", payload);
+      
 
       try {
         const res = await timeKeepingCheckOut(
           currentTimeScheduleDate.timeKeepingId,
           payload
         );
+        console.log("check out response: ", res);
+        
         if (res.status !== 200) {
           throw new Error("Chấm công thất bại");
         }
-      } catch (err) {
-        throw err;
+      } catch (err: any) {
+        console.log("check out error: ", err);
+        const errorMessage = err?.response?.data?.message || err?.message || "Lỗi check-out";
+        throw new Error(errorMessage);
       }
     }
   };
@@ -444,7 +566,16 @@ export default function CameraPage() {
         <View style={styles.buttonContainer}>
           <Pressable
             style={[styles.actionButton, styles.retakeButton]}
-            onPress={() => setUri(null)}
+            onPress={() => {
+              setUri(null);
+              // Reset location modal if it's open
+              setLocationModalProps((prev) => ({
+                ...prev,
+                visible: false,
+                isCheckingIn: false,
+                checkInResult: undefined,
+              }));
+            }}
             disabled={isProcessing}
           >
             {({ pressed }) => (
@@ -659,7 +790,7 @@ export default function CameraPage() {
 
   return (
     <>
-      <LocationModal {...locationModalProps}></LocationModal>
+      <LocationModal {...memoizedLocationModalProps}></LocationModal>
       <View style={styles.container}>
         {uri ? renderPicture() : renderCamera()}
       </View>

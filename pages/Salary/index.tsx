@@ -7,6 +7,7 @@ import {
   Dimensions,
   FlatList,
   Modal,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -19,7 +20,7 @@ import SalaryCriteria from "./SalaryCriteria";
 import Details from "./Details";
 import Summary from "./Summary";
 import { formatCurrency } from "../../utils/string";
-import { getBangLuong } from "../../service/salaryPage";
+import { getBangLuong, getBangLuongCriteria } from "../../service/salaryPage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserProfile } from "../../models/timekeeping";
 import { Salary } from "../../models/salary";
@@ -47,20 +48,21 @@ const SalaryPage = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [salaryData, setSalaryData] = useState<Salary>();
   const [salaryHistory, setSalaryHistory] = useState<Salary[]>([]);
-
-  const salaryCriteriaData = {
-    id: "6",
-    createdAt: "2025-06-19T15:42:19.296Z",
-    updatedAt: "2025-06-19T15:42:19.296Z",
-    code: "POS2506190006",
-    positionName: "Nhân viên Hỗ trợ khách hàng",
-    role: "R4",
-    description: "Staff",
-    baseSalary: 80000,
-    allowance: 1000000,
-    overtimeSalary: 100000,
-    lateFine: 50000,
-  };
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+  const [salaryCriteriaData, setSalaryCriteriaData] = useState<any>();
+  // const salaryCriteriaData = {
+  //   id: "6",
+  //   createdAt: "2025-06-19T15:42:19.296Z",
+  //   updatedAt: "2025-06-19T15:42:19.296Z",
+  //   code: "POS2506190006",
+  //   positionName: "Nhân viên Hỗ trợ khách hàng",
+  //   role: "R4",
+  //   description: "Staff",
+  //   baseSalary: 80000,
+  //   allowance: 1000000,
+  //   overtimeSalary: 100000,
+  //   lateFine: 50000,
+  // };
   useEffect(() => {
     loadUserProfile();
   }, []);
@@ -69,6 +71,7 @@ const SalaryPage = () => {
     useCallback(() => {
       if (userProfile) {
         fetchBangLuong(selectedMonth);
+        fetchSalaryCriteria();
       }
     }, [userProfile, selectedMonth])
   );
@@ -92,6 +95,19 @@ const SalaryPage = () => {
       setSalaryHistory(resHistory.data.data);
       setSalaryData(res.data.data[0]);
     } catch (error) {}
+  };
+  const fetchSalaryCriteria = async () => {
+    if (!userProfile) return;
+    try {
+      const res = await getBangLuongCriteria(userProfile.code);
+      setSalaryCriteriaData(res.data.data[0]);
+      console.log("salaryCriteriaData",res.data.data[0]);
+      
+    } catch (error) {
+      console.log(error);
+
+      
+    }
   };
 
   const chartData = {
@@ -135,6 +151,18 @@ const SalaryPage = () => {
       }, 500);
     }
   }, [activeTab, refreshing]);
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setPullRefreshing(true);
+    try {
+      await fetchBangLuong(selectedMonth);
+    } catch (error) {
+      console.error("Error refreshing salary data:", error);
+    } finally {
+      setPullRefreshing(false);
+    }
+  }, [selectedMonth]);
 
   // Hàm chuyển đổi tháng
   const changeMonth = (direction: "prev" | "next") => {
@@ -379,14 +407,24 @@ const SalaryPage = () => {
           </View>
         );
       case "history":
-        return (
+        return salaryHistory ? (
           <History
             salaryHistory={salaryHistory}
             formatCurrency={formatCurrency}
           />
+        ): (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Không có dữ liệu lương.</Text>
+          </View>
         );
       case "SalaryCriteria":
-        return <SalaryCriteria salaryCriteriaData={salaryCriteriaData} />;
+        return salaryCriteriaData ? (
+          <SalaryCriteria salaryCriteriaData={salaryCriteriaData} />
+        ): (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Không có dữ liệu tiêu chí lương.</Text>
+          </View>
+        );
       default:
         return <View />;
     }
@@ -401,7 +439,13 @@ const SalaryPage = () => {
         {renderHeaderSection()}
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={pullRefreshing} onRefresh={onRefresh} />
+        }
+      >
         {renderTab()}
         <View style={{ height: 20 }} />
       </ScrollView>
