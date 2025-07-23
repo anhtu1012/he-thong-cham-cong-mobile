@@ -7,3 +7,7 @@ export const getBangLuong = (userCode: string, month?: string) => {
   }
   return api.get(url);
 };
+
+export const getBangLuongCriteria = (userCode: string) => {
+  return api.get(`/position/user-code?userCode=${userCode}`);
+};

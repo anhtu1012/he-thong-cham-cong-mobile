@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Image,
   SafeAreaView,
   Dimensions,
+  RefreshControl,
 } from "react-native";
 import {
   AntDesign,
@@ -91,6 +92,7 @@ const ProfilePage = () => {
   const [formTitleOptions, setFormTitleOptions] = useState<
     Array<{ value: string; label: string }>
   >([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -272,6 +274,18 @@ const ProfilePage = () => {
     setShowFormTitleDropdown(!showFormTitleDropdown);
     setShowStatusDropdown(false);
   };
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadUserData(), fetchForms()]);
+    } catch (error) {
+      console.error("Error refreshing profile data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   // Format date to DD/MM/YYYY
   const formatDate = (dateString: string) => {
@@ -1290,7 +1304,12 @@ const ProfilePage = () => {
         </ScrollView>
       </View>
 
-      <ScrollView style={styles.container}>
+      <ScrollView 
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {renderTabContent()}
         {/* Bottom space */}
         <View style={styles.bottomSpace} />

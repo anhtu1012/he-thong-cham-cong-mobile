@@ -1,415 +1,186 @@
 {
   "conversations": [
     {
-      "question": "tôi cảm thấy buồn",
+      "question": "làm sao để chấm công",
       "similarQuestions": [
-        "tôi buồn quá",
-        "tôi thấy buồn",
-        "tôi đang buồn",
-        "sao tôi buồn thế này",
-        "tôi chán quá",
-        "tôi thấy chán",
-        "tôi không vui",
-        "tôi muốn khóc"
+        "cách chấm công trong app",
+        "check in như thế nào",
+        "làm sao để điểm danh",
+        "cách ghi nhận giờ làm việc",
+        "tôi muốn chấm công",
+        "hướng dẫn chấm công",
+        "check in check out"
       ],
-      "answer": "Tôi hiểu cảm xúc của bạn. Hãy chia sẻ thêm về điều gì đang khiến bạn buồn nhé? Đôi khi nói ra những điều làm ta buồn sẽ giúp ta cảm thấy nhẹ nhõm hơn đấy."
+      "answer": "Để chấm công trong app, bạn có thể làm theo các bước sau:\n1. Mở app và đăng nhập tài khoản\n2. Vào trang chủ (Home)\n3. Nhấn nút 'Chấm công' hoặc 'Check In'\n4. Cho phép app truy cập vị trí để xác nhận bạn đang ở đúng nơi làm việc\n5. Chấm công bằng khuôn mặt nếu có tính năng này\n6. Xác nhận thông tin và hoàn tất\n\nLưu ý: Hãy đảm bảo bạn ở đúng vị trí làm việc khi chấm công nhé!"
     },
     {
-      "question": "tôi đang stress",
+      "question": "xem lương như thế nào",
       "similarQuestions": [
-        "tôi bị stress",
-        "tôi đang căng thẳng",
-        "tôi thấy căng thẳng quá",
-        "tôi stress quá",
-        "tôi đang rất áp lực",
-        "tôi thấy áp lực quá",
-        "tôi bị ngột ngạt",
-        "tôi thấy mệt mỏi"
+        "cách xem bảng lương",
+        "kiểm tra lương trong app",
+        "xem thông tin lương",
+        "bảng lương ở đâu",
+        "tôi muốn xem lương tháng này",
+        "chi tiết lương",
+        "lịch sử lương"
       ],
-      "answer": "Stress là phản ứng tự nhiên của cơ thể. Bạn có thể thử một số phương pháp thư giãn như hít thở sâu, đi dạo hoặc nghe nhạc. Bạn muốn chia sẻ nguyên nhân gây stress không?"
+      "answer": "Để xem thông tin lương trong app:\n1. Vào tab 'Salary' (Lương) ở menu chính\n2. Chọn tháng bạn muốn xem\n3. Ở đây bạn có thể xem:\n   - Tổng quan lương (Summary)\n   - Chi tiết lương (Details) \n   - Lịch sử lương (History)\n   - Tiêu chí tính lương (Salary Criteria)\n\nBạn cũng có thể xuất file PDF hoặc chia sẻ thông tin lương nếu cần thiết."
     },
     {
-      "question": "tôi thất tình",
+      "question": "làm sao để tạo đơn từ",
       "similarQuestions": [
-        "người yêu bỏ tôi",
-        "tôi chia tay rồi",
-        "tình yêu tan vỡ",
-        "tôi bị phản bội",
-        "tôi đang đau khổ vì tình yêu",
-        "tôi không muốn yêu nữa",
-        "tôi thất bại trong tình yêu"
+        "cách tạo form đơn từ",
+        "xin phép nghỉ",
+        "tạo đơn xin nghỉ",
+        "làm đơn từ trong app",
+        "gửi đơn từ",
+        "form xin phép",
+        "đơn từ ở đâu"
       ],
-      "answer": "Tôi rất thông cảm với nỗi đau của bạn. Thất tình là trải nghiệm rất khó khăn và đau đớn. Hãy cho bản thân thời gian để chữa lành và đừng quên rằng bạn xứng đáng được hạnh phúc. Bạn có muốn chia sẻ thêm không?"
+      "answer": "Để tạo đơn từ trong app:\n1. Vào mục 'Create Form' (Tạo đơn từ)\n2. Chọn loại đơn từ bạn muốn tạo (nghỉ phép, đi muộn, về sớm, v.v.)\n3. Điền thông tin chi tiết:\n   - Ngày bắt đầu và kết thúc\n   - Lý do xin phép\n   - Ghi chú thêm (nếu có)\n4. Đính kèm file nếu cần thiết\n5. Nhấn 'Gửi đơn'\n\nBạn có thể theo dõi trạng thái đơn từ trong danh sách forms đã tạo."
     },
     {
-      "question": "tôi thấy cô đơn",
+      "question": "xem lịch làm việc",
       "similarQuestions": [
-        "tôi không có bạn",
-        "tôi cảm thấy lẻ loi",
-        "không ai hiểu tôi",
-        "tôi thấy mình cô độc quá",
-        "tôi muốn có người tâm sự",
-        "tôi không có ai bên cạnh"
+        "lịch chấm công",
+        "timesheet ở đâu",
+        "xem giờ làm việc",
+        "bảng chấm công",
+        "lịch sử chấm công",
+        "thống kê chấm công",
+        "báo cáo thời gian"
       ],
-      "answer": "Cảm giác cô đơn có thể rất khó khăn. Bạn có thể thử tham gia các hoạt động nhóm, câu lạc bộ hoặc tình nguyện để gặp gỡ những người mới. Đôi khi, việc chia sẻ cảm xúc với người khác cũng giúp ta cảm thấy được kết nối hơn."
+      "answer": "Để xem lịch làm việc và thông tin chấm công:\n1. Vào tab 'Timesheet' (Bảng chấm công)\n2. Bạn có thể xem theo:\n   - Tuần (Weekly Timesheet)\n   - Tháng (Monthly Timesheet) \n   - Thống kê (Stats Timesheet)\n\nThông tin hiển thị bao gồm:\n- Giờ vào, giờ ra hàng ngày\n- Tổng số giờ làm việc\n- Số ngày làm việc\n- Thời gian nghỉ\n- Đi muộn, về sớm (nếu có)"
     },
     {
-      "question": "tôi lo lắng về tương lai",
+      "question": "app bị lỗi không chấm công được",
       "similarQuestions": [
-        "tôi sợ tương lai",
-        "tôi không biết tương lai sẽ ra sao",
-        "tôi bất an về tương lai",
-        "tôi không biết phải làm gì",
-        "tương lai mờ mịt quá",
-        "tôi hoang mang về tương lai"
+        "không check in được",
+        "app lỗi chấm công",
+        "chấm công không hoạt động",
+        "tại sao không chấm công được",
+        "lỗi khi chấm công",
+        "app không phản hồi",
+        "chấm công thất bại"
       ],
-      "answer": "Lo lắng về tương lai là điều rất bình thường. Thay vì lo lắng quá nhiều, hãy thử tập trung vào những việc bạn có thể làm ngay bây giờ. Bạn có thể chia sẻ cụ thể hơn về điều gì đang khiến bạn lo lắng không?"
+      "answer": "Nếu gặp lỗi khi chấm công, bạn hãy thử:\n1. Kiểm tra kết nối internet\n2. Đảm bảo GPS/vị trí được bật\n3. Cho phép app truy cập camera (nếu dùng chấm công bằng khuôn mặt)\n4. Khởi động lại app\n5. Kiểm tra xem bạn có ở đúng vị trí cho phép chấm công không\n6. Cập nhật app lên phiên bản mới nhất\n\nNếu vẫn không được, hãy liên hệ bộ phận IT hoặc HR để được hỗ trợ."
     },
     {
-      "question": "tôi không tự tin",
+      "question": "quên mật khẩu đăng nhập",
       "similarQuestions": [
-        "tôi thấy mình kém cỏi",
-        "tôi không đủ tốt",
-        "tôi ghét bản thân",
-        "tôi thấy mình vô dụng",
-        "tôi không thích bản thân",
-        "tôi kém hơn người khác"
+        "làm sao lấy lại mật khẩu",
+        "reset password",
+        "tôi quên mật khẩu",
+        "không đăng nhập được",
+        "khôi phục mật khẩu",
+        "đổi mật khẩu"
       ],
-      "answer": "Mỗi người đều có những điểm mạnh riêng. Đừng so sánh bản thân với người khác. Hãy tập trung vào việc phát triển những điểm mạnh của mình. Bạn có thể kể cho tôi nghe về những thành công nhỏ mà bạn đã đạt được không?"
+      "answer": "Để lấy lại mật khẩu:\n1. Ở màn hình đăng nhập, nhấn 'Quên mật khẩu?'\n2. Nhập email hoặc số điện thoại đã đăng ký\n3. Kiểm tra email/SMS để nhận link reset mật khẩu\n4. Nhấn vào link và tạo mật khẩu mới\n5. Đăng nhập lại với mật khẩu mới\n\nLưu ý: Nếu không nhận được email, hãy kiểm tra thư mục spam. Vẫn không được thì liên hệ admin để được hỗ trợ."
     },
     {
-      "question": "tôi hay suy nghĩ tiêu cực",
+      "question": "cách cập nhật thông tin cá nhân",
       "similarQuestions": [
-        "tôi bi quan quá",
-        "tôi hay nghĩ xấu",
-        "tôi không lạc quan được",
-        "tôi hay nghĩ không tốt",
-        "tôi không thấy hi vọng"
+        "sửa profile",
+        "thay đổi thông tin cá nhân",
+        "cập nhật hồ sơ",
+        "profile ở đâu",
+        "đổi avatar",
+        "sửa thông tin tài khoản",
+        "cập nhật profile"
       ],
-      "answer": "Suy nghĩ tiêu cực có thể ảnh hưởng lớn đến cuộc sống. Hãy thử viết ra những điều tích cực đã xảy ra trong ngày, dù là việc nhỏ nhất. Điều này có thể giúp bạn nhìn nhận cuộc sống cân bằng hơn."
+      "answer": "Để cập nhật thông tin cá nhân:\n1. Vào tab 'Profile' (Hồ sơ)\n2. Nhấn nút 'Chỉnh sửa' hoặc biểu tượng bút chì\n3. Cập nhật các thông tin cần thiết:\n   - Ảnh đại diện\n   - Họ tên\n   - Email\n   - Số điện thoại\n   - Địa chỉ\n4. Nhấn 'Lưu' để hoàn tất\n\nLưu ý: Một số thông tin như mã nhân viên có thể không thể tự thay đổi và cần liên hệ HR."
     },
     {
-      "question": "tôi mất ngủ",
+      "question": "không thấy nút chấm công",
       "similarQuestions": [
-        "tôi khó ngủ",
-        "tôi không ngủ được",
-        "tôi trằn trọc",
-        "tôi thức khuya",
-        "tôi hay tỉnh giấc",
-        "tôi ngủ không ngon"
+        "mất nút check in",
+        "không có nút chấm công",
+        "tôi không thấy chấm công ở đâu",
+        "nút chấm công biến mất",
+        "interface thiếu nút chấm công"
       ],
-      "answer": "Mất ngủ có thể ảnh hưởng nhiều đến sức khỏe và tinh thần. Bạn có thể thử một số cách như: tập thể dục nhẹ nhàng ban ngày, tránh caffein buổi tối, thiết lập thời gian đi ngủ cố định. Bạn thường làm gì trước khi đi ngủ?"
+      "answer": "Nếu không thấy nút chấm công:\n1. Kiểm tra xem bạn đã đăng nhập chưa\n2. Đảm bảo bạn ở trang chủ (Home)\n3. Cuộn xuống để tìm widget chấm công\n4. Kiểm tra xem có thông báo nào về bảo trì hệ thống không\n5. Thử thoát app và mở lại\n6. Kiểm tra phiên bản app có cũ không\n\nNếu vẫn không thấy, có thể tài khoản của bạn chưa được kích hoạt tính năng chấm công. Hãy liên hệ quản lý hoặc HR."
     },
     {
-      "question": "tôi hay giận dữ",
+      "question": "làm sao để chat với đồng nghiệp",
       "similarQuestions": [
-        "tôi dễ nổi nóng",
-        "tôi hay cáu gắt",
-        "tôi khó kiểm soát cảm xúc",
-        "tôi hay bực tức",
-        "tôi hay tức giận",
-        "tôi dễ cáu"
+        "chat trong app",
+        "nhắn tin với đồng nghiệp",
+        "tính năng chat",
+        "gửi tin nhắn",
+        "chat box ở đâu",
+        "liên lạc với team"
       ],
-      "answer": "Cảm xúc giận dữ là bình thường, nhưng quan trọng là cách ta kiểm soát nó. Khi cảm thấy tức giận, hãy thử đếm đến 10, hít thở sâu hoặc tạm rời khỏi tình huống đó. Bạn có muốn chia sẻ điều gì thường khiến bạn giận không?"
+      "answer": "Để sử dụng tính năng chat:\n1. Tìm nút chat (thường là biểu tượng tin nhắn) ở góc màn hình\n2. Nhấn vào để mở cửa sổ chat\n3. Chọn người hoặc nhóm bạn muốn nhắn tin\n4. Gõ tin nhắn và nhấn gửi\n\nBạn có thể:\n- Chat riêng với từng đồng nghiệp\n- Tham gia nhóm chat của team\n- Gửi file, hình ảnh\n- Xem lịch sử tin nhắn\n\nLưu ý: Hãy sử dụng chat một cách chuyên nghiệp và phù hợp trong môi trường làm việc."
     },
     {
-      "question": "tôi hay lo âu",
+      "question": "thời gian chấm công sai",
       "similarQuestions": [
-        "tôi hay lo lắng",
-        "tôi hay sợ hãi",
-        "tôi hay hoảng sợ",
-        "tôi bất an",
-        "tôi hay hồi hộp",
-        "tôi hay căng thẳng"
+        "giờ chấm công không đúng",
+        "thời gian hiển thị sai",
+        "app ghi nhầm giờ",
+        "múi giờ sai",
+        "thời gian không chính xác",
+        "sửa thời gian chấm công"
       ],
-      "answer": "Lo âu là cảm giác rất phổ biến. Khi bạn cảm thấy lo âu, hãy tập trung vào hơi thở và những điều đang diễn ra xung quanh. Điều này giúp bạn kết nối với hiện tại và giảm lo âu. Bạn thường lo âu về những vấn đề gì?"
+      "answer": "Nếu thời gian chấm công hiển thị sai:\n1. Kiểm tra cài đặt múi giờ trên điện thoại\n2. Đảm bảo điện thoại đã đồng bộ thời gian tự động\n3. Kiểm tra xem app có cài đặt múi giờ riêng không\n4. Khởi động lại app để đồng bộ lại thời gian\n\nNếu vẫn sai:\n1. Chụp ảnh màn hình làm bằng chứng\n2. Liên hệ HR hoặc quản lý để điều chỉnh\n3. Ghi chú lại giờ chấm công thực tế để tham khảo\n\nThông thường admin có thể điều chỉnh thời gian chấm công trong trường hợp có lỗi hệ thống."
     },
     {
-      "question": "tôi muốn tự tử",
+      "question": "đơn từ bị từ chối",
       "similarQuestions": [
-        "tôi không muốn sống nữa",
-        "tôi muốn kết thúc cuộc đời",
-        "tôi không còn hy vọng để sống",
-        "tôi nghĩ đến cái chết",
-        "tôi muốn biến mất"
+        "đơn từ không được duyệt",
+        "tại sao đơn từ bị reject",
+        "form bị từ chối",
+        "đơn xin nghỉ không được chấp nhận",
+        "đơn từ bị hủy"
       ],
-      "answer": "Tôi rất lo lắng khi nghe bạn nói vậy. Cuộc sống của bạn rất quý giá. Hãy gọi ngay số điện thoại đường dây nóng tư vấn tâm lý 19001544 hoặc liên hệ người thân tin cậy. Bạn không đơn độc trong chuyện này. Chúng ta có thể cùng nhau tìm cách giải quyết."
+      "answer": "Khi đơn từ bị từ chối:\n1. Kiểm tra lý do từ chối trong chi tiết đơn từ\n2. Đọc kỹ feedback từ người duyệt\n3. Các lý do thường gặp:\n   - Thông tin không đầy đủ\n   - Thời gian xin nghỉ không hợp lý\n   - Không có giấy tờ chứng minh (nếu cần)\n   - Vi phạm quy định nghỉ phép\n\nBạn có thể:\n- Tạo đơn từ mới với thông tin đầy đủ hơn\n- Liên hệ trực tiếp với người duyệt để trao đổi\n- Xem lại quy định nghỉ phép của công ty"
     },
     {
-      "question": "tôi hay ghen tị",
+      "question": "không nhận được thông báo",
       "similarQuestions": [
-        "tôi thấy ghen với người khác",
-        "tôi không thích người khác thành công",
-        "tôi hay so sánh bản thân",
-        "tôi khó chịu khi người khác hơn mình",
-        "tôi ganh tị với bạn bè"
+        "app không báo thông báo",
+        "thiếu notification",
+        "không có thông báo đẩy",
+        "tại sao không có thông báo",
+        "bật thông báo như thế nào"
       ],
-      "answer": "Cảm giác ghen tị là bình thường, nhưng đừng để nó ảnh hưởng đến cuộc sống của bạn. Hãy tập trung vào phát triển bản thân và đặt mục tiêu cho riêng mình. Mỗi người có một hành trình riêng, bạn không cần phải giống ai cả."
+      "answer": "Để nhận thông báo từ app:\n1. Vào Cài đặt điện thoại > Thông báo\n2. Tìm app chấm công và bật thông báo\n3. Cho phép các loại thông báo: âm thanh, banner, badge\n4. Trong app, vào Settings và kiểm tra cài đặt thông báo\n5. Đảm bảo không bật chế độ 'Không làm phiền'\n\nCác thông báo thường có:\n- Nhắc nhở chấm công\n- Cập nhật trạng thái đơn từ\n- Thông báo về lương\n- Tin nhắn mới từ đồng nghiệp\n- Thay đổi lịch làm việc"
     },
     {
-      "question": "tôi sợ thất bại",
+      "question": "làm sao để xem thống kê chấm công",
       "similarQuestions": [
-        "tôi sợ làm sai",
-        "tôi sợ mắc lỗi",
-        "tôi không dám thử thách",
-        "tôi sợ người khác chê cười",
-        "tôi sợ không làm được"
+        "báo cáo chấm công",
+        "thống kê giờ làm việc",
+        "xem số liệu chấm công",
+        "dashboard chấm công",
+        "phân tích thời gian làm việc",
+        "báo cáo tháng"
       ],
-      "answer": "Nỗi sợ thất bại có thể cản trở chúng ta phát triển. Hãy nhớ rằng thất bại là một phần của quá trình học hỏi và trưởng thành. Bạn có thể chia sẻ điều gì đang khiến bạn lo sợ không?"
+      "answer": "Để xem thống kê và báo cáo chấm công:\n1. Vào tab 'Timesheet'\n2. Chọn 'Stats Timesheet' (Thống kê)\n3. Chọn khoảng thời gian: tuần, tháng, quý\n\nThông tin thống kê bao gồm:\n- Tổng giờ làm việc\n- Số ngày làm việc thực tế\n- Số lần đi muộn, về sớm\n- Thời gian nghỉ\n- Tỷ lệ chấm công đúng giờ\n- Biểu đồ xu hướng\n\nBạn có thể xuất báo cáo dưới dạng PDF hoặc Excel để lưu trữ hoặc gửi cho quản lý."
     },
     {
-      "question": "tôi hay trì hoãn",
+      "question": "chấm công bằng khuôn mặt không nhận diện được",
       "similarQuestions": [
-        "tôi lười biếng quá",
-        "tôi không có động lực",
-        "tôi hay để đến phút cuối",
-        "tôi không thể tập trung làm việc",
-        "tôi không hoàn thành công việc đúng hạn"
+        "face recognition không hoạt động",
+        "không nhận diện được mặt",
+        "camera không quét được mặt",
+        "chấm công bằng mặt lỗi",
+        "nhận diện khuôn mặt thất bại"
       ],
-      "answer": "Trì hoãn là vấn đề phổ biến. Hãy thử chia nhỏ công việc thành các phần dễ quản lý hơn và tạo thời gian biểu cụ thể. Bạn có thể bắt đầu từ việc nhỏ nhất và dễ nhất trước."
+      "answer": "Khi gặp lỗi nhận diện khuôn mặt:\n1. Đảm bảo có đủ ánh sáng\n2. Giữ điện thoại cách mặt khoảng 30-50cm\n3. Nhìn thẳng vào camera, không đeo kính râm\n4. Đảm bảo camera không bị che khuất\n5. Làm sạch camera trước khi sử dụng\n6. Thử chụp lại nếu lần đầu không thành công\n\nNếu vẫn không được:\n1. Kiểm tra xem profile có ảnh đại diện rõ nét không\n2. Liên hệ admin để cập nhật lại dữ liệu khuôn mặt\n3. Sử dụng phương thức chấm công khác tạm thời\n\nLưu ý: Tránh thay đổi ngoại hình quá nhiều so với ảnh đã đăng ký."
     },
     {
-      "question": "tôi nghiện game",
+      "question": "app chậm hoặc bị treo",
       "similarQuestions": [
-        "tôi chơi game nhiều quá",
-        "tôi không kiểm soát được việc chơi game",
-        "tôi bỏ bê việc học vì game",
-        "tôi dành nhiều thời gian cho game",
-        "tôi không thể ngừng chơi game"
+        "app lag",
+        "ứng dụng chạy chậm",
+        "app bị đơ",
+        "không phản hồi",
+        "app bị crash",
+        "ứng dụng không hoạt động"
       ],
-      "answer": "Nghiện game có thể ảnh hưởng đến cuộc sống của bạn. Hãy thử đặt ra giới hạn thời gian chơi game và tìm các hoạt động thay thế như thể thao hoặc gặp gỡ bạn bè. Bạn có muốn chia sẻ về những ảnh hưởng của game đến cuộc sống không?"
-    },
-    {
-      "question": "tôi bị bắt nạt",
-      "similarQuestions": [
-        "tôi bị bạn bè đối xử tệ",
-        "tôi bị chọc ghẹo",
-        "tôi bị ức hiếp",
-        "tôi bị cô lập",
-        "họ hay chế giễu tôi"
-      ],
-      "answer": "Rất tiếc khi nghe bạn phải trải qua điều này. Bắt nạt là hành vi không thể chấp nhận được. Hãy chia sẻ với người lớn đáng tin cậy như thầy cô, cha mẹ hoặc tư vấn viên. Bạn không phải chịu đựng điều này một mình."
-    },
-    {
-      "question": "tôi hay ganh tỵ với người yêu",
-      "similarQuestions": [
-        "tôi ghen với người yêu",
-        "tôi không tin tưởng người yêu",
-        "tôi sợ người yêu phản bội",
-        "tôi hay nghi ngờ người yêu",
-        "tôi kiểm soát người yêu quá nhiều"
-      ],
-      "answer": "Ghen tuông trong tình yêu là bình thường, nhưng nếu quá mức có thể phá hủy mối quan hệ. Hãy thử trao đổi thẳng thắn với người yêu về cảm xúc của bạn và cùng nhau xây dựng lòng tin."
-    },
-    {
-      "question": "tôi bị ám ảnh về ngoại hình",
-      "similarQuestions": [
-        "tôi không thích vẻ ngoài của mình",
-        "tôi thấy mình xấu xí",
-        "tôi muốn thay đổi ngoại hình",
-        "tôi không tự tin về ngoại hình",
-        "tôi ghét nhìn mình trong gương"
-      ],
-      "answer": "Ngoại hình không phải là tất cả. Mỗi người đều có vẻ đẹp riêng. Thay vì tập trung vào khuyết điểm, hãy chăm sóc bản thân và phát huy những điểm mạnh của mình. Bạn có thể chia sẻ điều gì khiến bạn không hài lòng không?"
-    },
-    {
-      "question": "tôi không biết mình là ai",
-      "similarQuestions": [
-        "tôi đang tìm kiếm bản thân",
-        "tôi không hiểu mình muốn gì",
-        "tôi không biết đam mê là gì",
-        "tôi không có định hướng",
-        "tôi không biết mình thích gì"
-      ],
-      "answer": "Việc tìm hiểu bản thân là một hành trình dài. Hãy thử trải nghiệm nhiều điều mới, ghi chép lại cảm xúc và suy nghĩ của mình. Dần dần bạn sẽ hiểu rõ bản thân hơn."
-    },
-    {
-      "question": "tôi sợ giao tiếp",
-      "similarQuestions": [
-        "tôi ngại nói chuyện với người lạ",
-        "tôi khó kết bạn",
-        "tôi sợ đám đông",
-        "tôi hay lo lắng khi gặp người mới",
-        "tôi không biết cách giao tiếp"
-      ],
-      "answer": "Nhiều người cũng có nỗi sợ tương tự. Hãy bắt đầu từ những tình huống nhỏ và quen thuộc. Bạn có thể tham gia các nhóm có cùng sở thích để dễ dàng trò chuyện hơn."
-    },
-    {
-      "question": "tôi hay tức giận với gia đình",
-      "similarQuestions": [
-        "tôi cãi nhau với bố mẹ",
-        "tôi không hòa thuận với gia đình",
-        "tôi ghét gia đình mình",
-        "tôi không được gia đình hiểu",
-        "tôi muốn rời xa gia đình"
-      ],
-      "answer": "Mâu thuẫn gia đình có thể rất căng thẳng. Hãy thử bình tĩnh chia sẻ cảm xúc của bạn với gia đình, và cũng lắng nghe quan điểm của họ. Đôi khi cần thời gian để hiểu nhau hơn."
-    },
-    {
-      "question": "làm sao để vượt qua nỗi buồn",
-      "similarQuestions": [
-        "cách vượt qua buồn bã",
-        "phương pháp vượt qua nỗi buồn",
-        "làm gì khi buồn",
-        "cách đối phó với buồn bã",
-        "làm sao để vui vẻ trở lại"
-      ],
-      "answer": "Có nhiều cách để vượt qua nỗi buồn: 1) Vận động cơ thể thường xuyên để tăng endorphin 2) Duy trì thói quen sinh hoạt điều độ 3) Viết nhật ký để giải tỏa cảm xúc 4) Tham gia các hoạt động xã hội 5) Tìm kiếm sự hỗ trợ từ bạn bè và gia đình. Bạn đã thử cách nào chưa?"
-    },
-    {
-      "question": "làm sao để kiểm soát cảm xúc",
-      "similarQuestions": [
-        "cách kiểm soát cảm xúc",
-        "làm chủ cảm xúc",
-        "kiểm soát tâm trạng",
-        "điều khiển cảm xúc",
-        "quản lý cảm xúc"
-      ],
-      "answer": "Để kiểm soát cảm xúc tốt hơn, bạn có thể: 1) Thực hành hít thở sâu khi cảm xúc dâng cao 2) Nhận diện trigger gây kích động 3) Tập thiền định mỗi ngày 4) Ghi chép lại cảm xúc 5) Học cách trì hoãn phản ứng. Bạn thấy khó khăn nhất ở điểm nào?"
-    },
-    {
-      "question": "làm sao để tự tin hơn",
-      "similarQuestions": [
-        "cách tăng sự tự tin",
-        "phương pháp xây dựng tự tin",
-        "làm sao để tự tin",
-        "cách để tự tin hơn",
-        "tăng sự tự tin"
-      ],
-      "answer": "Để xây dựng sự tự tin, bạn nên: 1) Đặt mục tiêu nhỏ và đạt được chúng 2) Chăm sóc ngoại hình 3) Học kỹ năng mới 4) Thực hành nói trước gương 5) Tập trung vào điểm mạnh của bản thân 6) Chấp nhận thất bại như cơ hội học hỏi. Bạn muốn bắt đầu từ điểm nào?"
-    },
-    {
-      "question": "làm sao để ngủ ngon",
-      "similarQuestions": [
-        "cách để ngủ ngon",
-        "làm sao để trị mất ngủ",
-        "phương pháp cải thiện giấc ngủ",
-        "làm sao để dễ ngủ",
-        "cách chữa mất ngủ",
-        "tips ngủ ngon"
-      ],
-      "answer": "Để có giấc ngủ ngon, bạn nên: 1) Tạo thời gian biểu ngủ cố định 2) Tránh caffein và điện thoại trước khi ngủ 3) Tập thể dục ban ngày 4) Tạo môi trường ngủ thoải mái, tối và mát 5) Thư giãn trước khi ngủ bằng đọc sách hoặc nghe nhạc nhẹ. Bạn đang gặp vấn đề gì với giấc ngủ?"
-    },
-    {
-      "question": "làm sao để giảm stress",
-      "similarQuestions": [
-        "cách đối phó với stress",
-        "phương pháp giảm căng thẳng",
-        "làm gì khi stress",
-        "cách thư giãn",
-        "giảm áp lực"
-      ],
-      "answer": "Để giảm stress hiệu quả: 1) Tập yoga hoặc thiền 2) Tập thể dục thường xuyên 3) Dành thời gian cho sở thích 4) Chia sẻ với người tin tưởng 5) Học cách nói 'không' với áp lực 6) Tổ chức thời gian khoa học 7) Nghỉ ngơi đầy đủ. Bạn thường làm gì để giảm stress?"
-    },
-    {
-      "question": "làm sao để quên người yêu cũ",
-      "similarQuestions": [
-        "cách vượt qua tình cũ",
-        "quên tình cũ như thế nào",
-        "vượt qua chia tay",
-        "cách hết yêu người cũ",
-        "làm sao để move on"
-      ],
-      "answer": "Để vượt qua tình cũ, bạn có thể: 1) Chấp nhận cảm xúc đau buồn 2) Tập trung phát triển bản thân 3) Tham gia hoạt động mới 4) Xóa bỏ kỷ vật và liên lạc 5) Dành thời gian cho bạn bè và gia đình 6) Đặt mục tiêu mới cho bản thân. Đừng ép buộc bản thân phải quên ngay, hãy cho phép thời gian chữa lành."
-    },
-    {
-      "question": "làm sao để cải thiện mối quan hệ",
-      "similarQuestions": [
-        "cách cải thiện quan hệ",
-        "làm sao để giao tiếp tốt hơn",
-        "cách xây dựng mối quan hệ",
-        "phương pháp tạo quan hệ tốt",
-        "cải thiện kỹ năng giao tiếp"
-      ],
-      "answer": "Để cải thiện mối quan hệ, bạn nên: 1) Lắng nghe tích cực không phán xét 2) Thể hiện sự quan tâm chân thành 3) Tôn trọng ranh giới cá nhân 4) Giao tiếp rõ ràng, thẳng thắn 5) Dành thời gian chất lượng 6) Thể hiện lòng biết ơn. Bạn đang gặp khó khăn gì trong các mối quan hệ?"
-    },
-    {
-      "question": "làm sao để tập trung học tập",
-      "similarQuestions": [
-        "cách tập trung học",
-        "phương pháp học tập hiệu quả",
-        "làm sao để học tốt hơn",
-        "cách cải thiện việc học",
-        "tăng khả năng tập trung"
-      ],
-      "answer": "Để tập trung học tập tốt hơn: 1) Chia nhỏ thời gian học (phương pháp Pomodoro) 2) Tạo môi trường học tập yên tĩnh 3) Đặt mục tiêu rõ ràng cho mỗi buổi học 4) Tránh phân tâm từ điện thoại 5) Nghỉ ngơi đủ giấc 6) Thưởng cho bản thân sau khi hoàn thành. Bạn thấy điều gì hay làm mình mất tập trung nhất?"
-    },
-    {
-      "question": "làm sao để giảm lo âu",
-      "similarQuestions": [
-        "cách đối phó với lo âu",
-        "phương pháp giảm lo lắng",
-        "làm gì khi lo lắng",
-        "cách kiểm soát lo âu",
-        "giảm anxiety"
-      ],
-      "answer": "Để giảm lo âu, bạn có thể: 1) Thực hành hít thở sâu 2) Tập thiền chánh niệm 3) Viết ra những điều lo lắng 4) Tập thể dục thường xuyên 5) Hạn chế caffein và đường 6) Ngủ đủ giấc 7) Tìm kiếm hỗ trợ chuyên môn nếu cần. Hãy chia sẻ điều gì đang khiến bạn lo lắng nhất?"
-    },
-    {
-      "question": "làm sao để tha thứ",
-      "similarQuestions": [
-        "cách học cách tha thứ",
-        "làm sao để bớt giận",
-        "cách buông bỏ hận thù",
-        "phương pháp tha thứ",
-        "học cách forgive"
-      ],
-      "answer": "Để học cách tha thứ: 1) Chấp nhận cảm xúc của bản thân 2) Hiểu rằng tha thứ là vì bản thân 3) Thay đổi góc nhìn về tình huống 4) Tập trung vào hiện tại và tương lai 5) Thực hành lòng từ bi 6) Cho phép thời gian chữa lành. Tha thứ không có nghĩa là bạn đồng ý với hành động sai trái, mà là để bản thân được tự do."
-    },
-    {
-      "question": "tôi buồn vì điểm thấp",
-      "similarQuestions": [
-        "tôi thi trượt rồi",
-        "điểm số của tôi không tốt",
-        "tôi học kém quá",
-        "tôi thất bại trong kỳ thi",
-        "tôi không đạt được điểm như mong muốn"
-      ],
-      "answer": "Mình hiểu cảm giác thất vọng của bạn lúc này. Điểm số không phải là tất cả đâu và nó cũng không định nghĩa giá trị của bạn. Có thể chia sẻ với mình bạn đã chuẩn bị như thế nào không? Mình có thể cùng bạn tìm ra phương pháp học phù hợp hơn. Đôi khi thất bại lại là cơ hội để ta nhìn nhận lại và phát triển tốt hơn đấy! 💪"
-    },
-    {
-      "question": "bạn bè tránh mặt tôi",
-      "similarQuestions": [
-        "không ai chơi với tôi",
-        "bạn bè xa lánh tôi",
-        "tôi bị bạn bè phớt lờ",
-        "bạn bè không thích tôi",
-        "tôi không hợp với nhóm bạn"
-      ],
-      "answer": "Chắc bạn đang cảm thấy rất tổn thương và cô đơn phải không? Đừng vội kết luận là do bạn không tốt nhé. Đôi khi có thể do hiểu lầm hoặc thiếu giao tiếp thôi. Bạn thử nghĩ xem gần đây có chuyện gì xảy ra không? Mình có thể cùng bạn tìm cách giải quyết và xây dựng tình bạn tốt đẹp hơn 🤗"
-    },
-    {
-      "question": "tôi thất tình vì người yêu phản bội",
-      "similarQuestions": [
-        "người yêu tôi có người khác",
-        "tôi bị cắm sừng",
-        "người yêu tôi không chung thủy",
-        "tôi bị phản bội trong tình yêu",
-        "người yêu tôi lừa dối"
-      ],
-      "answer": "Mình thực sự rất tiếc khi nghe điều này. Bị phản bội là một tổn thương rất lớn và bạn có quyền cảm thấy đau lòng. Nhưng hãy nhớ rằng đó không phải là lỗi của bạn nhé! Người không biết trân trọng tình cảm chân thành của bạn không xứng đáng với bạn đâu. Giờ điều quan trọng nhất là chăm sóc cho trái tim và tinh thần của bạn. Bạn đã thử làm gì để vượt qua nỗi đau này chưa? 🫂"
-    },
-    {
-      "question": "tôi áp lực với công việc",
-      "similarQuestions": [
-        "công việc quá nhiều",
-        "tôi làm không xuể",
-        "sếp đòi hỏi quá nhiều",
-        "tôi không đáp ứng được deadline",
-        "tôi stress vì công việc"
-      ],
-      "answer": "Mình thấu hiểu áp lực công việc mà bạn đang phải đối mặt. Đôi khi cảm giác như mọi thứ đè nặng lên vai phải không? Hãy thử chia nhỏ công việc ra và giải quyết từng phần một nhé. Bạn cũng nên trao đổi thẳng thắn với sếp về khối lượng công việc. Đừng quên dành thời gian nghỉ ngơi và thư giãn nữa - có thể là đi dạo, tập thể dục hay làm điều bạn thích. Bạn đã thử cách nào chưa? 😊"
-    },
-    {
-      "question": "bố mẹ không hiểu tôi",
-      "similarQuestions": [
-        "bố mẹ áp đặt tôi quá",
-        "cha mẹ không ủng hộ tôi",
-        "bố mẹ không lắng nghe tôi",
-        "tôi không thể nói chuyện với bố mẹ",
-        "cha mẹ không tôn trọng quyết định của tôi"
-      ],
-      "answer": "Khoảng cách thế hệ đôi khi khiến chúng ta cảm thấy khó được thấu hiểu, phải không bạn? Bố mẹ thường xuất phát từ tình yêu thương mà có những lo lắng và mong muốn cho con cái, dù cách thể hiện có thể khiến ta cảm thấy bị áp đặt. Bạn thử chọn thời điểm thích hợp, bình tĩnh chia sẻ với bố mẹ về cảm xúc và dự định của mình nhé. Đôi khi họ cần thời gian để hiểu và chấp nhận những thay đổi. Bạn muốn kể thêm về tình huống cụ thể không? 💝"
+      "answer": "Khi app chạy chậm hoặc bị treo:\n1. Đóng và mở lại app\n2. Khởi động lại điện thoại\n3. Kiểm tra kết nối internet (4G/WiFi)\n4. Xóa cache của app:\n   - Android: Cài đặt > Apps > [Tên app] > Storage > Clear Cache\n   - iOS: Gỡ và cài lại app\n5. Cập nhật app lên phiên bản mới nhất\n6. Giải phóng bộ nhớ điện thoại\n7. Kiểm tra dung lượng còn trống\n\nNếu vẫn không khắc phục được, hãy liên hệ bộ phận IT với thông tin:\n- Loại điện thoại và phiên bản OS\n- Phiên bản app\n- Mô tả chi tiết lỗi gặp phải"
     }
   ]
 }

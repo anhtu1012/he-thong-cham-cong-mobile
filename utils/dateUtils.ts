@@ -51,8 +51,7 @@ export const formatDate = (
  * @returns ISO string with Vietnamese timezone
  */
 export const getCurrentDateRes = (): string => {
-  const today = new Date();
-  return today.toISOString();
+  return dayjs().format("YYYY-MM-DDTHH:mm:ss");
 };
 
 /**
@@ -64,11 +63,9 @@ export const formatTime = (timeString: string | null): string => {
   if (!timeString) return "--:--";
 
   try {
-    const date = new Date(timeString);
-    return `${date.getHours().toString().padStart(2, "0")}:${date
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}`;
+    // Use dayjs with UTC to preserve original time from database
+    const utcTime = dayjs.utc(timeString);
+    return utcTime.format("HH:mm");
   } catch (error) {
     return "--:--";
   }

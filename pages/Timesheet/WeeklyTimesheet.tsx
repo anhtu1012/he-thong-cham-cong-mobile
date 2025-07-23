@@ -1,10 +1,11 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,8 +14,13 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import TimeScheduleModal from "../../components/TimeScheduleModal";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { UserProfile, WorkingSchedule } from "../../models/timekeeping";
 import { getTimeSchedule } from "../../service/api";
+
+// Kích hoạt plugin UTC cho dayjs
+dayjs.extend(utc);
 
 const WeeklyTimesheet = () => {
   const [weeklyData, setWeeklyData] = useState<WorkingSchedule[]>([]);
@@ -23,6 +29,7 @@ const WeeklyTimesheet = () => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDayData, setSelectedDayData] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadUserProfile();
@@ -101,11 +108,13 @@ const WeeklyTimesheet = () => {
 
   const formatTime = (timeString: string | null) => {
     if (!timeString) return "--:--";
-    const date = new Date(timeString);
-    return `${date.getHours().toString().padStart(2, "0")}:${date
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}`;
+    try {
+      // Use dayjs with UTC to preserve original time from database
+      const utcTime = dayjs.utc(timeString);
+      return utcTime.format("HH:mm");
+    } catch (error) {
+      return "--:--";
+    }
   };
 
   const getStatusColor = (
@@ -146,6 +155,18 @@ const WeeklyTimesheet = () => {
 
     return Math.max(0, actualHours - standardHours);
   };
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchWeeklyData();
+    } catch (error) {
+      console.error("Error refreshing weekly data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   const getTotalStats = () => {
     const completedDays = weeklyData.filter(
@@ -269,7 +290,13 @@ const WeeklyTimesheet = () => {
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {weeklyData.length === 0 ? (
           <View style={styles.emptyContainer}>
             <MaterialIcons name="event-busy" size={64} color="#E0E0E0" />
