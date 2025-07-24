@@ -51,7 +51,8 @@ export const formatDate = (
  * @returns ISO string with Vietnamese timezone
  */
 export const getCurrentDateRes = (): string => {
-  return dayjs().format("YYYY-MM-DDTHH:mm:ss");
+  // Sử dụng dayjs để lấy thời gian hiện tại theo múi giờ Việt Nam isoString
+  return dayjs().tz("Asia/Ho_Chi_Minh").toISOString();
 };
 
 /**
@@ -64,7 +65,7 @@ export const formatTime = (timeString: string | null): string => {
 
   try {
     // Use dayjs with UTC to preserve original time from database
-    const utcTime = dayjs.utc(timeString);
+    const utcTime = dayjs(timeString);
     return utcTime.format("HH:mm");
   } catch (error) {
     return "--:--";

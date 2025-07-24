@@ -14,6 +14,7 @@ import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { getFormDescriptions, cancelForm } from "../service/api";
 import Toast from "react-native-toast-message";
+import dayjs from "dayjs";
 
 const { width } = Dimensions.get("window");
 
@@ -130,11 +131,7 @@ const FormDetailView = () => {
 
   // utc to local time
   const utcToLocalTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-    const hours = String(localDate.getHours()).padStart(2, "0");
-    const minutes = String(localDate.getMinutes()).padStart(2, "0");
-    return `${formatDate(localDate.toISOString())} ${hours}:${minutes}`;
+    return dayjs(dateString).format("DD/MM/YYYY HH:mm");
   };
 
   // Map API status to display string
@@ -654,7 +651,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   timeValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "500",
     color: "#333",
   },

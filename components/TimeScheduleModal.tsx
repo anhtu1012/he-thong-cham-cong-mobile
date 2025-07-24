@@ -254,7 +254,7 @@ const TimeScheduleModal = ({
               <View style={styles.detailRow}>
                 <Ionicons name="hourglass" size={16} color="#6B7280" />
                 <Text style={styles.detailText}>
-                  Tổng giờ làm:{" "}
+                  Tổng công làm:{" "}
                   {selectedDate?.workingHourReal ||
                     `${
                       selectedDate?.status === "END" ||

@@ -202,7 +202,7 @@ const StatsTimesheet = () => {
                 </Text>
                 <Text style={styles.statCircleUnit}>giờ</Text>
               </View>
-              <Text style={styles.statLabel}>Tổng giờ</Text>
+              <Text style={styles.statLabel}>Tổng công</Text>
             </View>
           </View>
         </LinearGradient>
@@ -252,7 +252,7 @@ const StatsTimesheet = () => {
           <View style={styles.hoursContainer}>
             <View style={styles.hoursItem}>
               <Feather name="clock" size={20} color="#3674B5" />
-              <Text style={styles.hoursLabel}>Tổng giờ làm</Text>
+              <Text style={styles.hoursLabel}>Tổng công làm</Text>
               <Text style={styles.hoursValue}>{monthlyStats.totalHours}h</Text>
             </View>
             <View style={styles.hoursItem}>

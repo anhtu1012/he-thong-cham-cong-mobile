@@ -18,4 +18,5 @@ export interface Salary {
   paidDate: string | null;
   lateTimeCount: number | null;
   totalSalary: number;
+  overTimeSalaryPosition: number | null;
 }
