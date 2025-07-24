@@ -40,14 +40,13 @@ import { getCurrentDateRes } from "../utils/dateUtils";
 import LocationModal from "./LocationModal";
 import { isTheSameZone } from "../utils/distanceUtils";
 
-
 // Toast utility functions for better performance and consistency
 const showSuccessToast = (message: string) => {
   Toast.show({
     type: "success",
     text1: message,
-    text1Style: { 
-      textAlign: "center", 
+    text1Style: {
+      textAlign: "center",
       fontSize: 16,
       lineHeight: 22,
     },
@@ -62,8 +61,8 @@ const showErrorToast = (title: string, message: string) => {
     type: "error",
     text1: title,
     text2: message,
-    text1Style: { 
-      textAlign: "center", 
+    text1Style: {
+      textAlign: "center",
       fontSize: 16,
       fontWeight: "800",
       lineHeight: 22,
@@ -121,8 +120,6 @@ export default function CameraPage() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const cornerAnim = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation<NavigationProps>();
-  
-
 
   // Memoized callbacks for better performance
   const handleLocationModalDismiss = useCallback(() => {
@@ -150,19 +147,22 @@ export default function CameraPage() {
 
   // Main timekeeping function (moved up to fix function hoisting issue)
   const handleTimekeeping = useCallback(async () => {
-         // Check if we have captured image
-     if (!uri) {
-       setLocationModalProps((prev) => ({
-         ...prev,
-         visible: false,
-         isCheckingIn: false,
-         checkInResult: undefined,
-       }));
-       
-       // Show error toast and navigate back to camera
-       showErrorToast("Lỗi ảnh", "Không có ảnh để xác thực. Vui lòng chụp lại ảnh.");
-       return;
-     }
+    // Check if we have captured image
+    if (!uri) {
+      setLocationModalProps((prev) => ({
+        ...prev,
+        visible: false,
+        isCheckingIn: false,
+        checkInResult: undefined,
+      }));
+
+      // Show error toast and navigate back to camera
+      showErrorToast(
+        "Lỗi ảnh",
+        "Không có ảnh để xác thực. Vui lòng chụp lại ảnh."
+      );
+      return;
+    }
 
     // Set checking in state
     setLocationModalProps((prev) => ({
@@ -182,7 +182,7 @@ export default function CameraPage() {
 
         // Step 1: Face recognition first
         await handleFaceRecognition();
-        
+
         // Step 2: Finally checkin/out
         if (currentTimeScheduleDate.status === "NOTSTARTED") {
           await handleCheckIn();
@@ -190,7 +190,7 @@ export default function CameraPage() {
           await handleCheckOut();
         }
       }
-      
+
       // Show success result in the same modal
       setLocationModalProps((prev) => ({
         ...prev,
@@ -202,8 +202,11 @@ export default function CameraPage() {
       }));
     } catch (error: any) {
       // Standardized error handling
-      const errorMessage = error?.response?.data?.message || error?.message || "Có lỗi xảy ra khi xử lý dữ liệu!";
-      
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Có lỗi xảy ra khi xử lý dữ liệu!";
+
       // Show error result in the same modal
       setLocationModalProps((prev) => ({
         ...prev,
@@ -223,7 +226,7 @@ export default function CameraPage() {
       isCheckingIn: true,
       checkInResult: undefined,
     }));
-    
+
     // Trigger the check-in process again
     setTimeout(() => {
       handleTimekeeping();
@@ -231,11 +234,14 @@ export default function CameraPage() {
   }, [handleTimekeeping]);
 
   // Memoized modal configuration
-  const memoizedLocationModalProps = useMemo(() => ({
-    ...locationModalProps,
-    onDismiss: locationModalProps.onDismiss || handleLocationModalDismiss,
-    onRetry: locationModalProps.onRetry || handleLocationModalRetry,
-  }), [locationModalProps, handleLocationModalDismiss, handleLocationModalRetry]);
+  const memoizedLocationModalProps = useMemo(
+    () => ({
+      ...locationModalProps,
+      onDismiss: locationModalProps.onDismiss || handleLocationModalDismiss,
+      onRetry: locationModalProps.onRetry || handleLocationModalRetry,
+    }),
+    [locationModalProps, handleLocationModalDismiss, handleLocationModalRetry]
+  );
 
   // Pulse animation for shutter button
   useEffect(() => {
@@ -318,7 +324,6 @@ export default function CameraPage() {
     setFacing((prev) => (prev === "back" ? "front" : "back"));
   };
 
-
   const handleFaceRecognition = async () => {
     if (!uri) return;
 
@@ -365,7 +370,10 @@ export default function CameraPage() {
         throw new Error("Khuôn mặt không trùng khớp");
       }
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Lỗi xác nhận khuôn mặt";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Lỗi xác nhận khuôn mặt";
       throw new Error(errorMessage);
     } finally {
       setIsProcessing(false);
@@ -473,6 +481,7 @@ export default function CameraPage() {
         userCode: user.code,
         checkInTime: getCurrentDateRes(),
       };
+      // console.log("payload: ", payload);
 
       try {
         const res = await timeKeepingCheckIn(
@@ -485,7 +494,8 @@ export default function CameraPage() {
           throw new Error("Chấm công thất bại");
         }
       } catch (err: any) {
-        const errorMessage = err?.response?.data?.message || err?.message || "Lỗi check-in";
+        const errorMessage =
+          err?.response?.data?.message || err?.message || "Lỗi check-in";
         throw new Error(errorMessage);
       }
     }
@@ -504,7 +514,6 @@ export default function CameraPage() {
         checkOutTime: getCurrentDateRes(),
       };
       console.log("payload: ", payload);
-      
 
       try {
         const res = await timeKeepingCheckOut(
@@ -512,13 +521,14 @@ export default function CameraPage() {
           payload
         );
         console.log("check out response: ", res);
-        
+
         if (res.status !== 200) {
           throw new Error("Chấm công thất bại");
         }
       } catch (err: any) {
         console.log("check out error: ", err);
-        const errorMessage = err?.response?.data?.message || err?.message || "Lỗi check-out";
+        const errorMessage =
+          err?.response?.data?.message || err?.message || "Lỗi check-out";
         throw new Error(errorMessage);
       }
     }

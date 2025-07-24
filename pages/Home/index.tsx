@@ -145,7 +145,7 @@ function HomePage() {
           (a: FormDescription, b: FormDescription) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-        console.log("sortedForms");
+        // console.log("sortedForms");
         // Lấy 3 đơn gần nhất
         setForms(sortedForms.slice(0, 3));
       }
@@ -175,11 +175,7 @@ function HomePage() {
         throw new Error("Không có thông tin mã người dùng");
       }
 
-      const response = await getTimeSchedule(
-        fromData,
-        toDate,
-        codeToUse
-      );
+      const response = await getTimeSchedule(fromData, toDate, codeToUse);
 
       if (
         response.data &&
@@ -210,10 +206,10 @@ function HomePage() {
     try {
       // Load user profile trước
       await loadUserProfile();
-      
+
       // Fetch forms
       await fetchForms();
-      
+
       // Chỉ fetch schedule nếu có userProfile
       const userData = await AsyncStorage.getItem("userData");
       if (userData) {
@@ -276,8 +272,8 @@ function HomePage() {
         </View>
       </View>
 
-      <ScrollView 
-        style={styles.container} 
+      <ScrollView
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

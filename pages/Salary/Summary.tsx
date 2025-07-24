@@ -172,15 +172,15 @@ const Summary = ({ salaryData, chartData, width, styles }: SummaryProps) => (
         <View style={styles.componentInfo}>
           <Text style={styles.componentLabel}>Lương làm thêm</Text>
           <Text style={styles.componentDescription}>
-            {salaryData.overtimeSalary} giờ ×{" "}
-            {/* {formatCurrency(
-              Math.round(salaryData.hourlyRate * salaryData.overtimeRate)
-            )}{" "} */}
-            /giờ
+            {salaryData.overtimeSalary} giờ ×
+            {formatCurrency(salaryData.overTimeSalaryPosition)}
           </Text>
         </View>
         <Text style={styles.componentValue}>
-          {formatCurrency(salaryData.overtimeSalary)}
+          {formatCurrency(
+            (salaryData.overTimeSalaryPosition ?? 0) *
+              (salaryData.overtimeSalary ?? 0)
+          )}
         </Text>
       </View>
 

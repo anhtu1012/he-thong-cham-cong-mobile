@@ -1,10 +1,11 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -14,8 +15,6 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import TimeScheduleModal from "../../components/TimeScheduleModal";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 import { UserProfile, WorkingSchedule } from "../../models/timekeeping";
 import { getTimeSchedule } from "../../service/api";
 
@@ -110,7 +109,7 @@ const WeeklyTimesheet = () => {
     if (!timeString) return "--:--";
     try {
       // Use dayjs with UTC to preserve original time from database
-      const utcTime = dayjs.utc(timeString);
+      const utcTime = dayjs(timeString);
       return utcTime.format("HH:mm");
     } catch (error) {
       return "--:--";
@@ -279,7 +278,7 @@ const WeeklyTimesheet = () => {
             <Text style={styles.summaryValue}>
               {getTotalStats().totalHours}h
             </Text>
-            <Text style={styles.summaryLabel}>Tổng giờ</Text>
+            <Text style={styles.summaryLabel}>Tổng công</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>
@@ -290,8 +289,8 @@ const WeeklyTimesheet = () => {
         </View>
       </LinearGradient>
 
-      <ScrollView 
-        style={styles.content} 
+      <ScrollView
+        style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

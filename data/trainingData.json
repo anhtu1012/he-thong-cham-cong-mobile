@@ -157,7 +157,7 @@
         "phân tích thời gian làm việc",
         "báo cáo tháng"
       ],
-      "answer": "Để xem thống kê và báo cáo chấm công:\n1. Vào tab 'Timesheet'\n2. Chọn 'Stats Timesheet' (Thống kê)\n3. Chọn khoảng thời gian: tuần, tháng, quý\n\nThông tin thống kê bao gồm:\n- Tổng giờ làm việc\n- Số ngày làm việc thực tế\n- Số lần đi muộn, về sớm\n- Thời gian nghỉ\n- Tỷ lệ chấm công đúng giờ\n- Biểu đồ xu hướng\n\nBạn có thể xuất báo cáo dưới dạng PDF hoặc Excel để lưu trữ hoặc gửi cho quản lý."
+      "answer": "Để xem thống kê và báo cáo chấm công:\n1. Vào tab 'Timesheet'\n2. Chọn 'Stats Timesheet' (Thống kê)\n3. Chọn khoảng thời gian: tuần, tháng, quý\n\nThông tin thống kê bao gồm:\n- Tổng công làm việc\n- Số ngày làm việc thực tế\n- Số lần đi muộn, về sớm\n- Thời gian nghỉ\n- Tỷ lệ chấm công đúng giờ\n- Biểu đồ xu hướng\n\nBạn có thể xuất báo cáo dưới dạng PDF hoặc Excel để lưu trữ hoặc gửi cho quản lý."
     },
     {
       "question": "chấm công bằng khuôn mặt không nhận diện được",

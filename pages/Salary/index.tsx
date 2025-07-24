@@ -94,6 +94,8 @@ const SalaryPage = () => {
       const resHistory = await getBangLuong(userProfile.code);
       setSalaryHistory(resHistory.data.data);
       setSalaryData(res.data.data[0]);
+      // console.log("salaryData",res.data.data[0]);
+      
     } catch (error) {}
   };
   const fetchSalaryCriteria = async () => {

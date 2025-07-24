@@ -113,7 +113,8 @@ const MonthlyTimesheet = () => {
       const currentDateObj = new Date(date.date);
       const day = days[currentDateObj.getDate() - 1];
 
-      // Store additional data
+      // Store additional data + 7 tiếng
+
       day.checkInTime = date.checkInTime;
       day.checkOutTime = date.checkOutTime;
       day.workingHourReal = date.workingHourReal;
@@ -274,6 +275,8 @@ const MonthlyTimesheet = () => {
               activeOpacity={0.7}
               onPress={() => {
                 if (day.day !== 0) {
+                  console.log("Selected day:", day);
+
                   setChoosenDate(day);
                   setIsModalVisible(true);
                 }

@@ -1,4 +1,5 @@
 import { AntDesign } from "@expo/vector-icons";
+import dayjs from "dayjs";
 import React from "react";
 import {
   ActivityIndicator,
@@ -125,22 +126,11 @@ const TodayWidget = ({ todaySchedule, loadingSchedule }: TodayWidgetProps) => {
       checkInStatusColor = "#4CAF50";
     }
     //chuyên đổi định dạng giờ check-in từ isotring sang vd 01:30p không hiện pm hiện 16:30
-    checkInTime  =new Intl.DateTimeFormat('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'UTC'
-    }).format(new Date(todaySchedule.checkInTime));
-    
+    checkInTime = dayjs(todaySchedule.checkInTime).format("HH:mm");
   }
 
   if (todaySchedule.checkOutTime) {
-    checkOutTime = new Intl.DateTimeFormat('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'UTC'
-    }).format(new Date(todaySchedule.checkOutTime));
+    checkOutTime = dayjs(todaySchedule.checkOutTime).format("HH:mm");
   }
 
   return (
