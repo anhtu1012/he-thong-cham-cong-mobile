@@ -102,6 +102,16 @@ const TodayWidget = ({ todaySchedule, loadingSchedule }: TodayWidgetProps) => {
   let checkInTime = null;
   let checkOutTime = null;
   if (todaySchedule.checkInTime) {
+    if(todaySchedule.status === "ACTIVE"){
+      checkInButtonText = "Check-out" 
+    }else if(todaySchedule.status === "NOTSTARTED"){
+      checkInButtonText = "Check-in"
+    } else if(todaySchedule.status === "NOTWORK"){
+      checkInButtonText = "Vắng mặt"
+    } 
+    else {
+      checkInButtonText = "Hoàn thành"
+    }
     //nếu statusTimeKeeping = late thì check-in muộn , nếu end hoàn thành , nết nocheckout thì chưa check-out
     if (todaySchedule.statusTimeKeeping === "LATE") {
       checkInStatus = "Check-in muộn";

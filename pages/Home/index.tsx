@@ -145,7 +145,6 @@ function HomePage() {
           (a: FormDescription, b: FormDescription) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-        // console.log("sortedForms");
         // Lấy 3 đơn gần nhất
         setForms(sortedForms.slice(0, 3));
       }

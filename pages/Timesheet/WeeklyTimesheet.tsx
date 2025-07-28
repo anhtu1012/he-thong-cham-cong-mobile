@@ -66,7 +66,11 @@ const WeeklyTimesheet = () => {
       );
 
       if (response.data && response.data.data) {
-        setWeeklyData(response.data.data);
+        // Sort data by date (ascending order)
+        const sortedData = response.data.data.sort((a: WorkingSchedule, b: WorkingSchedule) => {
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        });
+        setWeeklyData(sortedData);
       }
     } catch (error) {
       console.error("Error fetching weekly data:", error);
@@ -139,7 +143,7 @@ const WeeklyTimesheet = () => {
     if (checkIn && !checkOut) return "Chưa checkout";
     if (statusTimeKeeping === "LATE") return "Đi muộn";
     if (status === "ACTIVE") return "Đang làm";
-    if (status === "FORGET") return "Hoan thành (QCC)";
+    if (status === "FORGET") return "Hoàn thành (QCC)";
     if (status === "NOTWORK") return "Vắng mặt";
     return "Chưa checkin";
   };

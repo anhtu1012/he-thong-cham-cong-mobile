@@ -191,7 +191,7 @@ const Summary = ({ salaryData, chartData, width, styles }: SummaryProps) => (
         <View style={styles.componentInfo}>
           <Text style={styles.componentLabel}>Tổng phụ cấp</Text>
           <Text style={styles.componentDescription}>
-            Ăn trưa, đi lại, iện thoại, ngày công
+            Ăn trưa, đi lại, điện thoại, ngày công
           </Text>
         </View>
         <Text style={styles.componentValue}>
