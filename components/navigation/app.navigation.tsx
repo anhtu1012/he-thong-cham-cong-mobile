@@ -33,6 +33,7 @@ import TimesheetNavigator from "./timesheet.navigation";
 import FormListPage from "../FormListPage";
 import FormDetailView from "../FormDetailView";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import FaceRegisterPage from "../FaceRegisterPage";
 
 export type AppStackParamList = {
   Login: undefined;
@@ -59,6 +60,7 @@ const MemoizedTimesheetPage = memo(TimesheetPage);
 const MemoizedSalaryPage = memo(SalaryPage);
 const MemoizedChatAppPage = memo(ChatAppPage);
 const MemoizedProfilePage = memo(ProfilePage);
+const MemoizedFaceRegisterPage = memo(FaceRegisterPage);
 const MemoizedFormDetail = memo(FormDetail);
 const MemoizedTimesheetNavigator = memo(TimesheetNavigator);
 
@@ -638,6 +640,13 @@ function AppNavigation() {
           component={MemoizedProfilePage}
           options={{
             title: "Thông tin cá nhân",
+          }}
+        />
+        <Drawer.Screen
+          name="RegisterFaceDrawer" // Updated name
+          component={MemoizedFaceRegisterPage}
+          options={{
+            title: "Đăng ký khuôn mặt",
           }}
         />
       </Drawer.Navigator>

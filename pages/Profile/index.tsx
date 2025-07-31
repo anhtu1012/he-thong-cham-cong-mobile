@@ -1304,7 +1304,7 @@ const ProfilePage = () => {
         </ScrollView>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.container}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

@@ -35,6 +35,7 @@ export type RootStackParamList = {
   HomeDrawer: undefined;
   ChatAppDrawer: undefined;
   ProfileDrawer: undefined;
+  RegisterFaceDrawer: undefined;
 
   // Timesheet bottom tab screens
   TimesheetBottomTabs: undefined;
@@ -57,6 +58,7 @@ export type DrawerParamList = {
   HomeDrawer: undefined;
   ChatAppDrawer: undefined;
   ProfileDrawer: undefined;
+  RegisterFaceDrawer: undefined;
 };
 
 // Type cho Timesheet Tab Navigator
