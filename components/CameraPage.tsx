@@ -179,7 +179,8 @@ export default function CameraPage() {
 
       if (currentTimeScheduleDateStr) {
         const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
-
+        // console.log("currentTimeScheduleDate: ", currentTimeScheduleDate);
+        
         // Step 1: Face recognition first
         await handleFaceRecognition();
 

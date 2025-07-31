@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
   RefreshControl,
 } from "react-native";
 import { AntDesign, Feather } from "@expo/vector-icons";
@@ -17,7 +16,6 @@ import { getCurrentDateRes } from "../../utils/dateUtils";
 import TimeScheduleModal from "../../components/TimeScheduleModal";
 import { DayStatus } from "../../models/timekeeping";
 
-const { width } = Dimensions.get("window");
 
 const MonthlyTimesheet = () => {
   const [daysInMonth, setDaysInMonth] = useState<DayStatus[]>([]);
@@ -58,12 +56,6 @@ const MonthlyTimesheet = () => {
       99
     );
     let days: DayStatus[] = Array.from({ length: toDate.getDate() }, (_, i) => {
-      const currentDay = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        i + 1
-      ).getDay();
-
       return {
         day: i + 1,
         value: "N",
@@ -91,20 +83,38 @@ const MonthlyTimesheet = () => {
       JSON.stringify(timeSchedule)
     );
 
-    // get current day & store to asyncStorage
-    for (const time of timeSchedule) {
-      try {
-        const today = new Date(getCurrentDateRes());
-        const timeDate = new Date(time.date);
+    // get current day & store to asyncStorage with priority logic
+    const today = new Date(getCurrentDateRes());
+    const currentDaySchedules = timeSchedule.filter((time: any) => {
+      const timeDate = new Date(time.date);
+      return timeDate.getDate() === today.getDate();
+    });
 
-        if (timeDate.getDate() === today.getDate()) {
-          await AsyncStorage.setItem(
-            "currentTimeScheduleDate",
-            JSON.stringify(time)
-          );
-        }
-      } catch (err) {
-        console.error("Error processing timeSchedule item:", err);
+    if (currentDaySchedules.length > 0) {
+      // Priority 1: Find ACTIVE shift
+      const activeShift = currentDaySchedules.find((schedule: any) => schedule.status === "ACTIVE");
+      
+      // Priority 2: Find first NOTSTARTED shift
+      const notStartedShift = currentDaySchedules.find((schedule: any) => schedule.status === "NOTSTARTED");
+      
+      let shiftToStore = null;
+      
+      if (activeShift) {
+        // If there's an active shift, store it
+        shiftToStore = activeShift;
+      } else if (notStartedShift) {
+        // If no active shift but there's a NOTSTARTED shift, store the first one
+        shiftToStore = notStartedShift;
+      } else {
+        // If neither ACTIVE nor NOTSTARTED, store the first shift
+        shiftToStore = currentDaySchedules[0];
+      }
+      
+      if (shiftToStore) {
+        await AsyncStorage.setItem(
+          "currentTimeScheduleDate",
+          JSON.stringify(shiftToStore)
+        );
       }
     }
 
@@ -114,7 +124,6 @@ const MonthlyTimesheet = () => {
       const day = days[currentDateObj.getDate() - 1];
 
       // Store additional data + 7 tiếng
-
       day.checkInTime = date.checkInTime;
       day.checkOutTime = date.checkOutTime;
       day.workingHourReal = date.workingHourReal;
@@ -144,6 +153,92 @@ const MonthlyTimesheet = () => {
         day.value = "A";
       }
     }
+
+    // Group shifts by date to handle multiple shifts per day
+    const shiftsByDate = new Map();
+    
+    for (const schedule of timeSchedule) {
+      const dateKey = new Date(schedule.date).toISOString().split('T')[0];
+      
+      if (!shiftsByDate.has(dateKey)) {
+        shiftsByDate.set(dateKey, []);
+      }
+      
+      shiftsByDate.get(dateKey).push({
+        shiftCode: schedule.shiftCode,
+        shiftName: schedule.shiftName,
+        startShiftTime: schedule.startShiftTime,
+        endShiftTime: schedule.endShiftTime,
+        workingHours: schedule.workingHours,
+        checkInTime: schedule.checkInTime,
+        checkOutTime: schedule.checkOutTime,
+        status: schedule.status,
+        statusTimeKeeping: schedule.statusTimeKeeping,
+        workingHourReal: schedule.workingHourReal,
+        lateMinutes: schedule.lateMinutes || 0,
+      });
+    }
+
+    // Update days with multiple shifts
+    for (const [dateKey, shifts] of shiftsByDate.entries()) {
+      const dateObj = new Date(dateKey);
+      const dayIndex = dateObj.getDate() - 1;
+      
+      if (dayIndex >= 0 && dayIndex < days.length) {
+        const day = days[dayIndex];
+        
+        if (shifts.length > 1) {
+          // Multiple shifts for this day
+          day.shifts = shifts;
+          day.totalShifts = shifts.length;
+          
+          // Calculate total working hours - only count shifts with status END, LATE, FORGET
+          const totalHours = shifts.reduce((sum: number, shift: any) => {
+            // Only add hours for shifts with status END, FORGET, or statusTimeKeeping LATE
+            if (shift.status === "END" || shift.status === "FORGET" || shift.statusTimeKeeping === "LATE") {
+              return sum + (shift.workingHours || 0);
+            }
+            // For other statuses (ACTIVE, NOTSTARTED, etc.), add 0 hours
+            return sum + 0;
+          }, 0);
+          
+          day.totalWorkingHours = totalHours;
+          
+          // Update status based on shifts
+          const hasActiveShift = shifts.some((s: any) => s.status === "ACTIVE");
+          const hasEndShift = shifts.some((s: any) => s.status === "END");
+          const hasNotStartedShift = shifts.some((s: any) => s.status === "NOTSTARTED");
+          
+          if (hasActiveShift) {
+            day.status = "ACTIVE";
+            day.value = "D";
+          } else if (hasEndShift) {
+            day.status = "END";
+            day.value = totalHours;
+          } else if (hasNotStartedShift) {
+            day.status = "NOTSTARTED";
+            day.value = 0;
+          } else {
+            day.status = "NOTWORK";
+            day.value = "A";
+          }
+        } else if (shifts.length === 1) {
+          // Single shift - apply same logic for total working hours
+          const shift = shifts[0];
+          day.shifts = [shift];
+          day.totalShifts = 1;
+          // Only count hours for shifts with status END, FORGET, or statusTimeKeeping LATE
+          if (shift.status === "END" || shift.status === "FORGET" || shift.statusTimeKeeping === "LATE") {
+            day.totalWorkingHours = shift.workingHours || 0;
+          } 
+          else {
+            day.totalWorkingHours = 0;
+          }
+        }
+      }
+    }
+
+
 
     setDaysInMonth(days);
   };
@@ -258,6 +353,9 @@ const MonthlyTimesheet = () => {
           const isCurrentDate =
             dayDate.getTime() === today.getTime() && day.day !== 0;
 
+          // Check if day has multiple shifts
+          const hasMultipleShifts = day.shifts && day.shifts.length > 1;
+
           return (
             <TouchableOpacity
               key={`day-${dayIndex}`}
@@ -271,12 +369,12 @@ const MonthlyTimesheet = () => {
                 isCurrentDate &&
                   day.status === "NOTSTARTED" &&
                   styles.currentDateNotStartedCell,
+                hasMultipleShifts && styles.multipleShiftsCell,
               ]}
               activeOpacity={0.7}
               onPress={() => {
                 if (day.day !== 0) {
                   console.log("Selected day:", day);
-
                   setChoosenDate(day);
                   setIsModalVisible(true);
                 }
@@ -293,37 +391,49 @@ const MonthlyTimesheet = () => {
               </Text>
 
               {day.day !== 0 && (
-                <View
-                  style={[
-                    styles.valueContainer,
-                    day.status === "ACTIVE" && styles.activeValueContainer,
-                    day.status === "END" && styles.endValueContainer,
-                    day.status === "NOTWORK" && styles.notWorkValueContainer,
-                    day.status === "weekend" && styles.weekendValueContainer,
-                    day.status === "NOTSTARTED" &&
-                      styles.notStartedValueContainer,
-                    isCurrentDate &&
-                      day.status === "NOTSTARTED" &&
-                      styles.currentDateNotStartedValueContainer,
-                    isFutureDate && styles.futureDateValueContainer,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statusValue,
-                      day.status === "ACTIVE" && styles.activeValue,
-                      day.status === "END" && styles.endValue,
-                      day.status === "NOTWORK" && styles.notWorkValue,
-                      day.status === "weekend" && styles.weekendValue,
-                      day.status === "NOTSTARTED" && styles.notStartedValue,
-                      isCurrentDate &&
-                        day.status === "NOTSTARTED" &&
-                        styles.currentDateNotStartedValue,
-                      isFutureDate && styles.futureDateValue,
-                    ]}
+                <View style={styles.dayContentContainer}>
+                  <View
+                                         style={[
+                       styles.valueContainer,
+                       day.status === "ACTIVE" && styles.activeValueContainer,
+                       day.status === "END" && styles.endValueContainer,
+                       day.status === "NOTWORK" && styles.notWorkValueContainer,
+                       day.status === "weekend" && styles.weekendValueContainer,
+                       day.status === "NOTSTARTED" &&
+                         styles.notStartedValueContainer,
+                       isCurrentDate &&
+                         day.status === "NOTSTARTED" &&
+                         styles.currentDateNotStartedValueContainer,
+                       isFutureDate && styles.futureDateValueContainer,
+                     ]}
                   >
-                    {day.value}
-                  </Text>
+                                         <Text
+                       style={[
+                         styles.statusValue,
+                         day.status === "ACTIVE" && styles.activeValue,
+                         day.status === "END" && styles.endValue,
+                         day.status === "NOTWORK" && styles.notWorkValue,
+                         day.status === "weekend" && styles.weekendValue,
+                         day.status === "NOTSTARTED" && styles.notStartedValue,
+                         isCurrentDate &&
+                           day.status === "NOTSTARTED" &&
+                           styles.currentDateNotStartedValue,
+                         isFutureDate && styles.futureDateValue,
+                       ]}
+                     >
+                       {hasMultipleShifts 
+                         ? day.totalWorkingHours
+                         : (day.status === "END" || day.status === "FORGET" || day.statusTimeKeeping === "LATE" || day.status === "NOTWORK"
+                            ? day.value 
+                            : 0)
+                       }
+                     </Text>
+                    {hasMultipleShifts && (
+                      <Text style={styles.multipleShiftsIndicator}>
+                        {day.totalShifts} ca
+                      </Text>
+                    )}
+                  </View>
                 </View>
               )}
             </TouchableOpacity>
@@ -366,6 +476,10 @@ const MonthlyTimesheet = () => {
       (day) => day.status === "END" || day.status === "ACTIVE"
     ).length;
 
+    const multipleShiftDays = daysInMonth.filter(
+      (day) => day.shifts && day.shifts.length > 1
+    ).length;
+
     return (
       <LinearGradient
         colors={["#3674B5", "#2196F3"]}
@@ -386,6 +500,13 @@ const MonthlyTimesheet = () => {
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Đã chấm công</Text>
             <Text style={styles.summaryValue}>{presentDays}</Text>
+          </View>
+
+          <View style={styles.summaryDivider} />
+
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Ngày nhiều ca</Text>
+            <Text style={styles.summaryValue}>{multipleShiftDays}</Text>
           </View>
         </View>
 
@@ -418,6 +539,17 @@ const MonthlyTimesheet = () => {
             <Text style={styles.legendText}>Nghỉ Phép</Text>
           </View>
         </View>
+
+        {multipleShiftDays > 0 && (
+          <View style={styles.multipleShiftsLegend}>
+            <View style={styles.legendItem}>
+              <View
+                style={[styles.legendBadge, { backgroundColor: "#FFFFFF" }]}
+              />
+              <Text style={styles.legendText}>Nhiều ca</Text>
+            </View>
+          </View>
+        )}
       </LinearGradient>
     );
   };
@@ -623,13 +755,17 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     flex: 1,
-    minHeight: 70,
+    minHeight: 35, // giảm từ 70 xuống 45
     alignItems: "center",
     justifyContent: "flex-start",
     padding: 5,
     borderRightWidth: 1,
     borderRightColor: "#f0f0f0",
-    position: "relative",
+  },
+  dayContentContainer: {
+    marginTop: 5,
+    width: "100%",
+    alignItems: "center",
   },
   weekendCell: {
     backgroundColor: "#f9f9f9",
@@ -662,6 +798,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E3F2FD",
     justifyContent: "center",
     alignItems: "center",
+    position: "relative",
   },
   specialValueContainer: {
     backgroundColor: "#BBDEFB",
@@ -767,6 +904,31 @@ const styles = StyleSheet.create({
   currentDateNotStartedValue: {
     color: "#FFFFFF",
     fontWeight: "bold",
+  },
+  multipleShiftsCell: {
+    backgroundColor: "rgba(240, 248, 255, 0.3)", // Light blue background for multiple shifts
+  },
+  multipleShiftsLegend: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.2)",
+    paddingTop: 12,
+    marginTop: 12,
+  },
+  
+  multipleShiftsIndicator: {
+    fontSize: 8,
+    color: "#666",
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    backgroundColor: "#E3F2FD",
+    paddingHorizontal: 3,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#BBDEFB",
   },
 });
 

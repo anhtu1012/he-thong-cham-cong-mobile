@@ -100,7 +100,37 @@ export interface WeeklySummary {
   absentCount: number;
 }
 
-// Day status for calendar view
+// Shift information for multiple shifts per day
+export interface ShiftInfo {
+  code: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  breakDuration: number;
+  minimumWorkingHours: number;
+  overtimeThreshold: number;
+  isFlexible: boolean;
+  allowedLateness: number; // in minutes
+  description?: string;
+}
+
+// Working shift data for a specific day
+export interface WorkingShift {
+  shiftCode: string;
+  shiftName: string;
+  startShiftTime: string;
+  endShiftTime: string;
+  workingHours: number;
+  checkInTime: string | null;
+  checkOutTime: string | null;
+  status: "NOTSTARTED" | "ACTIVE" | "END" | "NOTWORK";
+  statusTimeKeeping: "STARTED" | "LATE" | "END" | "NOCHECKOUT" | null;
+  workingHourReal?: string;
+  lateMinutes?: number;
+  earlyLeaveMinutes?: number;
+}
+
+// Day status for calendar view with multiple shifts
 export interface DayStatus {
   day: number;
   status:
@@ -114,6 +144,7 @@ export interface DayStatus {
   statusTimeKeeping?: "STARTED" | "LATE" | "END" | "NOCHECKOUT";
   value: string | number;
   date?: string;
+  // Single shift data (for backward compatibility)
   checkInTime?: string;
   checkOutTime?: string;
   workingHourReal?: string;
@@ -124,6 +155,10 @@ export interface DayStatus {
   isFuture?: boolean;
   isPast?: boolean;
   schedule?: WorkingSchedule;
+  // Multiple shifts data
+  shifts?: WorkingShift[];
+  totalWorkingHours?: number;
+  totalShifts?: number;
 }
 
 // Check-in/out request interfaces
@@ -210,20 +245,6 @@ export interface UserProfile {
   timezone?: string;
   isManager?: boolean;
   permissions?: string[];
-}
-
-// Shift information
-export interface ShiftInfo {
-  code: string;
-  name: string;
-  startTime: string;
-  endTime: string;
-  breakDuration: number;
-  minimumWorkingHours: number;
-  overtimeThreshold: number;
-  isFlexible: boolean;
-  allowedLateness: number; // in minutes
-  description?: string;
 }
 
 // Location information
