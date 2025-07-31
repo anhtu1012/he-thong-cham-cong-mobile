@@ -13,6 +13,8 @@ import {
   View,
   ActivityIndicator,
   Animated,
+  SafeAreaView,
+  TouchableOpacity,
 } from "react-native";
 import { Image } from "expo-image";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -23,7 +25,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { registerFace } from "../service/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
-import { useNavigation } from "@react-navigation/native";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 import { NavigationProps } from "../pages/Login";
 
 export default function FaceRegisterPage() {
@@ -36,7 +38,7 @@ export default function FaceRegisterPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const cornerAnim = useRef(new Animated.Value(0)).current;
-  const navigation = useNavigation<NavigationProps>();
+  const navigation = useNavigation<NavigationProps | any>();
 
   // Pulse animation for shutter button
   useEffect(() => {
@@ -95,6 +97,15 @@ export default function FaceRegisterPage() {
     );
   }
 
+  const handleGoBack = () => {
+    // Use CommonActions for more reliable navigation
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "DrawerHomeScreen" }],
+      })
+    );
+  };
   const takePicture = async () => {
     const photo = await ref.current?.takePictureAsync();
     setUri(photo!.uri);
@@ -421,16 +432,52 @@ export default function FaceRegisterPage() {
   };
 
   return (
-    <View style={styles.container}>
-      {uri ? renderPicture() : renderCamera()}
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+          <AntDesign name="arrowleft" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Đăng ký khuôn mặt</Text>
+        <TouchableOpacity style={styles.moreButton}>
+          <AntDesign name="ellipsis1" size={24} color="#3674B5" />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.container}>
+        {uri ? renderPicture() : renderCamera()}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
   container: {
     flex: 1,
     backgroundColor: "#000",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  moreButton: {
+    padding: 8,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
   },
   cameraWrapper: {
     flex: 1,
@@ -460,6 +507,7 @@ const styles = StyleSheet.create({
   statusContainer: {
     alignItems: "center",
     marginBottom: 30,
+    height: 50,
   },
   modernModeIndicator: {
     flexDirection: "row",
@@ -480,7 +528,7 @@ const styles = StyleSheet.create({
   },
   modernInstructionText: {
     color: "white",
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "600",
     textAlign: "center",
     textShadowColor: "rgba(0,0,0,0.8)",
@@ -530,7 +578,7 @@ const styles = StyleSheet.create({
   },
   cornerBottomLeft: {
     position: "absolute",
-    bottom: 0,
+    bottom: 50,
     left: 0,
     width: 50,
     height: 50,
@@ -544,7 +592,7 @@ const styles = StyleSheet.create({
   },
   cornerBottomRight: {
     position: "absolute",
-    bottom: 0,
+    bottom: 50,
     right: 0,
     width: 50,
     height: 50,

@@ -1284,23 +1284,6 @@ const ProfilePage = () => {
               Lịch sử đơn
             </Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.tabItem,
-              activeTab === "dangkykhuonmat" && styles.activeTab,
-            ]}
-            onPress={() => setActiveTab("dangkykhuonmat")}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "dangkykhuonmat" && styles.activeTabText,
-              ]}
-            >
-              Đăng ký khuôn mặt
-            </Text>
-          </TouchableOpacity>
         </ScrollView>
       </View>
 
