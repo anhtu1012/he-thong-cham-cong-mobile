@@ -181,8 +181,25 @@ function HomePage() {
         response.data.data &&
         response.data.data.length > 0
       ) {
-        // Lấy lịch làm việc của ngày hôm nay (phần tử đầu tiên)
-        setTodaySchedule(response.data.data[0]);
+        const schedules = response.data.data;
+        
+        // Tìm item có status === ACTIVE
+        const activeSchedule = schedules.find((item: WorkingSchedule) => item.status === 'ACTIVE');
+        if (activeSchedule) {
+          setTodaySchedule(activeSchedule);
+          return;
+        }
+        
+        // Tìm item có status === NOTSTARTED
+        const notStartedSchedules = schedules.filter((item: WorkingSchedule) => item.status === 'NOTSTARTED');
+        if (notStartedSchedules.length > 0) {
+          // Lấy item đầu tiên nếu có nhiều NOTSTARTED
+          setTodaySchedule(notStartedSchedules[0]);
+          return;
+        }
+        
+        // Nếu không có cả ACTIVE và NOTSTARTED thì lấy item cuối cùng
+        setTodaySchedule(schedules[schedules.length - 1]);
       } else {
         console.log("Không có lịch làm việc cho ngày hôm nay");
         setTodaySchedule(null);
