@@ -18,6 +18,7 @@ import React, {
 } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Constants from "expo-constants";
+import { NotificationProvider } from "./contexts/NotificationContext";
 
 // Ignore specific warnings that might clutter logs
 LogBox.ignoreLogs([
@@ -195,44 +196,46 @@ export default function App() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <NavigationContainer
-          ref={navigationRef}
-          fallback={<Text>Đang tải...</Text>}
-          onStateChange={handleNavigationStateChange}
-          onUnhandledAction={(action) => {
-            console.warn("Unhandled navigation action:", action);
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Stack.Navigator
-              screenOptions={{
-                headerShown: false,
-                animation: "slide_from_right",
-                animationDuration: 200,
-              }}
-              initialRouteName="Login"
-            >
-              <Stack.Screen
-                name="Login"
-                component={LoginPage}
-                options={{
-                  gestureEnabled: false,
-                  animationTypeForReplace: "push",
+        <NotificationProvider>
+          <NavigationContainer
+            ref={navigationRef}
+            fallback={<Text>Đang tải...</Text>}
+            onStateChange={handleNavigationStateChange}
+            onUnhandledAction={(action) => {
+              console.warn("Unhandled navigation action:", action);
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Stack.Navigator
+                screenOptions={{
+                  headerShown: false,
+                  animation: "slide_from_right",
+                  animationDuration: 200,
                 }}
-              />
-              <Stack.Screen
-                name="MainAppScreen"
-                component={AppNavigation}
-                options={{
-                  gestureEnabled: false,
-                  animationTypeForReplace: "push",
-                }}
-              />
-            </Stack.Navigator>
-            <Toast />
-            {currentRouteRef.current !== "Login" && <FloatingChatButtonMemo />}
-          </View>
-        </NavigationContainer>
+                initialRouteName="Login"
+              >
+                <Stack.Screen
+                  name="Login"
+                  component={LoginPage}
+                  options={{
+                    gestureEnabled: false,
+                    animationTypeForReplace: "push",
+                  }}
+                />
+                <Stack.Screen
+                  name="MainAppScreen"
+                  component={AppNavigation}
+                  options={{
+                    gestureEnabled: false,
+                    animationTypeForReplace: "push",
+                  }}
+                />
+              </Stack.Navigator>
+              <Toast />
+              {currentRouteRef.current !== "Login" && <FloatingChatButtonMemo />}
+            </View>
+          </NavigationContainer>
+        </NotificationProvider>
       </SafeAreaProvider>
     </ErrorBoundary>
   );

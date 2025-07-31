@@ -28,12 +28,14 @@ import HomePage from "../../pages/Home";
 import ProfilePage from "../../pages/Profile";
 import SalaryPage from "../../pages/Salary";
 import TimesheetPage from "../../pages/Timesheet";
+import NotificationPage from "../../pages/Notification";
 import { DrawerParamList, TabParamList } from "../../utils/routes";
 import TimesheetNavigator from "./timesheet.navigation";
 import FormListPage from "../FormListPage";
 import FormDetailView from "../FormDetailView";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import FaceRegisterPage from "../FaceRegisterPage";
+import { useNotification } from "../../contexts/NotificationContext";
 
 export type AppStackParamList = {
   Login: undefined;
@@ -63,6 +65,7 @@ const MemoizedProfilePage = memo(ProfilePage);
 const MemoizedFaceRegisterPage = memo(FaceRegisterPage);
 const MemoizedFormDetail = memo(FormDetail);
 const MemoizedTimesheetNavigator = memo(TimesheetNavigator);
+const MemoizedNotificationPage = memo(NotificationPage);
 
 const HomeLayout = memo(() => {
   const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -91,10 +94,11 @@ interface TabBarIconProps {
   color: string;
   size: number;
   iconType?: "AntDesign" | "MaterialIcons" | "Entypo";
+  badgeCount?: number;
 }
 
 const TabBarIcon = memo(
-  ({ focused, name, color, size, iconType = "AntDesign" }: TabBarIconProps) => {
+  ({ focused, name, color, size, iconType = "AntDesign", badgeCount }: TabBarIconProps) => {
     const animatedValue = React.useRef(new Animated.Value(1)).current;
 
     React.useEffect(() => {
@@ -135,6 +139,13 @@ const TabBarIcon = memo(
           <Entypo name={name as any} size={size} color={color} />
         )}
         {focused && <View style={localStyles.indicator} />}
+        {badgeCount && badgeCount > 0 && (
+          <View style={localStyles.badge}>
+            <Text style={localStyles.badgeText}>
+              {badgeCount > 99 ? '99+' : badgeCount.toString()}
+            </Text>
+          </View>
+        )}
       </Animated.View>
     );
   }
@@ -197,7 +208,7 @@ const CustomTabBar = memo(
             const { options } = descriptors[route.key];
             const label =
               options.tabBarLabel !== undefined
-                ? options.tabBarLabel
+                ? (typeof options.tabBarLabel === 'function' ? undefined : options.tabBarLabel)
                 : options.title !== undefined
                 ? options.title
                 : route.name;
@@ -221,10 +232,22 @@ const CustomTabBar = memo(
                     color: isFocused ? "#3674B5" : "#888",
                     size: 24,
                   })}
-                  {options.tabBarLabel({
-                    focused: isFocused,
-                    color: isFocused ? "#3674B5" : "#888",
-                  })}
+                  {typeof options.tabBarLabel === 'function' 
+                    ? options.tabBarLabel({
+                        focused: isFocused,
+                        color: isFocused ? "#3674B5" : "#888",
+                      })
+                    : <Text
+                        style={{
+                          color: isFocused ? "#3674B5" : "#888",
+                          fontSize: 12,
+                          fontWeight: isFocused ? "bold" : "500",
+                          marginBottom: 5,
+                        }}
+                      >
+                        {(options.tabBarLabel ? options.tabBarLabel.toString() : "") || "Bảng công"}
+                      </Text>
+                  }
                 </TouchableOpacity>
               );
             }
@@ -253,7 +276,7 @@ const CustomTabBar = memo(
                       marginTop: 3,
                     }}
                   >
-                    {label}
+                    {(label ? label.toString() : "") || "Menu"}
                   </Text>
                 </TouchableOpacity>
               );
@@ -282,7 +305,7 @@ const CustomTabBar = memo(
                     marginTop: 3,
                   }}
                 >
-                  {label}
+                  {(label ? label.toString() : "") || (route.name ? route.name.toString() : "") || "Tab"}
                 </Text>
               </TouchableOpacity>
             );
@@ -295,6 +318,7 @@ const CustomTabBar = memo(
 
 const BottomTabNavigation = memo(() => {
   const Tab = createBottomTabNavigator<TabParamList>();
+  const { notificationCount } = useNotification();
 
   return (
     <Tab.Navigator
@@ -444,6 +468,7 @@ const BottomTabNavigation = memo(() => {
               color={color}
               size={size}
               iconType="Entypo"
+              badgeCount={notificationCount}
             />
           ),
           title: "Menu",
@@ -495,11 +520,29 @@ const localStyles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: "#3674B5",
   },
+  badge: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "#FF4444",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
 });
 
 function AppNavigation() {
   const Drawer = createDrawerNavigator<DrawerParamList>();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { notificationCount } = useNotification();
 
   // Thêm root stack để quản lý NavigationContainer
   const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -530,6 +573,7 @@ function AppNavigation() {
   // Custom drawer content - memoized
   const renderDrawerContent = useCallback(
     (props: any) => {
+      
       return (
         <>
           <Text
@@ -562,17 +606,39 @@ function AppNavigation() {
                     borderRadius: 8,
                   })}
                 >
-                  <Text
-                    style={{
-                      padding: 16,
-                      color: props.state.index === index ? "#3674B5" : "#333",
-                      fontWeight:
-                        props.state.index === index ? "600" : "normal",
-                      fontSize: 16,
-                    }}
-                  >
-                    {descriptor.options.title || descriptor.route.name}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text
+                      style={{
+                        padding: 16,
+                        color: props.state.index === index ? "#3674B5" : "#333",
+                        fontWeight:
+                          props.state.index === index ? "600" : "normal",
+                        fontSize: 16,
+                      }}
+                    >
+                      {(descriptor.options.title ? descriptor.options.title.toString() : "") || (descriptor.route.name ? descriptor.route.name.toString() : "") || "Menu"}
+                    </Text>
+                    {descriptor.route.name === "NotificationDrawer" && notificationCount > 0 && (
+                      <View style={{
+                        backgroundColor: "#FF4444",
+                        borderRadius: 10,
+                        minWidth: 20,
+                        height: 20,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginRight: 16,
+                        paddingHorizontal: 4,
+                      }}>
+                        <Text style={{
+                          color: "white",
+                          fontSize: 10,
+                          fontWeight: "bold",
+                        }}>
+                          {notificationCount > 99 ? '99+' : notificationCount.toString()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </Pressable>
               )
             )}
@@ -601,7 +667,7 @@ function AppNavigation() {
         </>
       );
     },
-    [handleLogout]
+    [handleLogout, notificationCount]
   );
 
   // MainDrawer memoized
@@ -647,6 +713,13 @@ function AppNavigation() {
           component={MemoizedFaceRegisterPage}
           options={{
             title: "Đăng ký khuôn mặt",
+          }}
+        />
+        <Drawer.Screen
+          name="NotificationDrawer"
+          component={MemoizedNotificationPage}
+          options={{
+            title: "Thông báo",
           }}
         />
       </Drawer.Navigator>
