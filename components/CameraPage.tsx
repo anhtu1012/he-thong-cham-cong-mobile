@@ -180,7 +180,7 @@ export default function CameraPage() {
       if (currentTimeScheduleDateStr) {
         const currentTimeScheduleDate = JSON.parse(currentTimeScheduleDateStr);
         // console.log("currentTimeScheduleDate: ", currentTimeScheduleDate);
-        
+
         // Step 1: Face recognition first
         await handleFaceRecognition();
 
@@ -339,22 +339,30 @@ export default function CameraPage() {
       const formData = new FormData();
       const user = JSON.parse(userDataStr);
 
-      // Binary image response
-      const userImgRes = await getUserFaceImg(`face/${user.userName}.jpg`);
-      const binary = userImgRes.data;
+      // // Binary image response
+      // const userImgRes = await getUserFaceImg(`face/${user.userName}.jpg`);
+      // const binary = userImgRes.data;
 
-      //  Convert binary to base64
-      const base64Data = Buffer.from(binary, "binary").toString("base64");
+      // //  Convert binary to base64
+      // const base64Data = Buffer.from(binary, "binary").toString("base64");
 
-      // Save it to Expo's cache
-      const userImgPath = `${FileSystem.cacheDirectory}${user.userName}.jpg`;
-      await FileSystem.writeAsStringAsync(userImgPath, base64Data, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // // Save it to Expo's cache
+      // const userImgPath = `${FileSystem.cacheDirectory}${user.userName}.jpg`;
+      // await FileSystem.writeAsStringAsync(userImgPath, base64Data, {
+      //   encoding: FileSystem.EncodingType.Base64,
+      // });
+
+      const fileUri = `${FileSystem.cacheDirectory}${user.userName}.jpg`;
+
+      // Download file
+      const { uri: userImageUri } = await FileSystem.downloadAsync(
+        user.faceImg,
+        fileUri
+      );
 
       // Attach images to FormData
       formData.append("refImg", {
-        uri: userImgPath,
+        uri: userImageUri,
         type: "image/jpeg",
         name: `${user.userName}.jpg`,
       } as any);
