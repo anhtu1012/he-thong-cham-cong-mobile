@@ -23,6 +23,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import FaceRegisterPage from "../../components/FaceRegisterPage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getUserContract, getFormDescriptions } from "../../service/api";
+import { getBangLuong, getBangLuongCriteria } from "../../service/salaryPage";
+import { Salary } from "../../models/salary";
+import { formatCurrency } from "../../utils/string";
 import FormItemCard from "../../components/FormItemCard";
 import Toast from "react-native-toast-message";
 
@@ -93,6 +96,10 @@ const ProfilePage = () => {
     Array<{ value: string; label: string }>
   >([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [apiSalaryData, setApiSalaryData] = useState<Salary | null>(null);
+  const [apiSalaryHistory, setApiSalaryHistory] = useState<Salary[]>([]);
+  const [salaryCriteriaData, setSalaryCriteriaData] = useState<any>(null);
+  const [salaryLoading, setSalaryLoading] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -101,6 +108,9 @@ const ProfilePage = () => {
   useEffect(() => {
     if (userData && activeTab === "lichSuDon") {
       fetchForms();
+    }
+    if (userData && activeTab === "congViec") {
+      fetchSalaryData();
     }
   }, [userData, activeTab]);
 
@@ -133,9 +143,7 @@ const ProfilePage = () => {
             employeeId: userProfile.code,
             email: userProfile.email,
             phone: userProfile.phone,
-            joinDate: new Date(contractData.startTime).toLocaleDateString(
-              "vi-VN"
-            ),
+            joinDate: formatDate(contractData.startTime),
             address: userProfile.addressCode,
             faceImg: userProfile.faceImg,
             baseSalary: contractData.baseSalary,
@@ -157,6 +165,48 @@ const ProfilePage = () => {
       console.error("Error loading user data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSalaryData = async () => {
+    try {
+      setSalaryLoading(true);
+      const userProfileData = await AsyncStorage.getItem("userData");
+
+      if (userProfileData) {
+        const userProfile = JSON.parse(userProfileData);
+
+        // Lấy dữ liệu lương hiện tại
+        const currentMonth = new Date()
+          .toLocaleDateString("en-GB", {
+            month: "2-digit",
+            year: "numeric",
+          })
+          .replace(/\//g, "/");
+
+        const salaryResponse = await getBangLuong(
+          userProfile.code,
+          currentMonth
+        );
+        const salaryHistoryResponse = await getBangLuong(userProfile.code);
+        const criteriaResponse = await getBangLuongCriteria(userProfile.code);
+
+        if (salaryResponse.data && salaryResponse.data.data.length > 0) {
+          setApiSalaryData(salaryResponse.data.data[0]);
+        }
+
+        if (salaryHistoryResponse.data && salaryHistoryResponse.data.data) {
+          setApiSalaryHistory(salaryHistoryResponse.data.data);
+        }
+
+        if (criteriaResponse.data && criteriaResponse.data.data.length > 0) {
+          setSalaryCriteriaData(criteriaResponse.data.data[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching salary data:", error);
+    } finally {
+      setSalaryLoading(false);
     }
   };
 
@@ -279,18 +329,51 @@ const ProfilePage = () => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([loadUserData(), fetchForms()]);
+      const promises = [loadUserData()];
+      if (activeTab === "lichSuDon") promises.push(fetchForms());
+      if (activeTab === "congViec") promises.push(fetchSalaryData());
+      await Promise.all(promises);
     } catch (error) {
       console.error("Error refreshing profile data:", error);
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [activeTab]);
 
-  // Format date to DD/MM/YYYY
+  // Format date to DD/MM/YYYY with current year correction
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+    let year = date.getFullYear();
+
+    // Nếu năm là 2025 (từ API test), đổi thành năm hiện tại
+    if (year === 2025) {
+      year = new Date().getFullYear();
+    }
+
+    return `${date.getDate().toString().padStart(2, "0")}/${(
+      date.getMonth() + 1
+    )
+      .toString()
+      .padStart(2, "0")}/${year}`;
+  };
+
+  // Get display year from API data
+  const getDisplayYear = () => {
+    let year = new Date().getFullYear(); // fallback to current year
+
+    // Lấy năm từ API data nếu có
+    if (apiSalaryData?.createdAt) {
+      year = new Date(apiSalaryData.createdAt).getFullYear();
+    } else if (apiSalaryHistory.length > 0 && apiSalaryHistory[0].createdAt) {
+      year = new Date(apiSalaryHistory[0].createdAt).getFullYear();
+    }
+
+    // Nếu năm là 2025 (từ API test), đổi thành năm hiện tại
+    if (year === 2025) {
+      year = new Date().getFullYear();
+    }
+
+    return year;
   };
 
   // Mock attendance data
@@ -542,9 +625,7 @@ const ProfilePage = () => {
                   <Text style={styles.contractInfoLabel}>Ngày kết thúc:</Text>
                   <Text style={styles.contractInfoValue}>
                     {userData?.contractEndTime
-                      ? new Date(userData.contractEndTime).toLocaleDateString(
-                          "vi-VN"
-                        )
+                      ? formatDate(userData.contractEndTime)
                       : "N/A"}
                   </Text>
                 </View>
@@ -716,6 +797,14 @@ const ProfilePage = () => {
         );
 
       case "congViec":
+        if (salaryLoading) {
+          return (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Đang tải dữ liệu lương...</Text>
+            </View>
+          );
+        }
+
         return (
           <View style={styles.tabContent}>
             {/* Salary Overview Card with Gradient */}
@@ -735,69 +824,116 @@ const ProfilePage = () => {
                 />
               </View>
 
-              <Text style={styles.salaryTotalAmount}>24,093,000đ</Text>
+              <Text style={styles.salaryTotalAmount}>
+                {apiSalaryData
+                  ? formatCurrency(apiSalaryData.totalSalary)
+                  : "0"}{" "}
+                đ
+              </Text>
 
               <View style={styles.salaryStatusContainer}>
-                <View style={styles.salaryStatusDot} />
+                <View
+                  style={[
+                    styles.salaryStatusDot,
+                    {
+                      backgroundColor:
+                        apiSalaryData?.status === "PAID"
+                          ? "#4CAF50"
+                          : "#FFC107",
+                    },
+                  ]}
+                />
                 <Text style={styles.salaryStatusText}>
-                  Đã thanh toán (12/07/2024)
+                  {apiSalaryData?.status === "PAID"
+                    ? "Đã thanh toán"
+                    : "Chưa thanh toán"}
+                  {apiSalaryData?.paidDate &&
+                    ` (${formatDate(apiSalaryData.paidDate)})`}
                 </Text>
               </View>
 
               <View style={styles.salaryQuickInfo}>
                 <View style={styles.salaryQuickInfoItem}>
-                  <Text style={styles.salaryQuickInfoValue}>1,145,400đ</Text>
+                  <Text style={styles.salaryQuickInfoValue}>
+                    {apiSalaryData &&
+                    apiSalaryData.actualSalary &&
+                    apiSalaryData.workDay
+                      ? formatCurrency(
+                          Math.round(
+                            apiSalaryData.actualSalary / apiSalaryData.workDay
+                          )
+                        )
+                      : "0"}{" "}
+                    đ
+                  </Text>
                   <Text style={styles.salaryQuickInfoLabel}>Lương / ngày</Text>
                 </View>
                 <View style={styles.salaryDivider} />
                 <View style={styles.salaryQuickInfoItem}>
-                  <Text style={styles.salaryQuickInfoValue}>23,052,900đ</Text>
+                  <Text style={styles.salaryQuickInfoValue}>
+                    {apiSalaryData
+                      ? formatCurrency(apiSalaryData.actualSalary || 0)
+                      : "0"}{" "}
+                    đ
+                  </Text>
                   <Text style={styles.salaryQuickInfoLabel}>Lương / tháng</Text>
                 </View>
               </View>
             </LinearGradient>
 
-            {/* Contract Details */}
+            {/* Work Performance */}
             <View style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>Thông tin hợp đồng</Text>
+              <Text style={styles.sectionTitle}>
+                Thông tin công việc tháng này
+              </Text>
 
               <View style={styles.infoItem}>
                 <View style={[styles.infoIcon, { backgroundColor: "#e8f5e9" }]}>
-                  <Feather name="file-text" size={18} color="#4CAF50" />
+                  <Feather name="calendar" size={18} color="#4CAF50" />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Tiêu đề hợp đồng</Text>
+                  <Text style={styles.infoLabel}>Số ngày công</Text>
                   <Text style={styles.infoValue}>
-                    {userData?.contractTitle}
+                    {apiSalaryData?.workDay || 0} ngày
                   </Text>
                 </View>
               </View>
 
               <View style={styles.infoItem}>
                 <View style={[styles.infoIcon, { backgroundColor: "#e3f2fd" }]}>
-                  <Feather name="file-text" size={18} color="#2196F3" />
+                  <Feather name="clock" size={18} color="#2196F3" />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Mô tả công việc</Text>
+                  <Text style={styles.infoLabel}>Tổng giờ làm việc</Text>
                   <Text style={styles.infoValue}>
-                    {userData?.contractDescription}
+                    {apiSalaryData?.totalWorkHour || 0} giờ
                   </Text>
                 </View>
               </View>
 
-              {userData?.contractEndTime && (
+              <View style={styles.infoItem}>
+                <View style={[styles.infoIcon, { backgroundColor: "#fff3e0" }]}>
+                  <Feather name="alert-circle" size={18} color="#FF9800" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Số lần đi muộn</Text>
+                  <Text style={styles.infoValue}>
+                    {apiSalaryData?.lateTimeCount || 0} lần
+                  </Text>
+                </View>
+              </View>
+
+              {userData?.contractTitle && (
                 <View style={styles.infoItem}>
                   <View
-                    style={[styles.infoIcon, { backgroundColor: "#fff8e1" }]}
+                    style={[styles.infoIcon, { backgroundColor: "#f3e5f5" }]}
                   >
-                    <Feather name="calendar" size={18} color="#FFC107" />
+                    <Feather name="file-text" size={18} color="#9C27B0" />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Ngày kết thúc hợp đồng</Text>
+                    <Text style={styles.infoLabel}>Hợp đồng</Text>
                     <Text style={styles.infoValue}>
-                      {new Date(userData.contractEndTime).toLocaleDateString(
-                        "vi-VN"
-                      )}
+                      {userData.contractTitle}
                     </Text>
                   </View>
                 </View>
@@ -821,7 +957,11 @@ const ProfilePage = () => {
                   <FontAwesome name="dollar" size={22} color="#4CAF50" />
                 </View>
                 <Text style={styles.salaryDetailLabel}>Lương cơ bản</Text>
-                <Text style={styles.salaryDetailValue}>15,000,000đ</Text>
+                <Text style={styles.salaryDetailValue}>
+                  {salaryCriteriaData
+                    ? formatCurrency(salaryCriteriaData.baseSalary)
+                    : formatCurrency(apiSalaryData?.baseSalary || 0)}
+                </Text>
               </View>
 
               <View
@@ -838,8 +978,10 @@ const ProfilePage = () => {
                 >
                   <MaterialIcons name="timer" size={22} color="#2196F3" />
                 </View>
-                <Text style={styles.salaryDetailLabel}>Lương làm thêm</Text>
-                <Text style={styles.salaryDetailValue}>1,500,000đ</Text>
+                <Text style={styles.salaryDetailLabel}>Lương tăng ca</Text>
+                <Text style={styles.salaryDetailValue}>
+                  {formatCurrency(apiSalaryData?.overtimeSalary || 0)}
+                </Text>
               </View>
 
               <View
@@ -861,7 +1003,9 @@ const ProfilePage = () => {
                   />
                 </View>
                 <Text style={styles.salaryDetailLabel}>Phụ cấp</Text>
-                <Text style={styles.salaryDetailValue}>2,000,000đ</Text>
+                <Text style={styles.salaryDetailValue}>
+                  {formatCurrency(apiSalaryData?.allowance || 0)}
+                </Text>
               </View>
 
               <View
@@ -884,7 +1028,7 @@ const ProfilePage = () => {
                 </View>
                 <Text style={styles.salaryDetailLabel}>Khấu trừ</Text>
                 <Text style={[styles.salaryDetailValue, { color: "#F44336" }]}>
-                  -1,800,000đ
+                  -{formatCurrency(apiSalaryData?.deductionFee || 0)}
                 </Text>
               </View>
             </View>
@@ -897,7 +1041,7 @@ const ProfilePage = () => {
                   <Text style={styles.salaryHistoryTitle}>Lịch sử lương</Text>
                 </View>
                 <View style={styles.yearSelector}>
-                  <Text style={styles.yearText}>Năm 2024</Text>
+                  <Text style={styles.yearText}>Năm {getDisplayYear()}</Text>
                   <AntDesign name="down" size={12} color="#666" />
                 </View>
               </View>
@@ -905,111 +1049,124 @@ const ProfilePage = () => {
               {/* Salary History Chart Placeholder */}
               <View style={styles.salaryChartContainer}>
                 <View style={styles.salaryChartYAxis}>
-                  <Text style={styles.salaryChartLabel}>30M</Text>
-                  <Text style={styles.salaryChartLabel}>25M</Text>
-                  <Text style={styles.salaryChartLabel}>20M</Text>
-                  <Text style={styles.salaryChartLabel}>15M</Text>
+                  {(() => {
+                    if (apiSalaryHistory.length === 0) return null;
+                    const maxSalary = Math.max(
+                      ...apiSalaryHistory.map((s) => s.totalSalary)
+                    );
+                    const step = Math.ceil(maxSalary / 4 / 1000000) * 1000000;
+                    return [4, 3, 2, 1].map((i) => (
+                      <Text key={i} style={styles.salaryChartLabel}>
+                        {((step * i) / 1000000).toFixed(0)}M
+                      </Text>
+                    ));
+                  })()}
                 </View>
                 <View style={styles.salaryChartBars}>
-                  <View style={styles.salaryChartBarContainer}>
-                    <View
-                      style={[
-                        styles.salaryChartBar,
-                        { height: 120, backgroundColor: "#4CAF50" },
-                      ]}
-                    />
-                    <Text style={styles.salaryChartBarLabel}>Tháng 8</Text>
-                  </View>
-                  <View style={styles.salaryChartBarContainer}>
-                    <View
-                      style={[
-                        styles.salaryChartBar,
-                        { height: 100, backgroundColor: "#4CAF50" },
-                      ]}
-                    />
-                    <Text style={styles.salaryChartBarLabel}>Tháng 9</Text>
-                  </View>
-                  <View style={styles.salaryChartBarContainer}>
-                    <View
-                      style={[
-                        styles.salaryChartBar,
-                        { height: 90, backgroundColor: "#F44336" },
-                      ]}
-                    />
-                    <Text style={styles.salaryChartBarLabel}>Tháng 10</Text>
-                  </View>
-                  <View style={styles.salaryChartBarContainer}>
-                    <View
-                      style={[
-                        styles.salaryChartBar,
-                        { height: 110, backgroundColor: "#4CAF50" },
-                      ]}
-                    />
-                    <Text style={styles.salaryChartBarLabel}>Tháng 11</Text>
-                  </View>
-                  <View style={styles.salaryChartBarContainer}>
-                    <View
-                      style={[
-                        styles.salaryChartBar,
-                        { height: 105, backgroundColor: "#F44336" },
-                      ]}
-                    />
-                    <Text style={styles.salaryChartBarLabel}>Tháng 12</Text>
-                  </View>
+                  {apiSalaryHistory.slice(0, 5).map((item, index) => {
+                    const maxSalary =
+                      apiSalaryHistory.length > 0
+                        ? Math.max(
+                            ...apiSalaryHistory.map((s) => s.totalSalary)
+                          )
+                        : 1;
+                    const heightPercentage =
+                      (item.totalSalary / maxSalary) * 120;
+                    const previousSalary =
+                      index < apiSalaryHistory.length - 1
+                        ? apiSalaryHistory[index + 1]?.totalSalary
+                        : item.totalSalary;
+                    const isIncrease = item.totalSalary >= previousSalary;
+
+                    return (
+                      <View
+                        key={item.id}
+                        style={styles.salaryChartBarContainer}
+                      >
+                        <View
+                          style={[
+                            styles.salaryChartBar,
+                            {
+                              height: Math.max(heightPercentage, 10),
+                              backgroundColor: isIncrease
+                                ? "#4CAF50"
+                                : "#F44336",
+                            },
+                          ]}
+                        />
+                        <Text style={styles.salaryChartBarLabel}>
+                          Tháng {item.month.split("/")[0]}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                  {apiSalaryHistory.length === 0 && (
+                    <View style={styles.emptyContainer}>
+                      <Text style={styles.emptyText}>
+                        Chưa có dữ liệu biểu đồ
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
 
               {/* Salary History List */}
               <View style={styles.salaryHistoryList}>
-                {[
-                  { month: "Tháng 12", amount: "24,093,000", trend: "down" },
-                  { month: "Tháng 11", amount: "26,117,000", trend: "up" },
-                  { month: "Tháng 10", amount: "22,151,000", trend: "down" },
-                  { month: "Tháng 9", amount: "23,301,000", trend: "up" },
-                  { month: "Tháng 8", amount: "25,802,000", trend: "up" },
-                ].map((item, index) => (
-                  <View key={index} style={styles.salaryHistoryItem}>
-                    <View style={styles.salaryHistoryMonthContainer}>
-                      <Text style={styles.salaryMonth}>{item.month}</Text>
+                {apiSalaryHistory.slice(0, 5).map((item, index) => {
+                  // Tính toán xu hướng so với tháng trước
+                  const currentSalary = item.totalSalary;
+                  const previousSalary =
+                    index < apiSalaryHistory.length - 1
+                      ? apiSalaryHistory[index + 1]?.totalSalary
+                      : currentSalary;
+                  const trendPercentage = previousSalary
+                    ? ((currentSalary - previousSalary) / previousSalary) * 100
+                    : 0;
+                  const trend = trendPercentage > 0 ? "up" : "down";
+
+                  // Format tháng từ "MM/YYYY" thành "Tháng MM"
+                  const monthDisplay = `Tháng ${item.month.split("/")[0]}`;
+
+                  return (
+                    <View key={item.id} style={styles.salaryHistoryItem}>
+                      <View style={styles.salaryHistoryMonthContainer}>
+                        <Text style={styles.salaryMonth}>{monthDisplay}</Text>
+                      </View>
+                      <View style={styles.salaryAmountContainer}>
+                        {Math.abs(trendPercentage) > 0.1 && (
+                          <View style={styles.salaryTrendContainer}>
+                            <Entypo
+                              name={
+                                trend === "up" ? "triangle-up" : "triangle-down"
+                              }
+                              size={14}
+                              color={trend === "up" ? "#4CAF50" : "#F44336"}
+                            />
+                            <Text
+                              style={[
+                                styles.salaryTrendValue,
+                                {
+                                  color: trend === "up" ? "#4CAF50" : "#F44336",
+                                },
+                              ]}
+                            >
+                              {trend === "up" ? "+" : ""}
+                              {trendPercentage.toFixed(1)}%
+                            </Text>
+                          </View>
+                        )}
+                        <Text style={styles.salaryAmount}>
+                          {formatCurrency(currentSalary)}đ
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.salaryAmountContainer}>
-                      {item.trend === "up" ? (
-                        <View style={styles.salaryTrendContainer}>
-                          <Entypo
-                            name="triangle-up"
-                            size={14}
-                            color="#4CAF50"
-                          />
-                          <Text
-                            style={[
-                              styles.salaryTrendValue,
-                              { color: "#4CAF50" },
-                            ]}
-                          >
-                            +3.5%
-                          </Text>
-                        </View>
-                      ) : (
-                        <View style={styles.salaryTrendContainer}>
-                          <Entypo
-                            name="triangle-down"
-                            size={14}
-                            color="#F44336"
-                          />
-                          <Text
-                            style={[
-                              styles.salaryTrendValue,
-                              { color: "#F44336" },
-                            ]}
-                          >
-                            -7.8%
-                          </Text>
-                        </View>
-                      )}
-                      <Text style={styles.salaryAmount}>{item.amount}đ</Text>
-                    </View>
+                  );
+                })}
+                {apiSalaryHistory.length === 0 && (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>Chưa có lịch sử lương</Text>
                   </View>
-                ))}
+                )}
               </View>
 
               {/* Download Salary Slip Button */}
@@ -1304,7 +1461,7 @@ const ProfilePage = () => {
         </ScrollView>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.container}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
