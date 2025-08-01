@@ -36,6 +36,7 @@ export default function FaceRegisterPage() {
   const [facing, setFacing] = useState<CameraType>("front");
   const [recording, setRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const cornerAnim = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation<NavigationProps | any>();
@@ -81,6 +82,17 @@ export default function FaceRegisterPage() {
 
     return () => cornerAnimation.stop();
   }, []);
+
+  useEffect(() => {
+    const getUserProfile = async () => {
+      let userDataStr = await AsyncStorage.getItem("userData");
+      if (userDataStr) {
+        const user = JSON.parse(userDataStr);
+        setUserProfile(user);
+      }
+    };
+    getUserProfile();
+  });
 
   if (!permission) {
     return null;
@@ -443,7 +455,13 @@ export default function FaceRegisterPage() {
         </TouchableOpacity>
       </View>
       <View style={styles.container}>
-        {uri ? renderPicture() : renderCamera()}
+        {userProfile?.faceImg != null ? (
+          <Text style={{ color: "green" }}>Có ảnh rồi bro</Text>
+        ) : uri ? (
+          renderPicture()
+        ) : (
+          renderCamera()
+        )}
       </View>
     </SafeAreaView>
   );
