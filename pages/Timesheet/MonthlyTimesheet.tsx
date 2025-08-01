@@ -425,7 +425,7 @@ const MonthlyTimesheet = () => {
                          ? day.totalWorkingHours
                          : (day.status === "END" || day.status === "FORGET" || day.statusTimeKeeping === "LATE" || day.status === "NOTWORK"
                             ? day.value 
-                            : 0)
+                            : (day.value === "N" ? "N" : 0))
                        }
                      </Text>
                     {hasMultipleShifts && (
@@ -539,17 +539,6 @@ const MonthlyTimesheet = () => {
             <Text style={styles.legendText}>Nghỉ Phép</Text>
           </View>
         </View>
-
-        {multipleShiftDays > 0 && (
-          <View style={styles.multipleShiftsLegend}>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendBadge, { backgroundColor: "#FFFFFF" }]}
-              />
-              <Text style={styles.legendText}>Nhiều ca</Text>
-            </View>
-          </View>
-        )}
       </LinearGradient>
     );
   };

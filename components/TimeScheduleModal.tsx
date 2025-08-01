@@ -694,17 +694,17 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   activeStatusBadge: {
-    backgroundColor: "#D1FAE5",
+    backgroundColor: "#0b9c31",
     borderColor: "#A7F3D0",
     borderWidth: 1,
   },
   endStatusBadge: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: "#edc218",
     borderColor: "#FDE68A",
     borderWidth: 1,
   },
   notWorkStatusBadge: {
-    backgroundColor: "#F3E8FF",
+    backgroundColor: "red",
     borderColor: "#E9D5FF",
     borderWidth: 1,
   },
@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
   shiftStatusText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#10B981",
+    color: "#fff",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
