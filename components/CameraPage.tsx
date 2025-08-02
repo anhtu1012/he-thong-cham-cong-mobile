@@ -373,16 +373,10 @@ export default function CameraPage() {
         name: "face.jpg",
       } as any);
 
-      const res = await compareFace(formData);
-      const data = res.data;
-      if (!data.matched) {
-        throw new Error("Khuôn mặt không trùng khớp");
-      }
+      await compareFace(formData);
     } catch (err: any) {
       const errorMessage =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Lỗi xác nhận khuôn mặt";
+        err?.response?.data?.error || "Lỗi xác nhận khuôn mặt";
       throw new Error(errorMessage);
     } finally {
       setIsProcessing(false);
