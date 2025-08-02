@@ -286,11 +286,13 @@ function HomePage() {
         </View>
         <View style={styles.avatarContainer}>
           <Image
-            source={{
-              uri:
-                userProfile?.faceImg ||
-                "https://thumbs.dreamstime.com/b/default-avatar-profile-vector-user-profile-default-avatar-profile-vector-user-profile-profile-179376714.jpg",
-            }}
+            source={
+              userProfile?.faceImg
+                ? {
+                    uri: userProfile?.faceImg,
+                  }
+                : require("../../assets/empty-avatar.png")
+            }
             style={styles.avatar}
           />
           <View style={styles.statusDot} />
@@ -304,8 +306,34 @@ function HomePage() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {/* Register face widget */}
+        <View style={styles.widgetContainer}>
+          <View style={styles.faceRegisterHeader}>
+            <View style={styles.faceIconContainer}>
+              <MaterialCommunityIcons
+                name="face-recognition"
+                size={32}
+                color="#3674B5"
+              />
+            </View>
+            <View style={styles.faceRegisterContent}>
+              <Text style={styles.faceRegisterTitle}>Đăng ký khuôn mặt</Text>
+              <Text style={styles.faceRegisterSubtitle}>
+                Thiết lập nhận diện khuôn mặt để chấm công nhanh chóng và bảo
+                mật
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.faceRegisterButton}
+            onPress={() => navigation.navigate("RegisterFaceDrawer")}
+          >
+            <Text style={styles.faceRegisterButtonText}>Đăng ký ngay</Text>
+            <AntDesign name="arrowright" size={16} color="#fff" />
+          </TouchableOpacity>
+        </View>
         {/* Summary Widget */}
-        <View style={styles.summaryContainer}>
+        <View style={styles.widgetContainer}>
           <Text style={styles.sectionTitle}>Tóm tắt tháng này</Text>
           <View style={styles.summaryGrid}>
             <View style={styles.summaryItem}>
@@ -390,7 +418,7 @@ function HomePage() {
 
             <TouchableOpacity
               style={styles.quickActionItem}
-              onPress={() => navigation.navigate("Salary" as any)}
+              onPress={() => navigation.navigate("SalaryTab" as any)}
             >
               <View
                 style={[styles.quickActionIcon, { backgroundColor: "#E8F5E9" }]}
@@ -483,7 +511,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#fff",
   },
-  summaryContainer: {
+  widgetContainer: {
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
@@ -608,6 +636,49 @@ const styles = StyleSheet.create({
   },
   bottomSpace: {
     height: 80, // Space for bottom navigation
+  },
+  faceRegisterHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  faceIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#FFF4F0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  faceRegisterContent: {
+    flex: 1,
+  },
+  faceRegisterTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  faceRegisterSubtitle: {
+    fontSize: 13,
+    color: "#666",
+    lineHeight: 18,
+  },
+  faceRegisterButton: {
+    backgroundColor: "#3674B5",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    gap: 8,
+  },
+  faceRegisterButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
 
