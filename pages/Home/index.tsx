@@ -284,7 +284,10 @@ function HomePage() {
             {userProfile?.fullName || "Người dùng"}
           </Text>
         </View>
-        <View style={styles.avatarContainer}>
+        <TouchableOpacity
+          style={styles.avatarContainer}
+          onPress={() => navigation.navigate("ProfileDrawer")}
+        >
           <Image
             source={
               userProfile?.faceImg
@@ -296,7 +299,7 @@ function HomePage() {
             style={styles.avatar}
           />
           <View style={styles.statusDot} />
-        </View>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -307,31 +310,33 @@ function HomePage() {
         }
       >
         {/* Register face widget */}
-        <View style={styles.widgetContainer}>
-          <View style={styles.faceRegisterHeader}>
-            <View style={styles.faceIconContainer}>
-              <MaterialCommunityIcons
-                name="face-recognition"
-                size={32}
-                color="#3674B5"
-              />
+        {!userProfile?.faceImg && (
+          <View style={styles.widgetContainer}>
+            <View style={styles.faceRegisterHeader}>
+              <View style={styles.faceIconContainer}>
+                <MaterialCommunityIcons
+                  name="face-recognition"
+                  size={32}
+                  color="#3674B5"
+                />
+              </View>
+              <View style={styles.faceRegisterContent}>
+                <Text style={styles.faceRegisterTitle}>Đăng ký khuôn mặt</Text>
+                <Text style={styles.faceRegisterSubtitle}>
+                  Thiết lập nhận diện khuôn mặt để chấm công nhanh chóng và bảo
+                  mật
+                </Text>
+              </View>
             </View>
-            <View style={styles.faceRegisterContent}>
-              <Text style={styles.faceRegisterTitle}>Đăng ký khuôn mặt</Text>
-              <Text style={styles.faceRegisterSubtitle}>
-                Thiết lập nhận diện khuôn mặt để chấm công nhanh chóng và bảo
-                mật
-              </Text>
-            </View>
+            <TouchableOpacity
+              style={styles.faceRegisterButton}
+              onPress={() => navigation.navigate("RegisterFaceDrawer")}
+            >
+              <Text style={styles.faceRegisterButtonText}>Đăng ký ngay</Text>
+              <AntDesign name="arrowright" size={16} color="#fff" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.faceRegisterButton}
-            onPress={() => navigation.navigate("RegisterFaceDrawer")}
-          >
-            <Text style={styles.faceRegisterButtonText}>Đăng ký ngay</Text>
-            <AntDesign name="arrowright" size={16} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        )}
         {/* Summary Widget */}
         <View style={styles.widgetContainer}>
           <Text style={styles.sectionTitle}>Tóm tắt tháng này</Text>
