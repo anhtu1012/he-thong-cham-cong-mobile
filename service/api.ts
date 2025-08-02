@@ -25,6 +25,18 @@ export const getUserFaceImg = (path: string) => {
   });
 };
 
+export const checkMultipleFace = (values: FormData) => {
+  return axios.post(
+    `${process.env.EXPO_PUBLIC_API_PYTHON_URL}/check-multiple-face`,
+    values,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+};
+
 export const compareFace = (values: FormData) => {
   return axios.post(
     `${process.env.EXPO_PUBLIC_API_PYTHON_URL}/verify`,

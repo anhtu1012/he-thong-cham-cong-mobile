@@ -22,7 +22,7 @@ import Feather from "@expo/vector-icons/Feather";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { LinearGradient } from "expo-linear-gradient";
-import { createForm, registerFace } from "../service/api";
+import { checkMultipleFace, createForm, registerFace } from "../service/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { CommonActions, useNavigation } from "@react-navigation/native";
@@ -154,36 +154,39 @@ export default function FaceRegisterPage() {
     if (userDataStr !== null) {
       const user = JSON.parse(userDataStr);
       try {
-        const formData = new FormData();
-        formData.append("key", `face/${user.userName}.jpg`);
-        formData.append("userCode", user.code);
-        formData.append("file", {
-          uri,
+        // validation face image
+        const faceFormData = new FormData();
+        faceFormData.append("img", {
+          uri: uri,
           type: "image/jpeg",
           name: "face.jpg",
         } as any);
 
-        const res = await registerFace(formData);
+        await checkMultipleFace(faceFormData);
 
-        if (res.status === 201) {
-          Toast.show({
-            type: "success",
-            text1: "Đăng ký khuôn mặt thành công!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-          navigation.navigate("DrawerHomeScreen");
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Lỗi khi đăng ký khuôn mặt!",
-            text1Style: { textAlign: "center", fontSize: 16 },
-          });
-        }
-      } catch (error) {
-        console.log("Upload error:", error);
+        // store face to minio
+        const formData = new FormData();
+        formData.append("key", `face/${user.userName}.jpg`);
+        formData.append("userCode", user.code);
+        formData.append("file", {
+          uri: uri,
+          type: "image/jpeg",
+          name: "face.jpg",
+        } as any);
+
+        await registerFace(formData);
+
+        Toast.show({
+          type: "success",
+          text1: "Đăng ký khuôn mặt thành công!",
+          text1Style: { textAlign: "center", fontSize: 16 },
+        });
+        navigation.navigate("DrawerHomeScreen");
+      } catch (error: any) {
+        console.log("Upload error:", error.response.data);
         Toast.show({
           type: "error",
-          text1: "Có lỗi xảy ra khi đăng ký!",
+          text1: error.response.data.error,
           text1Style: { textAlign: "center", fontSize: 16 },
         });
       } finally {
