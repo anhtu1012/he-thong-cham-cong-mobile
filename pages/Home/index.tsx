@@ -337,7 +337,7 @@ function HomePage() {
           </View>
         )}
         {/* Summary Widget */}
-        <View style={styles.widgetContainer}>
+        {/* <View style={styles.widgetContainer}>
           <Text style={styles.sectionTitle}>Tóm tắt tháng này</Text>
           <View style={styles.summaryGrid}>
             <View style={styles.summaryItem}>
@@ -361,7 +361,7 @@ function HomePage() {
               <Text style={styles.summaryLabel}>Chuyên cần</Text>
             </View>
           </View>
-        </View>
+        </View> */}
 
         {/* Today Widget */}
         <TodayWidget
