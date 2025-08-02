@@ -92,13 +92,20 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
         index: 0,
         routes: [{ name: "MainAppScreen" }],
       });
-    } catch (error) {
-      console.error("Error logging in:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi đăng nhập. Vui lòng thử lại sau!",
-        text1Style: { textAlign: "center", fontSize: 16 },
-      });
+    } catch (error: any) {
+      if (error.status == 401) {
+        Toast.show({
+          type: "error",
+          text1: "Tài khoản hoặc mật khẩu không đúng!",
+          text1Style: { textAlign: "center", fontSize: 16 },
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi đăng nhập. Vui lòng thử lại sau!",
+          text1Style: { textAlign: "center", fontSize: 16 },
+        });
+      }
     }
   };
 
