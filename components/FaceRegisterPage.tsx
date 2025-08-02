@@ -36,6 +36,7 @@ export default function FaceRegisterPage() {
   const [facing, setFacing] = useState<CameraType>("front");
   const [recording, setRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isUpdatingFace, setIsUpdatingFace] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const cornerAnim = useRef(new Animated.Value(0)).current;
@@ -121,6 +122,9 @@ export default function FaceRegisterPage() {
   const takePicture = async () => {
     const photo = await ref.current?.takePictureAsync();
     setUri(photo!.uri);
+    if (userProfile.faceImg) {
+      setIsUpdatingFace(false);
+    }
   };
 
   const recordVideo = async () => {
@@ -443,6 +447,92 @@ export default function FaceRegisterPage() {
     );
   };
 
+  const renderUserImage = () => {
+    return (
+      <LinearGradient
+        colors={["#4facfe", "#00f2fe"]}
+        style={styles.pictureContainer}
+      >
+        <View style={styles.headerSection}>
+          <View style={styles.iconContainer}>
+            <MaterialIcons
+              name="face-retouching-natural"
+              size={40}
+              color="#fff"
+            />
+          </View>
+          <Text style={styles.pictureTitle}>Bạn đã đăng ký khuôn mặt</Text>
+          <Text style={styles.pictureSubtitle}>
+            Chụp lại để cập nhật khuôn mặt mới
+          </Text>
+        </View>
+
+        <View style={styles.imageWrapper}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={uri ? uri : userProfile.faceImg}
+              contentFit="cover"
+              style={styles.capturedImage}
+            />
+            <View style={styles.imageOverlay} />
+            {isProcessing && (
+              <View style={styles.processingOverlay}>
+                <View style={styles.processingContent}>
+                  <ActivityIndicator size="large" color="#4facfe" />
+                  <Text style={styles.processingText}>Đang xử lý...</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <Pressable
+            style={[styles.actionButton, styles.retakeButton]}
+            onPress={() => {
+              setUri(null);
+              setIsUpdatingFace(true);
+            }}
+            disabled={isProcessing}
+          >
+            {({ pressed }) => (
+              <View style={[styles.buttonContent, pressed && styles.pressed]}>
+                <AntDesign name="reload1" size={20} color="#4facfe" />
+                <Text style={styles.retakeButtonText}>Chụp lại</Text>
+              </View>
+            )}
+          </Pressable>
+
+          <Pressable
+            style={[styles.actionButton, styles.confirmButton]}
+            onPress={() => handleRegisterFace()}
+            disabled={isProcessing || !uri}
+          >
+            {({ pressed }) => (
+              <LinearGradient
+                colors={
+                  isProcessing || !uri
+                    ? ["#ccc", "#999"]
+                    : ["#4facfe", "#00f2fe"]
+                }
+                style={[styles.buttonGradient, pressed && styles.pressed]}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator size={20} color="white" />
+                ) : (
+                  <AntDesign name="check" size={20} color="white" />
+                )}
+                <Text style={styles.confirmButtonText}>
+                  {isProcessing ? "Đang xử lý..." : "Cập nhật"}
+                </Text>
+              </LinearGradient>
+            )}
+          </Pressable>
+        </View>
+      </LinearGradient>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -455,13 +545,11 @@ export default function FaceRegisterPage() {
         </TouchableOpacity>
       </View>
       <View style={styles.container}>
-        {userProfile?.faceImg != null ? (
-          <Text style={{ color: "green" }}>Có ảnh rồi bro</Text>
-        ) : uri ? (
-          renderPicture()
-        ) : (
-          renderCamera()
-        )}
+        {userProfile?.faceImg != null && !isUpdatingFace
+          ? renderUserImage()
+          : uri
+          ? renderPicture()
+          : renderCamera()}
       </View>
     </SafeAreaView>
   );
@@ -753,7 +841,7 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     alignItems: "center",
-    paddingTop: 70,
+    paddingTop: 20,
     paddingHorizontal: 25,
     paddingBottom: 40,
   },
@@ -769,7 +857,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.3)",
   },
   pictureTitle: {
-    fontSize: 28,
+    fontSize: 25,
     fontWeight: "bold",
     color: "white",
     marginBottom: 12,
@@ -779,7 +867,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   pictureSubtitle: {
-    fontSize: 17,
+    fontSize: 15,
     color: "rgba(255,255,255,0.9)",
     textAlign: "center",
     lineHeight: 24,
@@ -837,7 +925,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
     paddingHorizontal: 25,
-    paddingBottom: 50,
+    paddingBottom: 20,
     gap: 20,
   },
   actionButton: {
