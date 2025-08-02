@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Dimensions,
+  Image,
+  Modal,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
@@ -50,6 +52,7 @@ const FormDetailView = () => {
   const [form, setForm] = useState<FormDescription | null>(null);
   const [loading, setLoading] = useState(true);
   const [canceling, setCanceling] = useState(false);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
 
   useEffect(() => {
     fetchFormDetail();
@@ -113,6 +116,14 @@ const FormDetailView = () => {
     } finally {
       setCanceling(false);
     }
+  };
+
+  const openImageModal = () => {
+    setImageModalVisible(true);
+  };
+
+  const closeImageModal = () => {
+    setImageModalVisible(false);
   };
 
   // Format date to DD/MM/YYYY
@@ -326,25 +337,36 @@ const FormDetailView = () => {
             </View>
           </View>
 
-          {/* File Attachment */}
+          {/* Image Attachment */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialIcons name="attach-file" size={20} color="#3674B5" />
-              <Text style={styles.sectionTitle}>File đính kèm</Text>
+              <MaterialIcons name="image" size={20} color="#3674B5" />
+              <Text style={styles.sectionTitle}>Hình ảnh đính kèm</Text>
             </View>
 
-            <TouchableOpacity style={styles.fileContainer}>
-              <View style={styles.fileIconContainer}>
-                <View style={styles.fileIcon}>
-                  <Feather name="file-text" size={24} color="#3674B5" />
+            <TouchableOpacity
+              style={styles.imageContainer}
+              onPress={openImageModal}
+            >
+              <View style={styles.imagePreviewContainer}>
+                <Image
+                  source={{ uri: form.file }}
+                  style={styles.imagePreview}
+                  resizeMode="cover"
+                />
+                <View style={styles.imageOverlay}>
+                  <Feather name="eye" size={24} color="#fff" />
                 </View>
               </View>
-              <View style={styles.fileContent}>
-                <Text style={styles.fileName}>{form.file}</Text>
-                <Text style={styles.fileAction}>Nhấn để xem tài liệu</Text>
+              <View style={styles.imageContent}>
+                <Text style={styles.imageName}>Hình ảnh đính kèm</Text>
+                <Text style={styles.imageAction}>Nhấn để xem ảnh lớn</Text>
               </View>
-              <TouchableOpacity style={styles.downloadButton}>
-                <Feather name="download" size={20} color="#3674B5" />
+              <TouchableOpacity
+                style={styles.viewButton}
+                onPress={openImageModal}
+              >
+                <Feather name="maximize" size={20} color="#3674B5" />
               </TouchableOpacity>
             </TouchableOpacity>
           </View>
@@ -453,6 +475,42 @@ const FormDetailView = () => {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Image Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeImageModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalBackground}>
+            <TouchableOpacity
+              style={styles.modalCloseArea}
+              onPress={closeImageModal}
+              activeOpacity={1}
+            />
+            <View style={styles.imageModalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Hình ảnh đính kèm</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={closeImageModal}
+                >
+                  <Feather name="x" size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.imageViewContainer}>
+                <Image
+                  source={{ uri: form?.file }}
+                  style={styles.fullSizeImage}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -711,7 +769,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: "#3674B5",
   },
-  fileContainer: {
+  imageContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
@@ -726,31 +784,41 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  fileIconContainer: {
+  imagePreviewContainer: {
+    position: "relative",
     marginRight: 12,
   },
-  fileIcon: {
+  imagePreview: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: "#E3F2FD",
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+  },
+  imageOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
-  fileContent: {
+  imageContent: {
     flex: 1,
   },
-  fileName: {
+  imageName: {
     fontSize: 15,
     fontWeight: "600",
     color: "#333",
     marginBottom: 4,
   },
-  fileAction: {
+  imageAction: {
     fontSize: 13,
     color: "#666",
   },
-  downloadButton: {
+  viewButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -798,6 +866,59 @@ const styles = StyleSheet.create({
     backgroundColor: "#9E9E9E",
     shadowColor: "#9E9E9E",
     shadowOpacity: 0.2,
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCloseArea: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  imageModalContent: {
+    width: width * 0.95,
+    height: "80%",
+    backgroundColor: "#000",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "rgba(0,0,0,0.8)",
+  },
+  modalTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imageViewContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000",
+  },
+  fullSizeImage: {
+    width: "100%",
+    height: "100%",
   },
 });
 

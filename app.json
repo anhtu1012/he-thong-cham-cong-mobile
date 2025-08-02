@@ -13,6 +13,12 @@
         {
           "cameraPermission": "Cho phép ứng dụng truy cập camera của bạn để quét khuôn mặt."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép ứng dụng truy cập thư viện ảnh của bạn để chọn ảnh đính kèm."
+        }
       ]
     ],
     "splash": {
@@ -26,7 +32,11 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.anhtus.hethongchamcongmobile",
-      "runtimeVersion": "1.0.0"
+      "runtimeVersion": "1.0.0",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "extra": {
       "eas": {

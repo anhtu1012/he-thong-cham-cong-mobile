@@ -51,11 +51,14 @@
     "react-native-tab-view": "^4.0.6",
     "react-native-toast-message": "^2.2.1",
     "react-native-vector-icons": "^10.2.0",
-    "react-native-web": "~0.19.13"
+    "react-native-web": "~0.19.13",
+    "socket.io-client": "^4.8.1",
+    "expo-image-picker": "~16.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~18.3.12",
+    "@types/socket.io-client": "^3.0.0",
     "typescript": "^5.3.3"
   },
   "private": true,

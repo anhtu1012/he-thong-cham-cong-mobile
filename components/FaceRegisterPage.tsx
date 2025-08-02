@@ -22,7 +22,7 @@ import Feather from "@expo/vector-icons/Feather";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { LinearGradient } from "expo-linear-gradient";
-import { registerFace } from "../service/api";
+import { createForm, registerFace } from "../service/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { CommonActions, useNavigation } from "@react-navigation/native";
@@ -184,6 +184,52 @@ export default function FaceRegisterPage() {
         Toast.show({
           type: "error",
           text1: "Có lỗi xảy ra khi đăng ký!",
+          text1Style: { textAlign: "center", fontSize: 16 },
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+  };
+
+  const handleUpdateFace = async () => {
+    if (!uri) return;
+
+    setIsProcessing(true);
+    let userDataStr = await AsyncStorage.getItem("userData");
+    if (userDataStr !== null) {
+      try {
+        const formData = new FormData();
+        formData.append("reason", "Cập nhật khuôn mặt");
+        formData.append("status", "PENDING"); // Luôn để PENDING cho form
+        formData.append("startTime", new Date().toISOString());
+        formData.append("endTime", new Date().toISOString());
+        formData.append("formId", "5");
+        formData.append("file", {
+          uri,
+          type: "image/jpeg",
+          name: "face.jpg",
+        } as any);
+        const response = await createForm(formData);
+        if (response.status === 201 || response.status === 200) {
+          Toast.show({
+            type: "success",
+            text1: "Đã gữi yêu cầu xác thực khuôn mặt!",
+            text1Style: { textAlign: "center", fontSize: 16 },
+          });
+          navigation.goBack();
+        } else {
+          throw new Error("Server responded with an error");
+        }
+
+        // Reset về trạng thái hiển thị ảnh đã có
+        setUri(null);
+        setIsUpdatingFace(false);
+      } catch (error) {
+        console.log("Update error:", error);
+        Toast.show({
+          type: "error",
+          text1: "Có lỗi xảy ra khi cập nhật!",
           text1Style: { textAlign: "center", fontSize: 16 },
         });
       } finally {
@@ -449,87 +495,160 @@ export default function FaceRegisterPage() {
 
   const renderUserImage = () => {
     return (
-      <LinearGradient
-        colors={["#4facfe", "#00f2fe"]}
-        style={styles.pictureContainer}
-      >
-        <View style={styles.headerSection}>
-          <View style={styles.iconContainer}>
-            <MaterialIcons
-              name="face-retouching-natural"
-              size={40}
-              color="#fff"
-            />
-          </View>
-          <Text style={styles.pictureTitle}>Bạn đã đăng ký khuôn mặt</Text>
-          <Text style={styles.pictureSubtitle}>
-            Chụp lại để cập nhật khuôn mặt mới
-          </Text>
-        </View>
-
-        <View style={styles.imageWrapper}>
-          <View style={styles.imageContainer}>
-            <Image
-              source={uri ? uri : userProfile.faceImg}
-              contentFit="cover"
-              style={styles.capturedImage}
-            />
-            <View style={styles.imageOverlay} />
-            {isProcessing && (
-              <View style={styles.processingOverlay}>
-                <View style={styles.processingContent}>
-                  <ActivityIndicator size="large" color="#4facfe" />
-                  <Text style={styles.processingText}>Đang xử lý...</Text>
-                </View>
+      <View style={styles.userImageContainer}>
+        {/* Header với gradient xanh dương */}
+        <LinearGradient
+          colors={["#2196F3", "#1976D2"]}
+          style={styles.userImageHeader}
+        >
+          <View style={styles.userImageHeaderContent}>
+            <View style={styles.userImageIconContainer}>
+              <MaterialIcons name="face" size={32} color="#fff" />
+              <View style={styles.userImageStatusBadge}>
+                <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
               </View>
-            )}
+            </View>
+            <Text style={styles.userImageTitle}>Khuôn mặt đã đăng ký</Text>
+            <Text style={styles.userImageSubtitle}>
+              {uri
+                ? "Xem trước ảnh mới và xác nhận cập nhật"
+                : "Bạn có thể cập nhật khuôn mặt bất cứ lúc nào"}
+            </Text>
           </View>
-        </View>
+        </LinearGradient>
 
-        <View style={styles.buttonContainer}>
-          <Pressable
-            style={[styles.actionButton, styles.retakeButton]}
-            onPress={() => {
-              setUri(null);
-              setIsUpdatingFace(true);
-            }}
-            disabled={isProcessing}
-          >
-            {({ pressed }) => (
-              <View style={[styles.buttonContent, pressed && styles.pressed]}>
-                <AntDesign name="reload1" size={20} color="#4facfe" />
-                <Text style={styles.retakeButtonText}>Chụp lại</Text>
-              </View>
-            )}
-          </Pressable>
+        {/* Image Section */}
+        <View style={styles.userImageSection}>
+          <View style={styles.userImageWrapper}>
+            <View style={styles.userImageFrame}>
+              <Image
+                source={uri ? { uri } : { uri: userProfile.faceImg }}
+                contentFit="cover"
+                style={styles.userImage}
+              />
+              <View style={styles.userImageBorder} />
 
-          <Pressable
-            style={[styles.actionButton, styles.confirmButton]}
-            onPress={() => handleRegisterFace()}
-            disabled={isProcessing || !uri}
-          >
-            {({ pressed }) => (
-              <LinearGradient
-                colors={
-                  isProcessing || !uri
-                    ? ["#ccc", "#999"]
-                    : ["#4facfe", "#00f2fe"]
-                }
-                style={[styles.buttonGradient, pressed && styles.pressed]}
-              >
-                {isProcessing ? (
-                  <ActivityIndicator size={20} color="white" />
-                ) : (
-                  <AntDesign name="check" size={20} color="white" />
-                )}
-                <Text style={styles.confirmButtonText}>
-                  {isProcessing ? "Đang xử lý..." : "Cập nhật"}
+              {/* Status indicator */}
+              <View style={styles.userImageStatus}>
+                <View style={styles.userImageStatusDot} />
+                <Text style={styles.userImageStatusText}>
+                  {uri ? "Ảnh mới" : "Đã xác thực"}
                 </Text>
-              </LinearGradient>
-            )}
-          </Pressable>
+              </View>
+
+              {isProcessing && (
+                <View style={styles.userImageProcessingOverlay}>
+                  <View style={styles.userImageProcessingContent}>
+                    <ActivityIndicator size="large" color="#2196F3" />
+                    <Text style={styles.userImageProcessingText}>
+                      Đang xử lý...
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Info card */}
+          <View style={styles.userImageInfoCard}>
+            <View style={styles.userImageInfoRow}>
+              <MaterialIcons name="schedule" size={20} color="#2196F3" />
+              <Text style={styles.userImageInfoText}>
+                Đăng ký: {new Date().toLocaleDateString("vi-VN")}
+              </Text>
+            </View>
+            <View style={styles.userImageInfoRow}>
+              <MaterialIcons name="verified-user" size={20} color="#4CAF50" />
+              <Text style={styles.userImageInfoText}>
+                Trạng thái: Đã xác thực
+              </Text>
+            </View>
+          </View>
         </View>
-      </LinearGradient>
+
+        {/* Action Buttons */}
+        <View style={styles.userImageButtonContainer}>
+          {!uri ? (
+            // Nút cập nhật khi chưa có ảnh mới
+            <Pressable
+              style={styles.userImageUpdateButton}
+              onPress={() => {
+                setUri(null);
+                setIsUpdatingFace(true);
+              }}
+              disabled={isProcessing}
+            >
+              {({ pressed }) => (
+                <LinearGradient
+                  colors={["#2196F3", "#1976D2"]}
+                  style={[
+                    styles.userImageUpdateButtonGradient,
+                    pressed && styles.userImageButtonPressed,
+                  ]}
+                >
+                  <MaterialIcons name="camera-alt" size={24} color="white" />
+                  <Text style={styles.userImageUpdateButtonText}>
+                    Cập nhật khuôn mặt
+                  </Text>
+                </LinearGradient>
+              )}
+            </Pressable>
+          ) : (
+            // Nút khi đã có ảnh mới
+            <View style={styles.userImageActionRow}>
+              <Pressable
+                style={styles.userImageRetakeButton}
+                onPress={() => {
+                  setUri(null);
+                  setIsUpdatingFace(true);
+                }}
+                disabled={isProcessing}
+              >
+                {({ pressed }) => (
+                  <View
+                    style={[
+                      styles.userImageRetakeButtonContent,
+                      pressed && styles.userImageButtonPressed,
+                    ]}
+                  >
+                    <AntDesign name="reload1" size={20} color="#2196F3" />
+                    <Text style={styles.userImageRetakeButtonText}>
+                      Chụp lại
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+
+              <Pressable
+                style={styles.userImageConfirmButton}
+                onPress={() => handleUpdateFace()}
+                disabled={isProcessing}
+              >
+                {({ pressed }) => (
+                  <LinearGradient
+                    colors={
+                      isProcessing ? ["#ccc", "#999"] : ["#4CAF50", "#45a049"]
+                    }
+                    style={[
+                      styles.userImageConfirmButtonGradient,
+                      pressed && styles.userImageButtonPressed,
+                    ]}
+                  >
+                    {isProcessing ? (
+                      <ActivityIndicator size={20} color="white" />
+                    ) : (
+                      <AntDesign name="check" size={20} color="white" />
+                    )}
+                    <Text style={styles.userImageConfirmButtonText}>
+                      {isProcessing ? "Đang xử lý..." : "Xác nhận"}
+                    </Text>
+                  </LinearGradient>
+                )}
+              </Pressable>
+            </View>
+          )}
+        </View>
+      </View>
     );
   };
 
@@ -545,7 +664,9 @@ export default function FaceRegisterPage() {
         </TouchableOpacity>
       </View>
       <View style={styles.container}>
-        {userProfile?.faceImg != null && !isUpdatingFace
+        {userProfile?.faceImg != null && !isUpdatingFace && !uri
+          ? renderUserImage()
+          : userProfile?.faceImg != null && uri
           ? renderUserImage()
           : uri
           ? renderPicture()
@@ -977,5 +1098,248 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "700",
     color: "white",
+  },
+
+  // User Image Styles - Modern Design
+  userImageContainer: {
+    flex: 1,
+    backgroundColor: "#f8f9fa",
+  },
+  userImageHeader: {
+    paddingTop: 20,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+  },
+  userImageHeaderContent: {
+    alignItems: "center",
+  },
+  userImageIconContainer: {
+    position: "relative",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 15,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  userImageStatusBadge: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 2,
+  },
+  userImageTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "white",
+    marginBottom: 8,
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  userImageSubtitle: {
+    fontSize: 16,
+    color: "rgba(255,255,255,0.9)",
+    textAlign: "center",
+    lineHeight: 22,
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  userImageSection: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  userImageWrapper: {
+    alignItems: "center",
+    marginBottom: 25,
+  },
+  userImageFrame: {
+    position: "relative",
+    borderRadius: 25,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  userImage: {
+    width: 280,
+    height: 280,
+    borderRadius: 25,
+  },
+  userImageBorder: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 25,
+    borderWidth: 4,
+    borderColor: "rgba(255,255,255,0.8)",
+    shadowColor: "#2196F3",
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  userImageStatus: {
+    position: "absolute",
+    top: 15,
+    right: 15,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  userImageStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#4CAF50",
+  },
+  userImageStatusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#333",
+  },
+  userImageProcessingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 25,
+  },
+  userImageProcessingContent: {
+    alignItems: "center",
+    backgroundColor: "white",
+    paddingHorizontal: 25,
+    paddingVertical: 20,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  userImageProcessingText: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2196F3",
+  },
+  userImageInfoCard: {
+    backgroundColor: "white",
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  userImageInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 12,
+  },
+  userImageInfoText: {
+    fontSize: 15,
+    color: "#333",
+    fontWeight: "500",
+  },
+  userImageButtonContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  userImageUpdateButton: {
+    borderRadius: 15,
+    overflow: "hidden",
+    shadowColor: "#2196F3",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  userImageUpdateButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 18,
+    paddingHorizontal: 25,
+    gap: 12,
+  },
+  userImageUpdateButtonText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "white",
+  },
+  userImageActionRow: {
+    flexDirection: "row",
+    gap: 15,
+  },
+  userImageRetakeButton: {
+    flex: 1,
+    borderRadius: 15,
+    overflow: "hidden",
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  userImageRetakeButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    gap: 10,
+  },
+  userImageRetakeButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2196F3",
+  },
+  userImageConfirmButton: {
+    flex: 1,
+    borderRadius: 15,
+    overflow: "hidden",
+    shadowColor: "#4CAF50",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  userImageConfirmButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    gap: 10,
+  },
+  userImageConfirmButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "white",
+  },
+  userImageButtonPressed: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
   },
 });

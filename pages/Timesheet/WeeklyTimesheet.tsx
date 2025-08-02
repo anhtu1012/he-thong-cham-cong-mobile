@@ -67,9 +67,11 @@ const WeeklyTimesheet = () => {
 
       if (response.data && response.data.data) {
         // Sort data by date (ascending order)
-        const sortedData = response.data.data.sort((a: WorkingSchedule, b: WorkingSchedule) => {
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
-        });
+        const sortedData = response.data.data.sort(
+          (a: WorkingSchedule, b: WorkingSchedule) => {
+            return new Date(a.date).getTime() - new Date(b.date).getTime();
+          }
+        );
         setWeeklyData(sortedData);
       }
     } catch (error) {
@@ -176,9 +178,7 @@ const WeeklyTimesheet = () => {
       (d) => d.checkInTime && d.checkOutTime
     );
     const totalHours = completedDays.reduce((sum, d) => {
-      const hours = d.workingHourReal
-        ? parseFloat(d.workingHourReal)
-        : d.workingHours;
+      const hours = d.workingHours;
       return sum + (hours || 0);
     }, 0);
     const overtimeHours = completedDays.reduce(
@@ -213,10 +213,20 @@ const WeeklyTimesheet = () => {
   };
 
   const handleDayPress = (item: WorkingSchedule) => {
+    let value;
+    if (!item.checkInTime || !item.checkOutTime) {
+      value = "--:--";
+    } else if (item.status === "NOTWORK") {
+      value = "A";
+    } else if (item.startShiftTime === "LATE") {
+      value = item.workingHourReal;
+    } else {
+      value = item.workingHours;
+    }
     const dayData = {
       day: new Date(item.date).getDate(),
       status: item.status as any,
-      value: item.workingHourReal || item.workingHours || 0,
+      value: value || 0,
       date: item.date,
       checkInTime: item.checkInTime,
       checkOutTime: item.checkOutTime,
@@ -403,9 +413,13 @@ const WeeklyTimesheet = () => {
                   <View style={styles.timeContent}>
                     <Text style={styles.timeLabel}>Công</Text>
                     <Text style={styles.timeValue}>
-                      {item.checkInTime && item.checkOutTime
-                        ? item.workingHourReal || `${item.workingHours}h`
-                        : "--:--"}
+                      {!item.checkInTime || !item.checkOutTime
+                        ? "--:--"
+                        : item.checkInTime &&
+                          item.checkOutTime &&
+                          item.startShiftTime === "LATE"
+                        ? item.workingHourReal
+                        : item.workingHours}
                     </Text>
                     {calculateOvertimeHours(item) > 0 && (
                       <Text style={styles.overtimeText}>

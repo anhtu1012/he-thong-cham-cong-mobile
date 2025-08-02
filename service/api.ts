@@ -69,21 +69,12 @@ export const getForms = () => {
   return api.get("/form");
 };
 
-export const createForm = async (formData: {
-  reason: string;
-  status: string;
-  file: string;
-  startTime: string;
-  endTime: string;
-  formId: string;
-}) => {
-  try {
-    const response = await api.post("/form-description", formData);
-    return response;
-  } catch (error) {
-    console.error("Error creating form:", error);
-    throw error;
-  }
+export const createForm = (values: FormData) => {
+  return api.post("/business/tao-don", values, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 };
 
 export const getFormDescriptions = async (params: {

@@ -30,6 +30,17 @@ export type NavigationProps = {
   reset: (state: { index: number; routes: { name: string }[] }) => void;
 };
 
+// Token validation utility
+const isTokenValid = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const currentTime = Date.now() / 1000;
+    return payload.exp > currentTime;
+  } catch (error) {
+    return false;
+  }
+};
+
 const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [userName, setUserName] = useState("");
@@ -37,19 +48,38 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigation = useNavigation<NavigationProps>();
 
-  // useEffect(() => {
-  //   const handleIsLogin = async () => {
-  //     const userData = await AsyncStorage.getItem("userData");
+  useEffect(() => {
+    const handleIsLogin = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        const userData = await AsyncStorage.getItem("userData");
 
-  //     if (userData) {
-  //       navigation.reset({
-  //         index: 0,
-  //         routes: [{ name: "MainAppScreen" }],
-  //       });
-  //     }
-  //   };
-  //   handleIsLogin();
-  // }, []);
+        if (token && userData) {
+          // Check if token is still valid
+          if (isTokenValid(token)) {
+            // Token is valid, auto login
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "MainAppScreen" }],
+            });
+          } else {
+            // Token expired, clear storage
+            await AsyncStorage.multiRemove(["token", "userData"]);
+            Toast.show({
+              type: "info",
+              text1: "Phiên đăng nhập đã hết hạn",
+              text1Style: { textAlign: "center", fontSize: 16 },
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error checking login status:", error);
+        // Clear any corrupted data
+        await AsyncStorage.multiRemove(["token", "userData"]);
+      }
+    };
+    handleIsLogin();
+  }, []);
 
   const handleEyePress = () => {
     setPasswordVisible((oldValue) => !oldValue);

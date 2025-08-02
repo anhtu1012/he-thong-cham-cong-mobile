@@ -1,37 +1,28 @@
+import { AntDesign } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  SafeAreaView,
-  Platform,
-  Modal,
-  FlatList,
   ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { AntDesign } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import Toast from "react-native-toast-message";
 import { createForm } from "../../service/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface FormRouteParams {
   formId: string;
   formTitle: string;
 }
-
-// Common reasons users might select
-const commonReasons = [
-  "Việc cá nhân",
-  "Ốm đau",
-  "Việc gia đình",
-  "Đi khám bệnh",
-  "Đi công tác",
-  "Lý do khác",
-];
 
 const FormDetail = () => {
   const navigation = useNavigation();
@@ -41,7 +32,7 @@ const FormDetail = () => {
 
   // State cho form
   const [reason, setReason] = useState("");
-  const [attachments, setAttachments] = useState<string[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Date states
@@ -106,6 +97,58 @@ const FormDetail = () => {
     }
   };
 
+  // Function để chọn ảnh từ máy
+  const pickImageFromGallery = async () => {
+    try {
+      // Yêu cầu quyền truy cập thư viện ảnh
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== "granted") {
+        Alert.alert(
+          "Quyền truy cập",
+          "Cần quyền truy cập thư viện ảnh để chọn ảnh.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      // Mở image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setSelectedImage(result.assets[0].uri);
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: "Đã chọn ảnh thành công",
+        });
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể chọn ảnh. Vui lòng thử lại.",
+      });
+    }
+  };
+
+  // Function để xóa ảnh đã chọn
+  const removeSelectedImage = () => {
+    setSelectedImage(null);
+    Toast.show({
+      type: "info",
+      text1: "Thông báo",
+      text2: "Đã xóa ảnh đã chọn",
+    });
+  };
+
   const handleSubmitForm = async () => {
     if (!reason.trim()) {
       Toast.show({
@@ -118,20 +161,20 @@ const FormDetail = () => {
 
     try {
       setIsSubmitting(true);
-
       // Format dates for API
       const startTimeFormatted = formatDateTimeForApi(startDate, startTime);
       const endTimeFormatted = formatDateTimeForApi(endDate, endTime);
-
-      const formData = {
-        reason: reason.trim(),
-        status: "PENDING", // Luôn để PENDING cho form mới
-        file: "bằng chứng đâu ní", // Giá trị mặc định cho file
-        startTime: startTimeFormatted,
-        endTime: endTimeFormatted,
-        formId: formId,
-      };
-
+      const formData = new FormData();
+      formData.append("reason", reason.trim());
+      formData.append("status", "PENDING"); // Luôn để PENDING cho form
+      formData.append("startTime", startTimeFormatted);
+      formData.append("endTime", endTimeFormatted);
+      formData.append("formId", formId);
+      formData.append("file", {
+        uri: selectedImage,
+        type: "image/jpeg",
+        name: "face.jpg",
+      } as any);
       console.log("Submitting form data:", formData);
 
       const response = await createForm(formData);
@@ -308,6 +351,23 @@ const FormDetail = () => {
           {/* Attachment section */}
           <View style={styles.attachmentSection}>
             <Text style={styles.sectionTitle}>Đính kèm</Text>
+
+            {/* Hiển thị ảnh đã chọn */}
+            {selectedImage && (
+              <View style={styles.selectedImageContainer}>
+                <Image
+                  source={{ uri: selectedImage }}
+                  style={styles.selectedImage}
+                />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={removeSelectedImage}
+                >
+                  <AntDesign name="close" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
+
             <View style={styles.attachmentOptions}>
               <View style={styles.attachmentIconWrapper}>
                 <AntDesign
@@ -319,7 +379,10 @@ const FormDetail = () => {
               </View>
 
               <View style={styles.attachmentButtons}>
-                <TouchableOpacity style={styles.attachmentButtonPrimary}>
+                <TouchableOpacity
+                  style={styles.attachmentButtonPrimary}
+                  onPress={pickImageFromGallery}
+                >
                   <AntDesign name="export" size={18} color="#fff" />
                   <Text style={styles.attachmentButtonPrimaryText}>
                     CHỌN TỪ MÁY
@@ -577,6 +640,28 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  selectedImageContainer: {
+    position: "relative",
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  selectedImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 

@@ -16,7 +16,6 @@ import { getCurrentDateRes } from "../../utils/dateUtils";
 import TimeScheduleModal from "../../components/TimeScheduleModal";
 import { DayStatus } from "../../models/timekeeping";
 
-
 const MonthlyTimesheet = () => {
   const [daysInMonth, setDaysInMonth] = useState<DayStatus[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -92,13 +91,17 @@ const MonthlyTimesheet = () => {
 
     if (currentDaySchedules.length > 0) {
       // Priority 1: Find ACTIVE shift
-      const activeShift = currentDaySchedules.find((schedule: any) => schedule.status === "ACTIVE");
-      
+      const activeShift = currentDaySchedules.find(
+        (schedule: any) => schedule.status === "ACTIVE"
+      );
+
       // Priority 2: Find first NOTSTARTED shift
-      const notStartedShift = currentDaySchedules.find((schedule: any) => schedule.status === "NOTSTARTED");
-      
+      const notStartedShift = currentDaySchedules.find(
+        (schedule: any) => schedule.status === "NOTSTARTED"
+      );
+
       let shiftToStore = null;
-      
+
       if (activeShift) {
         // If there's an active shift, store it
         shiftToStore = activeShift;
@@ -109,7 +112,7 @@ const MonthlyTimesheet = () => {
         // If neither ACTIVE nor NOTSTARTED, store the first shift
         shiftToStore = currentDaySchedules[0];
       }
-      
+
       if (shiftToStore) {
         await AsyncStorage.setItem(
           "currentTimeScheduleDate",
@@ -147,7 +150,7 @@ const MonthlyTimesheet = () => {
         day.value = date.workingHours || 0;
       } else if (date.statusTimeKeeping === "LATE") {
         day.status = "END";
-        day.value = date.workingHourReal || 0;
+        day.value = date.workingHours || 0; //workingHourReal
       } else {
         day.status = "NOTWORK";
         day.value = "A";
@@ -156,14 +159,14 @@ const MonthlyTimesheet = () => {
 
     // Group shifts by date to handle multiple shifts per day
     const shiftsByDate = new Map();
-    
+
     for (const schedule of timeSchedule) {
-      const dateKey = new Date(schedule.date).toISOString().split('T')[0];
-      
+      const dateKey = new Date(schedule.date).toISOString().split("T")[0];
+
       if (!shiftsByDate.has(dateKey)) {
         shiftsByDate.set(dateKey, []);
       }
-      
+
       shiftsByDate.get(dateKey).push({
         shiftCode: schedule.shiftCode,
         shiftName: schedule.shiftName,
@@ -183,32 +186,34 @@ const MonthlyTimesheet = () => {
     for (const [dateKey, shifts] of shiftsByDate.entries()) {
       const dateObj = new Date(dateKey);
       const dayIndex = dateObj.getDate() - 1;
-      
+
       if (dayIndex >= 0 && dayIndex < days.length) {
         const day = days[dayIndex];
-        
+
         if (shifts.length > 1) {
           // Multiple shifts for this day
           day.shifts = shifts;
           day.totalShifts = shifts.length;
-          
+
           // Calculate total working hours - only count shifts with status END, LATE, FORGET
           const totalHours = shifts.reduce((sum: number, shift: any) => {
             // Only add hours for shifts with status END, FORGET, or statusTimeKeeping LATE
-            if (shift.status === "END" || shift.status === "FORGET" || shift.statusTimeKeeping === "LATE") {
+            if (shift.status === "END" || shift.status === "FORGET") {
               return sum + (shift.workingHours || 0);
             }
             // For other statuses (ACTIVE, NOTSTARTED, etc.), add 0 hours
             return sum + 0;
           }, 0);
-          
+
           day.totalWorkingHours = totalHours;
-          
+
           // Update status based on shifts
           const hasActiveShift = shifts.some((s: any) => s.status === "ACTIVE");
           const hasEndShift = shifts.some((s: any) => s.status === "END");
-          const hasNotStartedShift = shifts.some((s: any) => s.status === "NOTSTARTED");
-          
+          const hasNotStartedShift = shifts.some(
+            (s: any) => s.status === "NOTSTARTED"
+          );
+
           if (hasActiveShift) {
             day.status = "ACTIVE";
             day.value = "D";
@@ -228,17 +233,18 @@ const MonthlyTimesheet = () => {
           day.shifts = [shift];
           day.totalShifts = 1;
           // Only count hours for shifts with status END, FORGET, or statusTimeKeeping LATE
-          if (shift.status === "END" || shift.status === "FORGET" || shift.statusTimeKeeping === "LATE") {
+          if (
+            shift.status === "END" ||
+            shift.status === "FORGET" ||
+            shift.statusTimeKeeping === "LATE"
+          ) {
             day.totalWorkingHours = shift.workingHours || 0;
-          } 
-          else {
+          } else {
             day.totalWorkingHours = 0;
           }
         }
       }
     }
-
-
 
     setDaysInMonth(days);
   };
@@ -393,41 +399,45 @@ const MonthlyTimesheet = () => {
               {day.day !== 0 && (
                 <View style={styles.dayContentContainer}>
                   <View
-                                         style={[
-                       styles.valueContainer,
-                       day.status === "ACTIVE" && styles.activeValueContainer,
-                       day.status === "END" && styles.endValueContainer,
-                       day.status === "NOTWORK" && styles.notWorkValueContainer,
-                       day.status === "weekend" && styles.weekendValueContainer,
-                       day.status === "NOTSTARTED" &&
-                         styles.notStartedValueContainer,
-                       isCurrentDate &&
-                         day.status === "NOTSTARTED" &&
-                         styles.currentDateNotStartedValueContainer,
-                       isFutureDate && styles.futureDateValueContainer,
-                     ]}
+                    style={[
+                      styles.valueContainer,
+                      day.status === "ACTIVE" && styles.activeValueContainer,
+                      day.status === "END" && styles.endValueContainer,
+                      day.status === "NOTWORK" && styles.notWorkValueContainer,
+                      day.status === "weekend" && styles.weekendValueContainer,
+                      day.status === "NOTSTARTED" &&
+                        styles.notStartedValueContainer,
+                      isCurrentDate &&
+                        day.status === "NOTSTARTED" &&
+                        styles.currentDateNotStartedValueContainer,
+                      isFutureDate && styles.futureDateValueContainer,
+                    ]}
                   >
-                                         <Text
-                       style={[
-                         styles.statusValue,
-                         day.status === "ACTIVE" && styles.activeValue,
-                         day.status === "END" && styles.endValue,
-                         day.status === "NOTWORK" && styles.notWorkValue,
-                         day.status === "weekend" && styles.weekendValue,
-                         day.status === "NOTSTARTED" && styles.notStartedValue,
-                         isCurrentDate &&
-                           day.status === "NOTSTARTED" &&
-                           styles.currentDateNotStartedValue,
-                         isFutureDate && styles.futureDateValue,
-                       ]}
-                     >
-                       {hasMultipleShifts 
-                         ? day.totalWorkingHours
-                         : (day.status === "END" || day.status === "FORGET" || day.statusTimeKeeping === "LATE" || day.status === "NOTWORK"
-                            ? day.value 
-                            : (day.value === "N" ? "N" : 0))
-                       }
-                     </Text>
+                    <Text
+                      style={[
+                        styles.statusValue,
+                        day.status === "ACTIVE" && styles.activeValue,
+                        day.status === "END" && styles.endValue,
+                        day.status === "NOTWORK" && styles.notWorkValue,
+                        day.status === "weekend" && styles.weekendValue,
+                        day.status === "NOTSTARTED" && styles.notStartedValue,
+                        isCurrentDate &&
+                          day.status === "NOTSTARTED" &&
+                          styles.currentDateNotStartedValue,
+                        isFutureDate && styles.futureDateValue,
+                      ]}
+                    >
+                      {hasMultipleShifts
+                        ? day.totalWorkingHours
+                        : day.status === "END" ||
+                          day.status === "FORGET" ||
+                          day.statusTimeKeeping === "LATE" ||
+                          day.status === "NOTWORK"
+                        ? day.value
+                        : day.value === "N"
+                        ? "N"
+                        : 0}
+                    </Text>
                     {hasMultipleShifts && (
                       <Text style={styles.multipleShiftsIndicator}>
                         {day.totalShifts} ca
@@ -905,7 +915,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     marginTop: 12,
   },
-  
+
   multipleShiftsIndicator: {
     fontSize: 8,
     color: "#666",

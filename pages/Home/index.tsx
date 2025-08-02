@@ -98,6 +98,7 @@ function HomePage() {
   );
   const [loadingSchedule, setLoadingSchedule] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
 
   // Load initial data when component mounts
   const loadInitialData = async () => {
@@ -268,12 +269,39 @@ function HomePage() {
     { id: 3, title: "Workshop", time: "14:00 - 16:00", date: "22/07/2024" },
   ];
 
-  const summaryData = {
-    workDays: 21,
-    leaveRemaining: 12,
-    overtimeHours: 5,
-    attendance: "100%",
-  };
+  const motivationalQuotes = [
+    {
+      text: "Thành công không phải là chìa khóa của hạnh phúc. Hạnh phúc là chìa khóa của thành công.",
+      author: "Albert Schweitzer",
+    },
+    {
+      text: "Điều duy nhất bạn có thể kiểm soát hoàn toàn là nỗ lực của chính mình.",
+      author: "Mark Cuban",
+    },
+    {
+      text: "Cơ hội không xảy ra. Bạn tạo ra chúng.",
+      author: "Chris Grosser",
+    },
+    {
+      text: "Đừng chờ đợi cơ hội. Hãy tạo ra nó.",
+      author: "George Bernard Shaw",
+    },
+    {
+      text: "Mọi chuyên gia đều từng là người mới bắt đầu.",
+      author: "Robin Sharma",
+    },
+  ];
+
+  // Auto-rotate quotes every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentQuoteIndex(
+        (prevIndex) => (prevIndex + 1) % motivationalQuotes.length
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -336,30 +364,52 @@ function HomePage() {
             </TouchableOpacity>
           </View>
         )}
-        {/* Summary Widget */}
+
+        {/* Motivational Quote Widget */}
         <View style={styles.widgetContainer}>
-          <Text style={styles.sectionTitle}>Tóm tắt tháng này</Text>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{summaryData.workDays}</Text>
-              <Text style={styles.summaryLabel}>Ngày làm</Text>
+          <View style={styles.quoteHeader}>
+            <View style={styles.quoteIconContainer}>
+              <MaterialCommunityIcons
+                name="lightbulb"
+                size={24}
+                color="#3674B5"
+              />
             </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>
-                {summaryData.leaveRemaining}
-              </Text>
-              <Text style={styles.summaryLabel}>Phép còn</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>
-                {summaryData.overtimeHours}
-              </Text>
-              <Text style={styles.summaryLabel}>Giờ OT</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{summaryData.attendance}</Text>
-              <Text style={styles.summaryLabel}>Chuyên cần</Text>
-            </View>
+            <Text style={styles.sectionTitle}>Động lực hôm nay</Text>
+          </View>
+
+          <View style={styles.quoteContainer}>
+            <MaterialCommunityIcons
+              name="format-quote-open"
+              size={32}
+              color="#3674B5"
+              style={styles.quoteOpenIcon}
+            />
+            <Text style={styles.quoteText}>
+              {motivationalQuotes[currentQuoteIndex].text}
+            </Text>
+            <Text style={styles.quoteAuthor}>
+              - {motivationalQuotes[currentQuoteIndex].author}
+            </Text>
+            <MaterialCommunityIcons
+              name="format-quote-close"
+              size={32}
+              color="#3674B5"
+              style={styles.quoteCloseIcon}
+            />
+          </View>
+
+          <View style={styles.quoteDots}>
+            {motivationalQuotes.map((_, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.quoteDot,
+                  index === currentQuoteIndex && styles.quoteDotActive,
+                ]}
+                onPress={() => setCurrentQuoteIndex(index)}
+              />
+            ))}
           </View>
         </View>
 
@@ -563,6 +613,69 @@ const styles = StyleSheet.create({
   viewAllText: {
     color: "#3674B5",
     fontSize: 14,
+  },
+  quoteHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  quoteIconContainer: {
+    marginRight: 8,
+  },
+  quoteContainer: {
+    position: "relative",
+    backgroundColor: "#F8F9FA",
+    borderRadius: 12,
+    padding: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: "#3674B5",
+    marginBottom: 16,
+  },
+  quoteOpenIcon: {
+    position: "absolute",
+    top: -8,
+    left: 8,
+    opacity: 0.3,
+  },
+  quoteCloseIcon: {
+    position: "absolute",
+    bottom: -8,
+    right: 8,
+    opacity: 0.3,
+  },
+  quoteText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: "#333",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginVertical: 16,
+    paddingHorizontal: 16,
+  },
+  quoteAuthor: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "right",
+    fontWeight: "500",
+    marginTop: 8,
+  },
+  quoteDots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  quoteDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#E0E0E0",
+    marginHorizontal: 4,
+  },
+  quoteDotActive: {
+    backgroundColor: "#3674B5",
+    width: 12,
+    height: 8,
+    borderRadius: 4,
   },
   eventsContainer: {
     backgroundColor: "#fff",

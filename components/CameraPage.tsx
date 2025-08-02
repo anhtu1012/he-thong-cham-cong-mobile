@@ -189,6 +189,8 @@ export default function CameraPage() {
           await handleCheckIn();
         } else if (currentTimeScheduleDate.status === "ACTIVE") {
           await handleCheckOut();
+        } else {
+          throw new Error("Không có lịch làm, không thể chấm công !!!!");
         }
       }
 
@@ -380,9 +382,7 @@ export default function CameraPage() {
       }
     } catch (err: any) {
       const errorMessage =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Lỗi xác nhận khuôn mặt";
+        err?.response?.data?.detail || err?.detail || "Lỗi xác nhận khuôn mặt";
       throw new Error(errorMessage);
     } finally {
       setIsProcessing(false);

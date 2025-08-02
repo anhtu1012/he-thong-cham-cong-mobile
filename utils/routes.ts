@@ -77,3 +77,14 @@ export type TimesheetBottomTabParamList = {
   UserProfileTab: undefined;
   CameraPage: undefined;
 };
+
+// Add notification types
+export interface SocketNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: "info" | "success" | "error" | "warning";
+  timestamp: string;
+  userId?: string;
+  data?: any;
+}

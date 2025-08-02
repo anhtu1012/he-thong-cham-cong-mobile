@@ -73,44 +73,35 @@ const FormListItem: React.FC<FormItemProps> = ({
     title: string
   ): { icon: React.ReactNode; color: string } => {
     switch (title) {
-      case "Đơn xin nghỉ":
-        return {
-          icon: <Ionicons name="umbrella-outline" size={24} color="#6366f1" />,
-          color: "#eff6ff",
-        };
       case "Đơn vắng mặt":
         return {
-          icon: <AntDesign name="clockcircleo" size={24} color="#06b6d4" />,
+          icon: <Feather name="user-x" size={24} color="#06b6d4" />,
           color: "#ecfeff",
-        };
-      case "Đơn làm thêm":
-        return {
-          icon: <AntDesign name="staro" size={24} color="#eab308" />,
-          color: "#fefce8",
-        };
-      case "Đơn checkin/out":
-        return {
-          icon: <AntDesign name="checkcircleo" size={24} color="#ec4899" />,
-          color: "#fdf2f8",
-        };
-      case "Đơn đổi ca":
-        return {
-          icon: <MaterialIcons name="update" size={24} color="#22c55e" />,
-          color: "#f0fdf4",
         };
       case "Đơn tăng ca":
         return {
-          icon: <MaterialIcons name="assignment" size={24} color="#3b82f6" />,
+          icon: <MaterialIcons name="access-time" size={24} color="#3b82f6" />,
           color: "#eff6ff",
         };
-      case "Đơn công tác":
+      case "Đơn Quên chấm công":
         return {
-          icon: <FontAwesome name="truck" size={24} color="#84cc16" />,
-          color: "#f7fee7",
+          icon: <MaterialIcons name="schedule" size={24} color="#eab308" />,
+          color: "#fefce8",
         };
+      case "Đơn xác thực khuôn mặt":
+        return {
+          icon: <MaterialIcons name="face" size={24} color="#ec4899" />,
+          color: "#fdf2f8",
+        };
+      case "Đơn khác":
+        return {
+          icon: <MaterialIcons name="description" size={24} color="#22c55e" />,
+          color: "#f0fdf4",
+        };
+
       case "Đơn thôi việc":
         return {
-          icon: <Feather name="x-circle" size={24} color="#ef4444" />,
+          icon: <MaterialIcons name="exit-to-app" size={24} color="#ef4444" />,
           color: "#fee2e2",
         };
       default:

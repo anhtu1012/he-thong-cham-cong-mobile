@@ -24,22 +24,23 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
   selectedDate,
   currentDate,
 }) => {
-
   // Format selected date for display with proper null checking
   const formatSelectedDate = useMemo(() => {
     if (!selectedDate?.day || !currentDate) return "Thông tin chấm công";
-    
+
     const day = selectedDate.day;
     const month = currentDate.getMonth() + 1;
     const year = currentDate.getFullYear();
-    
-    return `${day.toString().padStart(2, "0")}/${month.toString().padStart(2, "0")}/${year}`;
+
+    return `${day.toString().padStart(2, "0")}/${month
+      .toString()
+      .padStart(2, "0")}/${year}`;
   }, [selectedDate?.day, currentDate]);
 
   // Format time for display with error handling
   const formatTime = (timeString?: string): string => {
     if (!timeString) return "--:--";
-    
+
     try {
       const formattedTime = formatTimeUtil(timeString);
       return formattedTime || "--:--";
@@ -50,7 +51,10 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
   };
 
   // Calculate late time in minutes with improved error handling
-  const calculateLateTime = (checkInTime?: string | null, startShiftTime?: string | null): number => {
+  const calculateLateTime = (
+    checkInTime?: string | null,
+    startShiftTime?: string | null
+  ): number => {
     if (!checkInTime || !startShiftTime) return 0;
 
     const parseTime = (timeString: string): number => {
@@ -74,14 +78,21 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
         if (timeParts.length !== 2) {
           throw new Error("Invalid time format");
         }
-        
+
         const hours = parseInt(timeParts[0], 10);
         const minutes = parseInt(timeParts[1], 10);
-        
-        if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+
+        if (
+          isNaN(hours) ||
+          isNaN(minutes) ||
+          hours < 0 ||
+          hours > 23 ||
+          minutes < 0 ||
+          minutes > 59
+        ) {
           throw new Error("Invalid time values");
         }
-        
+
         return hours * 60 + minutes;
       } catch (error) {
         console.warn("Error parsing time:", error, "Time string:", timeString);
@@ -105,7 +116,7 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
   // Format late time display
   const formatLateTime = (lateMinutes: number): string | undefined => {
     if (!lateMinutes || lateMinutes <= 0) return undefined;
-    
+
     try {
       const hours = Math.floor(lateMinutes / 60);
       const minutes = lateMinutes % 60;
@@ -134,8 +145,8 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
         (status === "END" || status === "FORGET")
       )
         return "Hoàn thành (Quên chấm công)";
-        if (checkInTime && !checkOutTime &&
-          (status === "NOTWORK" )) return "Quên check-out";
+      if (checkInTime && !checkOutTime && status === "NOTWORK")
+        return "Quên check-out";
       if (!checkInTime && !checkOutTime) return "Chưa chấm công";
       if (checkInTime && !checkOutTime) return "Đang làm việc";
       if (checkInTime && checkOutTime) return "Hoàn thành";
@@ -154,7 +165,7 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
   // Render single shift view (original)
   const renderSingleShiftView = () => {
     if (!selectedDate) return null;
-    
+
     return (
       <View style={styles.timeBoxContainer}>
         <View style={[styles.timeBox, styles.checkInBox]}>
@@ -198,19 +209,13 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
         <View style={[styles.timeBox, styles.workHoursBox]}>
           <View style={styles.timeBoxHeader}>
             <View style={styles.timeIconContainer}>
-              <MaterialIcons
-                name="access-time"
-                size={20}
-                color="#3B82F6"
-              />
+              <MaterialIcons name="access-time" size={20} color="#3B82F6" />
             </View>
             <View style={styles.statusBadge}>
               <MaterialIcons name="work" size={12} color="#fff" />
             </View>
           </View>
-          <Text style={styles.timeText}>
-            {selectedDate.value || "0"}
-          </Text>
+          <Text style={styles.timeText}>{selectedDate.value || "0"}</Text>
           <Text style={styles.timeStatus}>Công làm</Text>
         </View>
       </View>
@@ -218,10 +223,16 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
   };
 
   // Render shift item for FlatList
-  const renderShiftItem = ({ item: shift, index }: { item: WorkingShift; index: number }) => {
+  const renderShiftItem = ({
+    item: shift,
+    index,
+  }: {
+    item: WorkingShift;
+    index: number;
+  }) => {
     const lateTime = calculateLateTime(shift.checkInTime, shift.startShiftTime);
     const lateDisplay = formatLateTime(lateTime);
-    
+
     return (
       <View style={styles.shiftCard}>
         <View style={styles.shiftHeader}>
@@ -231,19 +242,23 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
           <Text style={styles.shiftTitle}>
             {shift.shiftName || `Ca ${index + 1}`}
           </Text>
-          <View style={[
-            styles.shiftStatusBadge,
-            shift.status === "ACTIVE" && styles.activeStatusBadge,
-            shift.status === "END" && styles.endStatusBadge,
-            shift.status === "NOTWORK" && styles.notWorkStatusBadge,
-            shift.status === "NOTSTARTED" && styles.notStartedStatusBadge,
-          ]}>
+          <View
+            style={[
+              styles.shiftStatusBadge,
+              shift.status === "ACTIVE" && styles.activeStatusBadge,
+              shift.status === "END" && styles.endStatusBadge,
+              shift.status === "NOTWORK" && styles.notWorkStatusBadge,
+              shift.status === "NOTSTARTED" && styles.notStartedStatusBadge,
+            ]}
+          >
             <Text style={styles.shiftStatusText}>
               {shift.status === "ACTIVE" && "Đang làm"}
               {shift.status === "END" && "Hoàn thành"}
               {shift.status === "NOTWORK" && "Vắng mặt"}
               {shift.status === "NOTSTARTED" && "Chưa bắt đầu"}
-              {!["ACTIVE", "END", "NOTWORK", "NOTSTARTED"].includes(shift.status || "") && "Không xác định"}
+              {!["ACTIVE", "END", "NOTWORK", "NOTSTARTED"].includes(
+                shift.status || ""
+              ) && "Không xác định"}
             </Text>
           </View>
         </View>
@@ -252,13 +267,14 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
           <View style={styles.shiftTimeBox}>
             <Text style={styles.shiftTimeLabel}>Giờ ca:</Text>
             <Text style={styles.shiftTimeValue}>
-              {shift.startShiftTime || '--'} - {shift.endShiftTime || '--'}
+              {shift.startShiftTime || "--"} - {shift.endShiftTime || "--"}
             </Text>
           </View>
           <View style={styles.shiftTimeBox}>
             <Text style={styles.shiftTimeLabel}>Chấm công:</Text>
             <Text style={styles.shiftTimeValue}>
-              {shift.checkInTime ? formatTime(shift.checkInTime) : '--'} - {shift.checkOutTime ? formatTime(shift.checkOutTime) : '--'}
+              {shift.checkInTime ? formatTime(shift.checkInTime) : "--"} -{" "}
+              {shift.checkOutTime ? formatTime(shift.checkOutTime) : "--"}
             </Text>
           </View>
         </View>
@@ -266,9 +282,7 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
         <View style={styles.shiftStatsContainer}>
           <View style={styles.shiftStat}>
             <Text style={styles.shiftStatLabel}>Công làm</Text>
-            <Text style={styles.shiftStatValue}>
-              {shift.workingHours || 0}h
-            </Text>
+            <Text style={styles.shiftStatValue}>{shift.workingHours || 0}</Text>
           </View>
           <View style={styles.shiftStat}>
             <Text style={styles.shiftStatLabel}>Thực tế</Text>
@@ -294,15 +308,19 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
     if (!selectedDate?.shifts || selectedDate.shifts.length === 0) {
       return (
         <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateText}>Không có dữ liệu ca làm việc</Text>
+          <Text style={styles.emptyStateText}>
+            Không có dữ liệu ca làm việc
+          </Text>
         </View>
       );
     }
 
     return (
       <View style={styles.multipleShiftsContainer}>
-        <Text style={styles.multipleShiftsTitle}>Thông tin các ca làm việc</Text>
-        
+        <Text style={styles.multipleShiftsTitle}>
+          Thông tin các ca làm việc
+        </Text>
+
         <FlatList
           data={selectedDate.shifts}
           renderItem={renderShiftItem}
@@ -318,7 +336,7 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
                 </View>
                 <View style={styles.totalHoursContent}>
                   <Text style={styles.totalHoursValue}>
-                    {selectedDate.totalWorkingHours}h
+                    {selectedDate.totalWorkingHours}
                   </Text>
                   <Text style={styles.totalHoursLabel}>Tổng công làm</Text>
                 </View>
@@ -349,9 +367,7 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
 
         <View style={styles.detailRow}>
           <Ionicons name="calendar" size={16} color="#6B7280" />
-          <Text style={styles.detailText}>
-            {formatSelectedDate}
-          </Text>
+          <Text style={styles.detailText}>{formatSelectedDate}</Text>
         </View>
 
         {!hasMultipleShifts && (
@@ -359,8 +375,8 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
             <View style={styles.detailRow}>
               <Ionicons name="time" size={16} color="#6B7280" />
               <Text style={styles.detailText}>
-                Ca làm: {selectedDate.startShiftTime || '--'} -{" "}
-                {selectedDate.endShiftTime || '--'}
+                Ca làm: {selectedDate.startShiftTime || "--"} -{" "}
+                {selectedDate.endShiftTime || "--"}
               </Text>
             </View>
 
@@ -377,13 +393,14 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
               <Ionicons name="hourglass" size={16} color="#6B7280" />
               <Text style={styles.detailText}>
                 Tổng công làm:{" "}
-                {selectedDate.workingHourReal ||
-                  `${
-                    selectedDate.status === "END" ||
-                    selectedDate.status === "FORGET"
-                      ? selectedDate.workingHours || 0
-                      : 0
-                  }h`}
+                {selectedDate.statusTimeKeeping === "LATE"
+                  ? selectedDate.workingHours // workingHourReal
+                  : `${
+                      selectedDate.status === "END" ||
+                      selectedDate.status === "FORGET"
+                        ? selectedDate.workingHours || 0
+                        : 0
+                    }`}
               </Text>
             </View>
           </>
@@ -416,7 +433,9 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
 
     return (
       <>
-        {hasMultipleShifts ? renderMultipleShiftsView() : renderSingleShiftView()}
+        {hasMultipleShifts
+          ? renderMultipleShiftsView()
+          : renderSingleShiftView()}
         {renderDetailsSection()}
       </>
     );
@@ -434,9 +453,9 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
           </View>
 
           <FlatList
-            data={[{ key: 'content' }]}
+            data={[{ key: "content" }]}
             renderItem={() => renderContent()}
-            keyExtractor={() => 'content'}
+            keyExtractor={() => "content"}
             showsVerticalScrollIndicator={false}
             style={styles.scrollContent}
             ListFooterComponent={
