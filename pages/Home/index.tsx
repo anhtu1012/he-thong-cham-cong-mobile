@@ -323,8 +323,7 @@ function HomePage() {
               <View style={styles.faceRegisterContent}>
                 <Text style={styles.faceRegisterTitle}>Đăng ký khuôn mặt</Text>
                 <Text style={styles.faceRegisterSubtitle}>
-                  Thiết lập nhận diện khuôn mặt để chấm công nhanh chóng và bảo
-                  mật
+                  Vui lòng thiết lập nhận diện khuôn mặt để có thể chấm công!
                 </Text>
               </View>
             </View>
