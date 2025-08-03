@@ -183,12 +183,6 @@ export default function App() {
     }
   }, []);
 
-  // Memoize key components để tránh re-renders không cần thiết
-  const renderFloatingChatButton = useMemo(() => {
-    if (currentRouteRef.current === "Login") return null;
-    return <FloatingChatButtonMemo />;
-  }, []);
-
   if (!isReady) {
     return <View style={{ flex: 1, backgroundColor: "#fff" }} />;
   }
@@ -231,8 +225,63 @@ export default function App() {
                   }}
                 />
               </Stack.Navigator>
-              <Toast />
-              {currentRouteRef.current !== "Login" && <FloatingChatButtonMemo />}
+              <Toast
+                config={{
+                  SUCCESS: (props) => (
+                    <View
+                      style={{
+                        backgroundColor: '#4CAF50',
+                        padding: 15,
+                        borderRadius: 8,
+                        marginHorizontal: 16,
+                        marginTop: 20,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 3.84,
+                        elevation: 5,
+                      }}
+                    >
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#fff' }}>
+                        {String(props.text1 || '')}
+                      </Text>
+                      {props.text2 && (
+                        <Text style={{ fontSize: 14, color: '#fff', marginTop: 4 }}>
+                          {String(props.text2)}
+                        </Text>
+                      )}
+                    </View>
+                  ),
+                  NOTSUCCESS: (props) => (
+                    <View
+                      style={{
+                        backgroundColor: '#F44336',
+                        padding: 15,
+                        borderRadius: 8,
+                        marginHorizontal: 16,
+                        marginTop: 60,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 3.84,
+                        elevation: 5,
+                      }}
+                    >
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#fff' }}>
+                        {String(props.text1 || '')}
+                      </Text>
+                      {props.text2 && (
+                        <Text style={{ fontSize: 14, color: '#fff', marginTop: 4 }}>
+                          {String(props.text2)}
+                        </Text>
+                      )}
+                    </View>
+                  ),
+                }}
+              />
+              {currentRouteRef.current !== "Login" && (
+                <FloatingChatButtonMemo />
+              )}
             </View>
           </NavigationContainer>
         </NotificationProvider>

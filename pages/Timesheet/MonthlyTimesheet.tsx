@@ -380,7 +380,6 @@ const MonthlyTimesheet = () => {
               activeOpacity={0.7}
               onPress={() => {
                 if (day.day !== 0) {
-                  console.log("Selected day:", day);
                   setChoosenDate(day);
                   setIsModalVisible(true);
                 }
@@ -440,7 +439,7 @@ const MonthlyTimesheet = () => {
                     </Text>
                     {hasMultipleShifts && (
                       <Text style={styles.multipleShiftsIndicator}>
-                        {day.totalShifts} ca
+                        {`${day.totalShifts} ca`}
                       </Text>
                     )}
                   </View>

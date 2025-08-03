@@ -31,9 +31,8 @@ interface NotificationProviderProps {
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   children,
 }) => {
-  const [notificationCount, setNotificationCount] = useState(2); // Số thông báo mặc định
+  const [notificationCount, setNotificationCount] = useState(0); // Số thông báo mặc định
   const socket = useSocket();
-
   // Handle socket notifications
   useEffect(() => {
     if (!socket) return;
@@ -42,13 +41,15 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       console.log("Received notification from socket:", data);
 
       try {
-        // Parse notification data
+        // Đảm bảo tất cả các giá trị là string và không undefined/null
         const notification: NotificationData = {
-          id: data.id || Date.now().toString(),
-          title: data.title || "Thông báo mới",
-          message: data.message || data.content || "Bạn có thông báo mới",
+          id: String(data.id || Date.now()),
+          title: String(data.title || "Thông báo mới"),
+          message: String(
+            data.message || data.content || "Bạn có thông báo mới"
+          ),
           type: data.type || "info",
-          timestamp: data.timestamp || new Date().toISOString(),
+          timestamp: data.createdAt || new Date().toISOString(),
           data: data.data || data,
         };
 
@@ -60,12 +61,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       } catch (error) {
         console.error("Error handling socket notification:", error);
 
-        // Fallback notification
+        // Fallback notification với giá trị string đảm bảo
         showNotificationToast({
-          id: Date.now().toString(),
+          id: String(Date.now()),
           title: "Thông báo mới",
           message: "Bạn có thông báo mới từ hệ thống",
-          type: "info",
+          type: "NOTSUCCESS",
         });
 
         incrementNotification();
@@ -73,14 +74,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     };
 
     // Listen for notifications with key 'noti'
-    socket.on("noti", handleNotification);
+    socket.on("NOTIFICATION_CREATED", handleNotification);
 
     // Also listen for other common notification events
     socket.on("notification", handleNotification);
     socket.on("new_notification", handleNotification);
 
     return () => {
-      socket.off("noti", handleNotification);
+      socket.off("NOTIFICATION_CREATED", handleNotification);
       socket.off("notification", handleNotification);
       socket.off("new_notification", handleNotification);
     };

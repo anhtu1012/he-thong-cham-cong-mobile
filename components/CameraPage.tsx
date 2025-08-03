@@ -1,44 +1,41 @@
-import * as Location from "expo-location";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import Feather from "@expo/vector-icons/Feather";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
 import {
   CameraMode,
   CameraType,
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { useRef, useState, useCallback, useEffect, useMemo } from "react";
+import * as FileSystem from "expo-file-system";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Animated,
   Button,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
-  ActivityIndicator,
-  Animated,
 } from "react-native";
-import { Image } from "expo-image";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Feather from "@expo/vector-icons/Feather";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { LinearGradient } from "expo-linear-gradient";
+import Toast from "react-native-toast-message";
+import { checkInValues, checkOutValues } from "../models/timekeeping";
+import { NavigationProps } from "../pages/Login";
 import {
   compareFace,
-  getAddress,
   getBranchDetail,
-  getUserFaceImg,
   timeKeepingCheckIn,
   timeKeepingCheckOut,
 } from "../service/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { checkInValues, checkOutValues } from "../models/timekeeping";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { NavigationProps } from "../pages/Login";
-import Toast from "react-native-toast-message";
-import * as FileSystem from "expo-file-system";
 import { getCurrentDateRes } from "../utils/dateUtils";
-import LocationModal from "./LocationModal";
 import { isTheSameZone } from "../utils/distanceUtils";
+import LocationModal from "./LocationModal";
 
 // Toast utility functions for better performance and consistency
 const showSuccessToast = (message: string) => {

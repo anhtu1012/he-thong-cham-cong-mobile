@@ -264,9 +264,9 @@ const WeeklyTimesheet = () => {
 
           <View style={styles.weekTitleContainer}>
             <Text style={styles.weekTitle}>Tuần {getWeekRange()}</Text>
-            <Text style={styles.weekSubtitle}>
-              Tháng {currentWeek.getMonth() + 1}, {currentWeek.getFullYear()}
-            </Text>
+                              <Text style={styles.weekSubtitle}>
+                    {`Tháng ${currentWeek.getMonth() + 1}, ${currentWeek.getFullYear()}`}
+                  </Text>
           </View>
 
           <TouchableOpacity
@@ -290,13 +290,13 @@ const WeeklyTimesheet = () => {
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>
-              {getTotalStats().totalHours}h
+              {`${getTotalStats().totalHours}h`}
             </Text>
             <Text style={styles.summaryLabel}>Tổng công</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>
-              {getTotalStats().overtimeHours}h
+              {`${getTotalStats().overtimeHours}h`}
             </Text>
             <Text style={styles.summaryLabel}>Tăng ca</Text>
           </View>
@@ -336,7 +336,7 @@ const WeeklyTimesheet = () => {
                 <View style={styles.shiftInfo}>
                   <Text style={styles.shiftName}>{item.shiftName}</Text>
                   <Text style={styles.shiftTime}>
-                    {item.startShiftTime} - {item.endShiftTime}
+                    {`${item.startShiftTime} - ${item.endShiftTime}`}
                   </Text>
                   {item.departmentName && (
                     <Text style={styles.departmentName}>
@@ -379,7 +379,7 @@ const WeeklyTimesheet = () => {
                     </Text>
                     {item.lateMinutes && item.lateMinutes > 0 && (
                       <Text style={styles.lateText}>
-                        Trễ {item.lateMinutes}p
+                        {`Trễ ${item.lateMinutes}p`}
                       </Text>
                     )}
                   </View>
@@ -398,7 +398,7 @@ const WeeklyTimesheet = () => {
                     </Text>
                     {item.earlyLeaveMinutes && item.earlyLeaveMinutes > 0 && (
                       <Text style={styles.earlyText}>
-                        Sớm {item.earlyLeaveMinutes}p
+                        {`Sớm ${item.earlyLeaveMinutes}p`}
                       </Text>
                     )}
                   </View>
@@ -422,9 +422,9 @@ const WeeklyTimesheet = () => {
                         : item.workingHours}
                     </Text>
                     {calculateOvertimeHours(item) > 0 && (
-                      <Text style={styles.overtimeText}>
-                        +{calculateOvertimeHours(item)}h OT
-                      </Text>
+                                          <Text style={styles.overtimeText}>
+                      {`+${calculateOvertimeHours(item)}h OT`}
+                    </Text>
                     )}
                   </View>
                 </View>

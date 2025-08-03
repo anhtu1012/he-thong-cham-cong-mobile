@@ -88,10 +88,6 @@ const LoginPage: React.FC<ILoginScreenProps> = ({ onEyePress }) => {
 
   const handleLogin = async () => {
     try {
-      console.log(userName, password);
-      // Simulating login
-      // In a real app, uncomment this code
-
       const response = await loginUser({ username: userName, password });
 
       if (response.status === 201) {

@@ -151,3 +151,7 @@ export const getContractHistory = async (userCode: string) => {
     throw error;
   }
 };
+
+export const getNotifications = async () => {
+  return api.get(`/notification`);
+};

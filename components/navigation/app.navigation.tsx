@@ -98,7 +98,14 @@ interface TabBarIconProps {
 }
 
 const TabBarIcon = memo(
-  ({ focused, name, color, size, iconType = "AntDesign", badgeCount }: TabBarIconProps) => {
+  ({
+    focused,
+    name,
+    color,
+    size,
+    iconType = "AntDesign",
+    badgeCount,
+  }: TabBarIconProps) => {
     const animatedValue = React.useRef(new Animated.Value(1)).current;
 
     React.useEffect(() => {
@@ -142,7 +149,7 @@ const TabBarIcon = memo(
         {badgeCount && badgeCount > 0 && (
           <View style={localStyles.badge}>
             <Text style={localStyles.badgeText}>
-              {badgeCount > 99 ? '99+' : badgeCount.toString()}
+              {badgeCount > 99 ? "99+" : String(badgeCount)}
             </Text>
           </View>
         )}
@@ -208,7 +215,9 @@ const CustomTabBar = memo(
             const { options } = descriptors[route.key];
             const label =
               options.tabBarLabel !== undefined
-                ? (typeof options.tabBarLabel === 'function' ? undefined : options.tabBarLabel)
+                ? typeof options.tabBarLabel === "function"
+                  ? undefined
+                  : options.tabBarLabel
                 : options.title !== undefined
                 ? options.title
                 : route.name;
@@ -232,22 +241,23 @@ const CustomTabBar = memo(
                     color: isFocused ? "#3674B5" : "#888",
                     size: 24,
                   })}
-                  {typeof options.tabBarLabel === 'function' 
-                    ? options.tabBarLabel({
-                        focused: isFocused,
+                  {typeof options.tabBarLabel === "function" ? (
+                    options.tabBarLabel({
+                      focused: isFocused,
+                      color: isFocused ? "#3674B5" : "#888",
+                    })
+                  ) : (
+                    <Text
+                      style={{
                         color: isFocused ? "#3674B5" : "#888",
-                      })
-                    : <Text
-                        style={{
-                          color: isFocused ? "#3674B5" : "#888",
-                          fontSize: 12,
-                          fontWeight: isFocused ? "bold" : "500",
-                          marginBottom: 5,
-                        }}
-                      >
-                        {(options.tabBarLabel ? options.tabBarLabel.toString() : "") || "Bảng công"}
-                      </Text>
-                  }
+                        fontSize: 12,
+                        fontWeight: isFocused ? "bold" : "500",
+                        marginBottom: 5,
+                      }}
+                    >
+                      {String(options.tabBarLabel || "Bảng công")}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               );
             }
@@ -276,7 +286,7 @@ const CustomTabBar = memo(
                       marginTop: 3,
                     }}
                   >
-                    {(label ? label.toString() : "") || "Menu"}
+                    {String(label || "Menu")}
                   </Text>
                 </TouchableOpacity>
               );
@@ -305,7 +315,7 @@ const CustomTabBar = memo(
                     marginTop: 3,
                   }}
                 >
-                  {(label ? label.toString() : "") || (route.name ? route.name.toString() : "") || "Tab"}
+                  {String(label || route.name || "Tab")}
                 </Text>
               </TouchableOpacity>
             );
@@ -573,7 +583,6 @@ function AppNavigation() {
   // Custom drawer content - memoized
   const renderDrawerContent = useCallback(
     (props: any) => {
-      
       return (
         <>
           <Text
@@ -606,7 +615,13 @@ function AppNavigation() {
                     borderRadius: 8,
                   })}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     <Text
                       style={{
                         padding: 16,
@@ -616,28 +631,35 @@ function AppNavigation() {
                         fontSize: 16,
                       }}
                     >
-                      {(descriptor.options.title ? descriptor.options.title.toString() : "") || (descriptor.route.name ? descriptor.route.name.toString() : "") || "Menu"}
+                      {String(descriptor.options.title || descriptor.route.name || "Menu")}
                     </Text>
-                    {descriptor.route.name === "NotificationDrawer" && notificationCount > 0 && (
-                      <View style={{
-                        backgroundColor: "#FF4444",
-                        borderRadius: 10,
-                        minWidth: 20,
-                        height: 20,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginRight: 16,
-                        paddingHorizontal: 4,
-                      }}>
-                        <Text style={{
-                          color: "white",
-                          fontSize: 10,
-                          fontWeight: "bold",
-                        }}>
-                          {notificationCount > 99 ? '99+' : notificationCount.toString()}
-                        </Text>
-                      </View>
-                    )}
+                    {descriptor.route.name === "NotificationDrawer" &&
+                      notificationCount > 0 && (
+                        <View
+                          style={{
+                            backgroundColor: "#FF4444",
+                            borderRadius: 10,
+                            minWidth: 20,
+                            height: 20,
+                            justifyContent: "center",
+                            alignItems: "center",
+                            marginRight: 16,
+                            paddingHorizontal: 4,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: "white",
+                              fontSize: 10,
+                              fontWeight: "bold",
+                            }}
+                                                      >
+                              {notificationCount > 99
+                                ? "99+"
+                                : String(notificationCount)}
+                            </Text>
+                        </View>
+                      )}
                   </View>
                 </Pressable>
               )

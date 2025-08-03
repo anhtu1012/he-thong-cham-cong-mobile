@@ -4,7 +4,7 @@ export interface NotificationData {
   id: string;
   title: string;
   message: string;
-  type?: "info" | "success" | "error" | "warning";
+  type?: "NOTSUCCESS" | "SUCCESS";
   timestamp?: string;
   data?: any;
 }
@@ -38,7 +38,7 @@ export const showNotificationToast = (notification: NotificationData) => {
 export const showSystemNotification = (
   title: string,
   message: string,
-  type: "info" | "success" | "error" | "warning" = "info"
+  type: "NOTSUCCESS" | "SUCCESS"
 ) => {
   showNotificationToast({
     id: Date.now().toString(),

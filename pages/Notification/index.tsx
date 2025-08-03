@@ -12,82 +12,83 @@ import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useNavigation } from "@react-navigation/native";
+import { getNotifications } from "../../service/api";
 
-// Data giả cho thông báo
-const mockNotifications = [
-  {
-    id: "1",
-    title: "Chấm công thành công",
-    message: "Bạn đã chấm công thành công lúc 08:00 sáng hôm nay",
-    type: "success",
-    time: "2 phút trước",
-    isRead: false,
-    icon: "check-circle",
-  },
-  {
-    id: "2",
-    title: "Nhắc nhở chấm công",
-    message: "Đừng quên chấm công trước 09:00 sáng",
-    type: "warning",
-    time: "15 phút trước",
-    isRead: false,
-    icon: "clock-circle",
-  },
-  {
-    id: "3",
-    title: "Đơn từ được duyệt",
-    message: "Đơn xin nghỉ phép của bạn đã được phê duyệt",
-    type: "info",
-    time: "1 giờ trước",
-    isRead: false,
-    icon: "file-done",
-  },
-  {
-    id: "4",
-    title: "Lương tháng 12",
-    message: "Lương tháng 12/2024 đã được chuyển vào tài khoản",
-    type: "success",
-    time: "2 giờ trước",
-    isRead: true,
-    icon: "dollar",
-  },
-  {
-    id: "5",
-    title: "Bảo trì hệ thống",
-    message: "Hệ thống sẽ bảo trì từ 22:00 - 06:00 ngày mai",
-    type: "warning",
-    time: "3 giờ trước",
-    isRead: true,
-    icon: "tool",
-  },
-  {
-    id: "6",
-    title: "Chúc mừng sinh nhật",
-    message: "Chúc mừng sinh nhật! Chúc bạn một ngày tuyệt vời",
-    type: "info",
-    time: "1 ngày trước",
-    isRead: true,
-    icon: "gift",
-  },
-  {
-    id: "7",
-    title: "Cập nhật ứng dụng",
-    message: "Phiên bản mới của ứng dụng đã có sẵn",
-    type: "info",
-    time: "2 ngày trước",
-    isRead: true,
-    icon: "download",
-  },
-  {
-    id: "8",
-    title: "Nhắc nhở họp",
-    message: "Cuộc họp tuần sẽ diễn ra lúc 14:00 chiều nay",
-    type: "warning",
-    time: "3 ngày trước",
-    isRead: true,
-    icon: "team",
-  },
-];
+// // Data giả cho thông báo
+// const mockNotifications = [
+//   {
+//     id: "1",
+//     title: "Chấm công thành công",
+//     message: "Bạn đã chấm công thành công lúc 08:00 sáng hôm nay",
+//     type: "success",
+//     time: "2 phút trước",
+//     isRead: false,
+//     icon: "check-circle",
+//   },
+//   {
+//     id: "2",
+//     title: "Nhắc nhở chấm công",
+//     message: "Đừng quên chấm công trước 09:00 sáng",
+//     type: "warning",
+//     time: "15 phút trước",
+//     isRead: false,
+//     icon: "clock-circle",
+//   },
+//   {
+//     id: "3",
+//     title: "Đơn từ được duyệt",
+//     message: "Đơn xin nghỉ phép của bạn đã được phê duyệt",
+//     type: "info",
+//     time: "1 giờ trước",
+//     isRead: false,
+//     icon: "file-done",
+//   },
+//   {
+//     id: "4",
+//     title: "Lương tháng 12",
+//     message: "Lương tháng 12/2024 đã được chuyển vào tài khoản",
+//     type: "success",
+//     time: "2 giờ trước",
+//     isRead: true,
+//     icon: "dollar",
+//   },
+//   {
+//     id: "5",
+//     title: "Bảo trì hệ thống",
+//     message: "Hệ thống sẽ bảo trì từ 22:00 - 06:00 ngày mai",
+//     type: "warning",
+//     time: "3 giờ trước",
+//     isRead: true,
+//     icon: "tool",
+//   },
+//   {
+//     id: "6",
+//     title: "Chúc mừng sinh nhật",
+//     message: "Chúc mừng sinh nhật! Chúc bạn một ngày tuyệt vời",
+//     type: "info",
+//     time: "1 ngày trước",
+//     isRead: true,
+//     icon: "gift",
+//   },
+//   {
+//     id: "7",
+//     title: "Cập nhật ứng dụng",
+//     message: "Phiên bản mới của ứng dụng đã có sẵn",
+//     type: "info",
+//     time: "2 ngày trước",
+//     isRead: true,
+//     icon: "download",
+//   },
+//   {
+//     id: "8",
+//     title: "Nhắc nhở họp",
+//     message: "Cuộc họp tuần sẽ diễn ra lúc 14:00 chiều nay",
+//     type: "warning",
+//     time: "3 ngày trước",
+//     isRead: true,
+//     icon: "team",
+//   },
+// ];
 
 interface NotificationItem {
   id: string;
@@ -100,26 +101,35 @@ interface NotificationItem {
 }
 
 const NotificationPage: React.FC = () => {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(
-    mockNotifications as NotificationItem[]
-  );
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const { setNotificationCount } = useNotification();
   const navigation = useNavigation();
+  const fetchNotifications = async () => {
+    try {
+      const response = await getNotifications();
+      setNotifications(response.data.data);
+      // Tính unreadCount từ data mới nhận được
+      const newUnreadCount = response.data.data.filter(
+        (notification: NotificationItem) => !notification.isRead
+      ).length;
+      setUnreadCount(newUnreadCount);
+      setNotificationCount(newUnreadCount);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
   useEffect(() => {
-    const count = notifications.filter(
-      (notification) => !notification.isRead
-    ).length;
-    setUnreadCount(count);
-  }, [notifications]);
+    fetchNotifications();
+  }, []); // Xóa dependency [notifications] - chỉ chạy 1 lần khi mount
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    // Simulate API call
-    setTimeout(() => {
+    fetchNotifications().finally(() => {
       setRefreshing(false);
-    }, 1000);
+    });
   }, []);
 
   const markAsRead = (id: string) => {
@@ -138,24 +148,15 @@ const NotificationPage: React.FC = () => {
     );
   };
 
-  // Cập nhật số thông báo khi có thay đổi
-  useEffect(() => {
-    const unreadCount = notifications.filter(
-      (notification) => !notification.isRead
-    ).length;
-    setUnreadCount(unreadCount);
-    setNotificationCount(unreadCount);
-  }, [notifications, setNotificationCount]);
-
   const getTypeColor = (type: string) => {
     switch (type) {
-      case "success":
+      case "SUCCESS":
         return "#4CAF50";
-      case "warning":
+      case "NOTSUCCESS":
         return "#FF9800";
-      case "error":
+      case "ERROR":
         return "#F44336";
-      case "info":
+      case "INFO":
       default:
         return "#2196F3";
     }
@@ -163,13 +164,13 @@ const NotificationPage: React.FC = () => {
 
   const getTypeBackground = (type: string) => {
     switch (type) {
-      case "success":
+      case "SUCCESS":
         return "#E8F5E8";
-      case "warning":
+      case "WARNING":
         return "#FFF3E0";
-      case "error":
+      case "ERROR":
         return "#FFEBEE";
-      case "info":
+      case "INFO":
       default:
         return "#E3F2FD";
     }
@@ -192,19 +193,19 @@ const NotificationPage: React.FC = () => {
           ]}
         >
           <AntDesign
-            name={item.icon as any}
+            name={"notification"}
             size={20}
             color={getTypeColor(item.type)}
           />
         </View>
         <View style={styles.notificationContent}>
           <Text style={[styles.title, !item.isRead && styles.unreadTitle]}>
-            {item.title}
+            {String(item.title || "")}
           </Text>
           <Text style={styles.message} numberOfLines={2}>
-            {item.message}
+            {String(item.message || "")}
           </Text>
-          <Text style={styles.time}>{item.time}</Text>
+          <Text style={styles.time}>{String(item.time || "")}</Text>
         </View>
         {!item.isRead && <View style={styles.unreadDot} />}
       </View>

@@ -1,4 +1,11 @@
-import { View, Text, Modal, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  Modal,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import React, { memo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -19,184 +26,209 @@ interface LocationModalProps {
   onRetry?: () => void;
 }
 
-const LocationModal = memo(({
-  visible,
-  place1,
-  place2,
-  isInTheSameZone,
-  loading = false,
-  isCheckingIn = false,
-  checkInResult,
-  onContinue,
-  onGoBack,
-  onDismiss,
-  onRetry,
-}: LocationModalProps) => {
-  const isMatch = isInTheSameZone;
+const LocationModal = memo(
+  ({
+    visible,
+    place1,
+    place2,
+    isInTheSameZone,
+    loading = false,
+    isCheckingIn = false,
+    checkInResult,
+    onContinue,
+    onGoBack,
+    onDismiss,
+    onRetry,
+  }: LocationModalProps) => {
+    const isMatch = isInTheSameZone;
 
-  const handleOverlayPress = () => {
-    if (!loading && !isCheckingIn && onDismiss) {
-      onDismiss();
-    }
-  };
+    const handleOverlayPress = () => {
+      if (!loading && !isCheckingIn && onDismiss) {
+        onDismiss();
+      }
+    };
 
-  // Determine what to show based on state
-  const getModalContent = () => {
-    if (checkInResult) {
-      // Show check-in result
-      return {
-        icon: checkInResult.success ? "checkmark-circle" : "close-circle",
-        iconColor: checkInResult.success ? "#4CAF50" : "#F44336",
-        title: checkInResult.success ? "Chấm công thành công!" : "Chấm công thất bại!",
-        message: checkInResult.message,
-        showLocationInfo: false,
-        buttonText: checkInResult.success ? "Đóng" : "Thử lại",
-        buttonAction: checkInResult.success ? onDismiss : onRetry,
-        buttonColor: checkInResult.success ? "#4CAF50" : "#3674B5",
-        showSecondButton: !checkInResult.success,
-        secondButtonText: "Đóng",
-        secondButtonAction: onDismiss,
-      };
-    } else if (isCheckingIn) {
-      // Show checking in state
-      return {
-        icon: "time",
-        iconColor: "#3674B5",
-        title: "Đang chấm công...",
-        message: "Vui lòng đợi trong giây lát",
-        showLocationInfo: false,
-        buttonText: null,
-        buttonAction: null,
-        buttonColor: null,
-        showSecondButton: false,
-      };
-    } else {
-      // Show location verification
-      return {
-        icon: isMatch ? "checkmark-circle" : "close-circle",
-        iconColor: isMatch ? "#4CAF50" : "#F44336",
-        title: `Địa điểm ${isMatch ? "trùng khớp" : "không trùng khớp"}!`,
-        message: isMatch ? "Địa điểm khớp hoàn toàn!" : "Địa điểm không khớp.",
-        showLocationInfo: true,
-        buttonText: isMatch ? "Tiếp tục" : "Quay lại",
-        buttonAction: isMatch ? onContinue : onGoBack,
-        buttonColor: isMatch ? "#28A745" : "#DC3545",
-        showSecondButton: false,
-      };
-    }
-  };
+    // Determine what to show based on state
+    const getModalContent = () => {
+      if (checkInResult) {
+        // Show check-in result
+        return {
+          icon: checkInResult.success ? "checkmark-circle" : "close-circle",
+          iconColor: checkInResult.success ? "#4CAF50" : "#F44336",
+          title: checkInResult.success
+            ? "Chấm công thành công!"
+            : "Chấm công thất bại!",
+          message: checkInResult.message,
+          showLocationInfo: false,
+          buttonText: checkInResult.success ? "Đóng" : "Thử lại",
+          buttonAction: checkInResult.success ? onDismiss : onRetry,
+          buttonColor: checkInResult.success ? "#4CAF50" : "#3674B5",
+          showSecondButton: !checkInResult.success,
+          secondButtonText: "Đóng",
+          secondButtonAction: onDismiss,
+        };
+      } else if (isCheckingIn) {
+        // Show checking in state
+        return {
+          icon: "time",
+          iconColor: "#3674B5",
+          title: "Đang chấm công...",
+          message: "Vui lòng đợi trong giây lát",
+          showLocationInfo: false,
+          buttonText: null,
+          buttonAction: null,
+          buttonColor: null,
+          showSecondButton: false,
+        };
+      } else {
+        // Show location verification
+        return {
+          icon: isMatch ? "checkmark-circle" : "close-circle",
+          iconColor: isMatch ? "#4CAF50" : "#F44336",
+          title: `Địa điểm ${isMatch ? "trùng khớp" : "không trùng khớp"}!`,
+          message: isMatch
+            ? "Địa điểm khớp hoàn toàn!"
+            : "Địa điểm không khớp.",
+          showLocationInfo: true,
+          buttonText: isMatch ? "Tiếp tục" : "Quay lại",
+          buttonAction: isMatch ? onContinue : onGoBack,
+          buttonColor: isMatch ? "#28A745" : "#DC3545",
+          showSecondButton: false,
+        };
+      }
+    };
 
-  const content = getModalContent();
+    const content = getModalContent();
 
-  const handleModalPress = (event: any) => {
-    // Stop event propagation to prevent closing when tapping inside modal
-    event.stopPropagation();
-  };
+    const handleModalPress = (event: any) => {
+      // Stop event propagation to prevent closing when tapping inside modal
+      event.stopPropagation();
+    };
 
-  return (
-    <Modal 
-      animationType="slide" 
-      transparent={true} 
-      visible={visible}
-      statusBarTranslucent={true}
-    >
-      <Pressable style={styles.overlay} onPress={handleOverlayPress}>
-        <Pressable style={styles.modalContainer} onPress={handleModalPress}>
-          <View style={styles.dragIndicator} />
-          
-          <View style={styles.iconContainer}>
-            <Ionicons
-              name={content.icon as any}
-              size={48}
-              color={content.iconColor}
-            />
-          </View>
-          
-          <Text style={styles.title}>
-            {content.title}
-          </Text>
-          
-          {content.showLocationInfo && (
-            <>
-              <View style={styles.infoContainer}>
-                <View style={styles.infoRow}>
-                  <Ionicons name="person" size={20} color="#666" />
-                  <View style={styles.textContainer}>
-                    <Text style={styles.textBold}>Bạn đang ở:</Text>
-                    <Text style={styles.text} numberOfLines={2}>{place1}</Text>
-                  </View>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <Ionicons name="location" size={20} color="#666" />
-                  <View style={styles.textContainer}>
-                    <Text style={styles.textBold}>Địa điểm đúng:</Text>
-                    <Text style={styles.text} numberOfLines={2}>{place2}</Text>
-                  </View>
-                </View>
-              </View>
-            </>
-          )}
-          
-          <Text
-            style={[
-              styles.statusText, 
-              checkInResult?.success ? styles.match : 
-              checkInResult?.success === false ? styles.noMatch : 
-              isMatch ? styles.match : styles.noMatch
-            ]}
-          >
-            {content.message}
-          </Text>
-          
-          {content.buttonText && (
-            <View style={styles.buttonContainer}>
-              <Pressable
-                style={[
-                  styles.button,
-                  { backgroundColor: content.buttonColor },
-                  (loading || isCheckingIn) ? styles.buttonDisabled : null,
-                ]}
-                onPress={content.buttonAction}
-                disabled={loading || isCheckingIn}
-              >
-                {(loading || isCheckingIn) && !checkInResult ? (
-                  <ActivityIndicator size="small" color="white" style={styles.buttonIcon} />
-                ) : (
-                  <Ionicons
-                    name={content.buttonText === "Tiếp tục" ? "arrow-forward" : 
-                         content.buttonText === "Quay lại" ? "arrow-back" :
-                         content.buttonText === "Thử lại" ? "refresh" : "close"}
-                    size={20}
-                    color="white"
-                    style={styles.buttonIcon}
-                  />
-                )}
-                <Text style={styles.buttonText}>
-                  {content.buttonText}
-                </Text>
-              </Pressable>
-              
-              {content.showSecondButton && (
-                <Pressable
-                  style={[styles.button, styles.cancelButton]}
-                  onPress={content.secondButtonAction}
-                >
-                  <Ionicons name="close" size={20} color="#666" style={styles.buttonIcon} />
-                  <Text style={[styles.buttonText, styles.cancelButtonText]}>
-                    {content.secondButtonText}
-                  </Text>
-                </Pressable>
-              )}
+    return (
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={visible}
+        statusBarTranslucent={true}
+      >
+        <Pressable style={styles.overlay} onPress={handleOverlayPress}>
+          <Pressable style={styles.modalContainer} onPress={handleModalPress}>
+            <View style={styles.dragIndicator} />
+
+            <View style={styles.iconContainer}>
+              <Ionicons
+                name={content.icon as any}
+                size={48}
+                color={content.iconColor}
+              />
             </View>
-          )}
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-});
 
-LocationModal.displayName = 'LocationModal';
+            <Text style={styles.title}>{content.title}</Text>
+
+            {content.showLocationInfo && (
+              <>
+                <View style={styles.infoContainer}>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="person" size={20} color="#666" />
+                    <View style={styles.textContainer}>
+                      <Text style={styles.textBold}>Bạn đang ở:</Text>
+                      <Text style={styles.text} numberOfLines={2}>
+                        {place1}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <Ionicons name="location" size={20} color="#666" />
+                    <View style={styles.textContainer}>
+                      <Text style={styles.textBold}>Địa điểm đúng:</Text>
+                      <Text style={styles.text} numberOfLines={2}>
+                        {place2}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </>
+            )}
+
+            <Text
+              style={[
+                styles.statusText,
+                checkInResult?.success
+                  ? styles.match
+                  : checkInResult?.success === false
+                  ? styles.noMatch
+                  : isMatch
+                  ? styles.match
+                  : styles.noMatch,
+              ]}
+            >
+              {content.message}
+            </Text>
+
+            {content.buttonText && (
+              <View style={styles.buttonContainer}>
+                <Pressable
+                  style={[
+                    styles.button,
+                    { backgroundColor: content.buttonColor },
+                    loading || isCheckingIn ? styles.buttonDisabled : null,
+                  ]}
+                  onPress={content.buttonAction}
+                  disabled={loading || isCheckingIn}
+                >
+                  {(loading || isCheckingIn) && !checkInResult ? (
+                    <ActivityIndicator
+                      size="small"
+                      color="white"
+                      style={styles.buttonIcon}
+                    />
+                  ) : (
+                    <Ionicons
+                      name={
+                        content.buttonText === "Tiếp tục"
+                          ? "arrow-forward"
+                          : content.buttonText === "Quay lại"
+                          ? "arrow-back"
+                          : content.buttonText === "Thử lại"
+                          ? "refresh"
+                          : "close"
+                      }
+                      size={20}
+                      color="white"
+                      style={styles.buttonIcon}
+                    />
+                  )}
+                  <Text style={styles.buttonText}>{content.buttonText}</Text>
+                </Pressable>
+
+                {content.showSecondButton && (
+                  <Pressable
+                    style={[styles.button, styles.cancelButton]}
+                    onPress={content.secondButtonAction}
+                  >
+                    <Ionicons
+                      name="close"
+                      size={20}
+                      color="#666"
+                      style={styles.buttonIcon}
+                    />
+                    <Text style={[styles.buttonText, styles.cancelButtonText]}>
+                      {content.secondButtonText}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+    );
+  }
+);
+
+LocationModal.displayName = "LocationModal";
 
 export default LocationModal;
 

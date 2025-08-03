@@ -154,16 +154,6 @@ export default function FaceRegisterPage() {
     if (userDataStr !== null) {
       const user = JSON.parse(userDataStr);
       try {
-        // validation face image
-        const faceFormData = new FormData();
-        faceFormData.append("img", {
-          uri: uri,
-          type: "image/jpeg",
-          name: "face.jpg",
-        } as any);
-
-        await checkMultipleFace(faceFormData);
-
         // store face to minio
         const formData = new FormData();
         formData.append("key", `face/${user.userName}.jpg`);

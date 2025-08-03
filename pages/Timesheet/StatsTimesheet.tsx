@@ -222,7 +222,7 @@ const StatsTimesheet = () => {
               </View>
               <Text style={styles.statItemLabel}>Ngày công</Text>
               <Text style={styles.statValue}>
-                {monthlyStats.workedDays}/{monthlyStats.totalDays}
+                {`${monthlyStats.workedDays}/${monthlyStats.totalDays}`}
               </Text>
             </View>
 
@@ -253,13 +253,13 @@ const StatsTimesheet = () => {
             <View style={styles.hoursItem}>
               <Feather name="clock" size={20} color="#3674B5" />
               <Text style={styles.hoursLabel}>Tổng công làm</Text>
-              <Text style={styles.hoursValue}>{monthlyStats.totalHours}h</Text>
+              <Text style={styles.hoursValue}>{`${monthlyStats.totalHours}h`}</Text>
             </View>
             <View style={styles.hoursItem}>
               <Feather name="plus-circle" size={20} color="#4CAF50" />
               <Text style={styles.hoursLabel}>Tăng ca</Text>
               <Text style={[styles.hoursValue, { color: "#4CAF50" }]}>
-                {monthlyStats.overTime}h
+                {`${monthlyStats.overTime}h`}
               </Text>
             </View>
           </View>
@@ -309,7 +309,7 @@ const StatsTimesheet = () => {
                   ]}
                 />
               </View>
-              <Text style={styles.barValue}>{week.hours}h</Text>
+              <Text style={styles.barValue}>{`${week.hours}h`}</Text>
               <Text style={styles.weekLabel}>{week.week}</Text>
               {week.lateCount > 0 && (
                 <View style={styles.lateIndicator}>

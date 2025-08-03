@@ -487,7 +487,7 @@ const ProfilePage = () => {
   const handleDownloadContract = async () => {
     try {
       setIsDownloading(true);
-      
+
       // Show loading toast
       Toast.show({
         type: "info",
@@ -496,14 +496,14 @@ const ProfilePage = () => {
         autoHide: false,
       });
 
-      console.log('Starting download...');
-      
+      console.log("Starting download...");
+
       // Call downloadContract without parameters - it will fetch active contract data
       await downloadContract();
-      
+
       // Hide loading toast
       Toast.hide();
-      
+
       // Show success message
       Toast.show({
         type: "success",
@@ -511,7 +511,6 @@ const ProfilePage = () => {
         text2: "Hợp đồng hiện tại đã được tạo. Chọn nơi lưu file.",
         visibilityTime: 3000,
       });
-      
     } catch (error) {
       console.error("Error downloading contract:", error);
       Toast.hide();
@@ -784,7 +783,7 @@ const ProfilePage = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.contractActionButton, styles.contractActionSecondary]}
+                style={[styles.contractActionButton]}
                 onPress={() => setContractHistoryVisible(true)}
               >
                 <Feather name="clock" size={16} color="#666" />

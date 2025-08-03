@@ -84,7 +84,4 @@ export interface SocketNotification {
   title: string;
   message: string;
   type: "info" | "success" | "error" | "warning";
-  timestamp: string;
-  userId?: string;
-  data?: any;
 }

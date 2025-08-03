@@ -139,17 +139,13 @@ const TimeScheduleModal: React.FC<TimeScheduleModalProps> = ({
   ): string => {
     try {
       console.log(checkInTime, checkOutTime, status);
-      if (
-        !checkInTime &&
-        !checkOutTime &&
-        (status === "END" || status === "FORGET")
-      )
+      if ((!checkInTime || !checkOutTime) && status === "FORGET")
         return "Hoàn thành (Quên chấm công)";
       if (checkInTime && !checkOutTime && status === "NOTWORK")
         return "Quên check-out";
       if (!checkInTime && !checkOutTime) return "Chưa chấm công";
       if (checkInTime && !checkOutTime) return "Đang làm việc";
-      if (checkInTime && checkOutTime) return "Hoàn thành";
+      if (checkInTime && checkOutTime && status === "END") return "Hoàn thành";
       return "Chưa chấm công";
     } catch (error) {
       console.warn("Error getting status text:", error);
