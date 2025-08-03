@@ -12,8 +12,13 @@ import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useNavigation } from "@react-navigation/native";
-import { getNotifications } from "../../service/api";
+import {
+  getNotifications,
+  updateNotificationStatus,
+  markAllNotificationsAsRead,
+} from "../../service/api";
 import { formatRelativeTime } from "../../utils/timeUtils";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // // Data giả cho thông báo
 // const mockNotifications = [
@@ -109,7 +114,12 @@ const NotificationPage: React.FC = () => {
   const navigation = useNavigation();
   const fetchNotifications = async () => {
     try {
-      const response = await getNotifications();
+      const userDataString = await AsyncStorage.getItem("userData");
+      if (!userDataString) {
+        return;
+      }
+      const userData = JSON.parse(userDataString);
+      const response = await getNotifications(userData?.code);
       setNotifications(response.data.data);
       // Tính unreadCount từ data mới nhận được
       const newUnreadCount = response.data.data.filter(
@@ -133,20 +143,69 @@ const NotificationPage: React.FC = () => {
     });
   }, []);
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
+  // Hàm cập nhật trạng thái đã đọc cho một notification
+  const markAsReadAPI = async (id: string) => {
+    try {
+      // Call API để update trạng thái
+      await updateNotificationStatus(id);
+
+      // Cập nhật state local
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification.id === id
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+
+      // Cập nhật unread count
+      const newUnreadCount = notifications.filter(
+        (notification) => notification.id !== id && !notification.isRead
+      ).length;
+      setUnreadCount(newUnreadCount);
+      setNotificationCount(newUnreadCount);
+    } catch (error) {
+      console.error("Error updating notification status:", error);
+      // Vẫn cập nhật local state nếu API failed
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification.id === id
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((notification) => ({ ...notification, isRead: true }))
-    );
+  // Hàm đánh dấu tất cả đã đọc
+  const markAllAsReadAPI = async () => {
+    try {
+      const userDataString = await AsyncStorage.getItem("userData");
+      if (!userDataString) {
+        return;
+      }
+      const userData = JSON.parse(userDataString);
+
+      // Call API để mark all as read
+      await markAllNotificationsAsRead(userData?.code);
+
+      // Cập nhật state local
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, isRead: true }))
+      );
+
+      // Reset unread count
+      setUnreadCount(0);
+      setNotificationCount(0);
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      // Vẫn cập nhật local state nếu API failed
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, isRead: true }))
+      );
+      setUnreadCount(0);
+      setNotificationCount(0);
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -184,7 +243,11 @@ const NotificationPage: React.FC = () => {
         { backgroundColor: item.isRead ? "#fff" : "#F0F8FF" },
         !item.isRead && styles.unreadItem,
       ]}
-      onPress={() => markAsRead(item.id)}
+      onPress={() => {
+        if (!item.isRead) {
+          markAsReadAPI(item.id);
+        }
+      }}
     >
       <View style={styles.notificationHeader}>
         <View
@@ -217,7 +280,10 @@ const NotificationPage: React.FC = () => {
     <View style={styles.header}>
       <Text style={styles.headerTitle}>Thông báo</Text>
       {unreadCount > 0 && (
-        <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
+        <TouchableOpacity
+          style={styles.markAllButton}
+          onPress={markAllAsReadAPI}
+        >
           <Text style={styles.markAllText}>Đánh dấu đã đọc tất cả</Text>
         </TouchableOpacity>
       )}

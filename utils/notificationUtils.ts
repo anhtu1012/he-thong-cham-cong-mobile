@@ -12,8 +12,8 @@ export interface NotificationData {
 export const showNotificationToast = (notification: NotificationData) => {
   Toast.show({
     type: notification.type || "info",
-    text1: notification.title,
-    text2: notification.message,
+    // text1: notification.title,
+    text1: notification.message,
     text1Style: {
       fontSize: 16,
       fontWeight: "bold",
@@ -25,7 +25,7 @@ export const showNotificationToast = (notification: NotificationData) => {
       marginTop: 4,
     },
     position: "top",
-    topOffset: 60,
+    topOffset: 20,
     visibilityTime: 5000,
     autoHide: true,
     onPress: () => {

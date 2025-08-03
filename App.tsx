@@ -230,23 +230,31 @@ export default function App() {
                   SUCCESS: (props) => (
                     <View
                       style={{
-                        backgroundColor: '#4CAF50',
+                        backgroundColor: "#4CAF50",
                         padding: 15,
                         borderRadius: 8,
                         marginHorizontal: 16,
                         marginTop: 20,
-                        shadowColor: '#000',
+                        shadowColor: "#000",
                         shadowOffset: { width: 0, height: 2 },
                         shadowOpacity: 0.25,
                         shadowRadius: 3.84,
                         elevation: 5,
                       }}
                     >
-                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#fff' }}>
-                        {String(props.text1 || '')}
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: "bold",
+                          color: "#fff",
+                        }}
+                      >
+                        {String(props.text1 || "")}
                       </Text>
                       {props.text2 && (
-                        <Text style={{ fontSize: 14, color: '#fff', marginTop: 4 }}>
+                        <Text
+                          style={{ fontSize: 14, color: "#fff", marginTop: 4 }}
+                        >
                           {String(props.text2)}
                         </Text>
                       )}
@@ -255,23 +263,31 @@ export default function App() {
                   NOTSUCCESS: (props) => (
                     <View
                       style={{
-                        backgroundColor: '#F44336',
+                        backgroundColor: "#F44336",
                         padding: 15,
                         borderRadius: 8,
                         marginHorizontal: 16,
-                        marginTop: 60,
-                        shadowColor: '#000',
+                        marginTop: 20,
+                        shadowColor: "#000",
                         shadowOffset: { width: 0, height: 2 },
                         shadowOpacity: 0.25,
                         shadowRadius: 3.84,
                         elevation: 5,
                       }}
                     >
-                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#fff' }}>
-                        {String(props.text1 || '')}
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: "bold",
+                          color: "#fff",
+                        }}
+                      >
+                        {String(props.text1 || "")}
                       </Text>
                       {props.text2 && (
-                        <Text style={{ fontSize: 14, color: '#fff', marginTop: 4 }}>
+                        <Text
+                          style={{ fontSize: 14, color: "#fff", marginTop: 4 }}
+                        >
                           {String(props.text2)}
                         </Text>
                       )}

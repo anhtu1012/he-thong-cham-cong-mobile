@@ -170,11 +170,13 @@ const FormDetail = () => {
       formData.append("startTime", startTimeFormatted);
       formData.append("endTime", endTimeFormatted);
       formData.append("formId", formId);
-      formData.append("file", {
-        uri: selectedImage,
-        type: "image/jpeg",
-        name: "face.jpg",
-      } as any);
+      if (selectedImage) {
+        formData.append("file", {
+          uri: selectedImage,
+          type: "image/jpeg",
+          name: "face.jpg",
+        } as any);
+      }
       console.log("Submitting form data:", formData);
 
       const response = await createForm(formData);

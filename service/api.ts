@@ -152,6 +152,18 @@ export const getContractHistory = async (userCode: string) => {
   }
 };
 
-export const getNotifications = async () => {
-  return api.get(`/notification`);
+export const getNotifications = async (userCode: string) => {
+  return api.get(`/notification?userCode=${userCode}`);
+};
+
+export const markAllNotificationsAsRead = async (userCode: string) => {
+  return api.post(`/v1/notification/mark-all-read`, {
+    userCode: userCode,
+  });
+};
+
+export const updateNotificationStatus = async (notificationId: string) => {
+  return api.put(`/v1/notification/${notificationId}`, {
+    isRead: true,
+  });
 };

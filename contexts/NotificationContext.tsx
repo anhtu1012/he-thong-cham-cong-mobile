@@ -11,6 +11,7 @@ import {
   showNotificationToast,
   NotificationData,
 } from "../utils/notificationUtils";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface NotificationContextType {
   notificationCount: number;

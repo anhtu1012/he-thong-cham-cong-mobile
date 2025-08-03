@@ -24,13 +24,13 @@
     "axios": "^1.8.1",
     "buffer": "^6.0.3",
     "dayjs": "^1.11.13",
-    "expo": "~52.0.46",
+    "expo": "~52.0.47",
     "expo-camera": "~16.0.18",
     "expo-constants": "~17.0.8",
     "expo-file-system": "~18.0.12",
     "expo-image": "~2.0.7",
-    "expo-image-manipulator": "^13.1.7",
-    "expo-linear-gradient": "^14.0.2",
+    "expo-image-manipulator": "~13.0.6",
+    "expo-linear-gradient": "~14.0.2",
     "expo-location": "~18.0.10",
     "expo-media-library": "~17.0.6",
     "expo-status-bar": "~2.0.1",
@@ -69,7 +69,8 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "exclude": [
-          "react-native-chart-kit"
+          "react-native-chart-kit",
+          "react-native-fs"
         ],
         "listUnknownPackages": false
       }
