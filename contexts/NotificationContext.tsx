@@ -38,8 +38,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     if (!socket) return;
 
     const handleNotification = (data: any) => {
-      console.log("Received notification from socket:", data);
-
       try {
         // Đảm bảo tất cả các giá trị là string và không undefined/null
         const notification: NotificationData = {

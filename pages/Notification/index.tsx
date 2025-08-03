@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useNavigation } from "@react-navigation/native";
 import { getNotifications } from "../../service/api";
+import { formatRelativeTime } from "../../utils/timeUtils";
 
 // // Data giả cho thông báo
 // const mockNotifications = [
@@ -94,8 +95,8 @@ interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  type: "success" | "warning" | "info" | "error";
-  time: string;
+  type: "NOTSUCCESS" | "SUCCESS";
+  createdAt: string;
   isRead: boolean;
   icon: string;
 }
@@ -153,7 +154,7 @@ const NotificationPage: React.FC = () => {
       case "SUCCESS":
         return "#4CAF50";
       case "NOTSUCCESS":
-        return "#FF9800";
+        return "#F44336";
       case "ERROR":
         return "#F44336";
       case "INFO":
@@ -167,7 +168,7 @@ const NotificationPage: React.FC = () => {
       case "SUCCESS":
         return "#E8F5E8";
       case "WARNING":
-        return "#FFF3E0";
+        return "#FFEBEE";
       case "ERROR":
         return "#FFEBEE";
       case "INFO":
@@ -205,7 +206,7 @@ const NotificationPage: React.FC = () => {
           <Text style={styles.message} numberOfLines={2}>
             {String(item.message || "")}
           </Text>
-          <Text style={styles.time}>{String(item.time || "")}</Text>
+          <Text style={styles.time}>{formatRelativeTime(item.createdAt)}</Text>
         </View>
         {!item.isRead && <View style={styles.unreadDot} />}
       </View>

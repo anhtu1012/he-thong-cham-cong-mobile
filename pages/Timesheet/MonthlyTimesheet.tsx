@@ -439,7 +439,7 @@ const MonthlyTimesheet = () => {
                     </Text>
                     {hasMultipleShifts && (
                       <Text style={styles.multipleShiftsIndicator}>
-                        {`${day.totalShifts} ca`}
+                        {day.totalShifts} ca
                       </Text>
                     )}
                   </View>
