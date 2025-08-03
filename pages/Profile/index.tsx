@@ -29,6 +29,7 @@ import { Salary } from "../../models/salary";
 import { formatCurrency } from "../../utils/string";
 import FormItemCard from "../../components/FormItemCard";
 import Toast from "react-native-toast-message";
+import { downloadContract } from "../../services/contractService";
 
 const { width } = Dimensions.get("window");
 
@@ -102,6 +103,8 @@ const ProfilePage = () => {
   const [salaryCriteriaData, setSalaryCriteriaData] = useState<any>(null);
   const [salaryLoading, setSalaryLoading] = useState(false);
   const [contractHistoryVisible, setContractHistoryVisible] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
   useEffect(() => {
     loadUserData();
   }, []);
@@ -481,6 +484,47 @@ const ProfilePage = () => {
     );
   };
 
+  const handleDownloadContract = async () => {
+    try {
+      setIsDownloading(true);
+      
+      // Show loading toast
+      Toast.show({
+        type: "info",
+        text1: "Đang tạo file PDF...",
+        text2: "Đang lấy thông tin hợp đồng hiệu lực...",
+        autoHide: false,
+      });
+
+      console.log('Starting download...');
+      
+      // Call downloadContract without parameters - it will fetch active contract data
+      await downloadContract();
+      
+      // Hide loading toast
+      Toast.hide();
+      
+      // Show success message
+      Toast.show({
+        type: "success",
+        text1: "Thành công!",
+        text2: "Hợp đồng hiện tại đã được tạo. Chọn nơi lưu file.",
+        visibilityTime: 3000,
+      });
+      
+    } catch (error) {
+      console.error("Error downloading contract:", error);
+      Toast.hide();
+      Toast.show({
+        type: "error",
+        text1: "Lỗi khi tải file",
+        text2: "Không thể tải hợp đồng. Vui lòng thử lại sau.",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const renderTabContent = () => {
     if (loading) {
       return (
@@ -716,12 +760,30 @@ const ProfilePage = () => {
 
             {/* Contract Actions */}
             <View style={styles.contractActionsContainer}>
-              <TouchableOpacity style={styles.contractActionButton}>
-                <Feather name="download" size={16} color="#3674B5" />
-                <Text style={styles.contractActionText}>Tải hợp đồng</Text>
+              <TouchableOpacity
+                style={[
+                  styles.contractActionButton,
+                  isDownloading && styles.contractActionDisabled,
+                ]}
+                onPress={handleDownloadContract}
+                disabled={isDownloading}
+              >
+                <Feather
+                  name={isDownloading ? "loader" : "download"}
+                  size={16}
+                  color={isDownloading ? "#999" : "#3674B5"}
+                />
+                <Text
+                  style={[
+                    styles.contractActionText,
+                    isDownloading && styles.contractActionTextDisabled,
+                  ]}
+                >
+                  {isDownloading ? "Đang tải..." : "Tải hợp đồng"}
+                </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[styles.contractActionButton, styles.contractActionSecondary]}
                 onPress={() => setContractHistoryVisible(true)}
               >
@@ -2155,13 +2217,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
-  contractActionSecondary: {
-    backgroundColor: "#f5f5f5",
+  contractActionDisabled: {
+    backgroundColor: "#f0f0f0",
+    opacity: 0.6,
   },
   contractActionText: {
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 8,
+  },
+  contractActionTextDisabled: {
+    color: "#999",
   },
 });
 

@@ -19,6 +19,13 @@
         {
           "photosPermission": "Cho phép ứng dụng truy cập thư viện ảnh của bạn để chọn ảnh đính kèm."
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Cho phép ứng dụng truy cập thư viện ảnh để lưu file PDF.",
+          "savePhotosPermission": "Cho phép ứng dụng lưu file PDF vào thư viện."
+        }
       ]
     ],
     "splash": {
@@ -34,8 +41,12 @@
       "package": "com.anhtus.hethongchamcongmobile",
       "runtimeVersion": "1.0.0",
       "permissions": [
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "READ_MEDIA_AUDIO",
+        "MANAGE_EXTERNAL_STORAGE"
       ]
     },
     "extra": {
