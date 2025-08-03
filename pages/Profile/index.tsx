@@ -21,6 +21,7 @@ import {
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import FaceRegisterPage from "../../components/FaceRegisterPage";
+import ContractHistoryModal from "../../components/ContractHistoryModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getUserContract, getFormDescriptions } from "../../service/api";
 import { getBangLuong, getBangLuongCriteria } from "../../service/salaryPage";
@@ -100,7 +101,7 @@ const ProfilePage = () => {
   const [apiSalaryHistory, setApiSalaryHistory] = useState<Salary[]>([]);
   const [salaryCriteriaData, setSalaryCriteriaData] = useState<any>(null);
   const [salaryLoading, setSalaryLoading] = useState(false);
-
+  const [contractHistoryVisible, setContractHistoryVisible] = useState(false);
   useEffect(() => {
     loadUserData();
   }, []);
@@ -716,8 +717,18 @@ const ProfilePage = () => {
             {/* Contract Actions */}
             <View style={styles.contractActionsContainer}>
               <TouchableOpacity style={styles.contractActionButton}>
-                <Feather name="download" size={18} color="#3674B5" />
+                <Feather name="download" size={16} color="#3674B5" />
                 <Text style={styles.contractActionText}>Tải hợp đồng</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.contractActionButton, styles.contractActionSecondary]}
+                onPress={() => setContractHistoryVisible(true)}
+              >
+                <Feather name="clock" size={16} color="#666" />
+                <Text style={[styles.contractActionText, { color: "#666" }]}>
+                  Lịch sử HĐ
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1454,6 +1465,13 @@ const ProfilePage = () => {
         {/* Bottom space */}
         <View style={styles.bottomSpace} />
       </ScrollView>
+
+      {/* Contract History Modal */}
+      <ContractHistoryModal
+        visible={contractHistoryVisible}
+        onClose={() => setContractHistoryVisible(false)}
+        userCode={userData?.employeeId || ""}
+      />
     </SafeAreaView>
   );
 };
@@ -2123,16 +2141,19 @@ const styles = StyleSheet.create({
   },
   contractActionsContainer: {
     flexDirection: "row",
-    justifyContent: "center",
+    justifyContent: "space-between",
     marginTop: 20,
+    gap: 12,
   },
   contractActionButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 12,
     backgroundColor: "#E3F2FD",
+    flex: 1,
+    justifyContent: "center",
   },
   contractActionSecondary: {
     backgroundColor: "#f5f5f5",

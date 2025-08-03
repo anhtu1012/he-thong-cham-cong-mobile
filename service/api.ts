@@ -136,3 +136,18 @@ export const cancelForm = async (formDescriptionId: string) => {
     throw error;
   }
 };
+
+export const getContractHistory = async (userCode: string) => {
+  try {
+    const response = await api.get(`/business/by-user-code-array/${userCode}`, {
+      params: {
+        offset: 0,
+        limit: 500000,
+      },
+    });
+    return response;
+  } catch (error) {
+    console.error("Error fetching contract history:", error);
+    throw error;
+  }
+};
