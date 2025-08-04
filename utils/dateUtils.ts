@@ -52,7 +52,7 @@ export const formatDate = (
  */
 export const getCurrentDateRes = (): string => {
   // Sử dụng dayjs để lấy thời gian hiện tại theo múi giờ Việt Nam isoString
-  return dayjs().tz("Asia/Ho_Chi_Minh").toISOString();
+  return dayjs().toISOString();
 };
 
 /**

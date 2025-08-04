@@ -15,10 +15,11 @@ import { useFocusEffect } from "@react-navigation/native";
 import { getCurrentDateRes } from "../../utils/dateUtils";
 import TimeScheduleModal from "../../components/TimeScheduleModal";
 import { DayStatus } from "../../models/timekeeping";
+import dayjs from "dayjs";
 
 const MonthlyTimesheet = () => {
   const [daysInMonth, setDaysInMonth] = useState<DayStatus[]>([]);
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(dayjs());
   const [dataWorkingSchedule, setDataWorkingSchedule] = useState<DayStatus[]>(
     []
   );
@@ -36,32 +37,18 @@ const MonthlyTimesheet = () => {
     const userData = await AsyncStorage.getItem("userData");
     const user = JSON.parse(userData!);
     const userCode = user.code;
-    let fromDate = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      1,
-      0,
-      0,
-      0,
-      0
-    );
-    const toDate = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      99
-    );
-    let days: DayStatus[] = Array.from({ length: toDate.getDate() }, (_, i) => {
+    
+    // Use dayjs for date calculations
+    let fromDate = currentDate.startOf('month').toDate();
+    const toDate = currentDate.endOf('month').toDate();
+    
+    let days: DayStatus[] = Array.from({ length: currentDate.daysInMonth() }, (_, i) => {
+      const dayDate = currentDate.date(i + 1);
       return {
         day: i + 1,
         value: "N",
         status: "normal",
-        date: new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1)
-          .toISOString()
-          .split("T")[0],
+        date: dayDate.format('YYYY-MM-DD'),
         checkInTime: undefined,
         checkOutTime: undefined,
         workingHourReal: undefined,
@@ -83,10 +70,10 @@ const MonthlyTimesheet = () => {
     );
 
     // get current day & store to asyncStorage with priority logic
-    const today = new Date(getCurrentDateRes());
+    const today = dayjs(getCurrentDateRes());
     const currentDaySchedules = timeSchedule.filter((time: any) => {
-      const timeDate = new Date(time.date);
-      return timeDate.getDate() === today.getDate();
+      const timeDate = dayjs(time.date);
+      return timeDate.isSame(today, 'day');
     });
 
     if (currentDaySchedules.length > 0) {
@@ -123,8 +110,8 @@ const MonthlyTimesheet = () => {
 
     // Process timeSchedule data
     for (const date of timeSchedule) {
-      const currentDateObj = new Date(date.date);
-      const day = days[currentDateObj.getDate() - 1];
+      const currentDateObj = dayjs(date.date);
+      const day = days[currentDateObj.date() - 1];
 
       // Store additional data + 7 tiếng
       day.checkInTime = date.checkInTime;
@@ -161,7 +148,7 @@ const MonthlyTimesheet = () => {
     const shiftsByDate = new Map();
 
     for (const schedule of timeSchedule) {
-      const dateKey = new Date(schedule.date).toISOString().split("T")[0];
+      const dateKey = dayjs(schedule.date).format('YYYY-MM-DD');
 
       if (!shiftsByDate.has(dateKey)) {
         shiftsByDate.set(dateKey, []);
@@ -184,8 +171,8 @@ const MonthlyTimesheet = () => {
 
     // Update days with multiple shifts
     for (const [dateKey, shifts] of shiftsByDate.entries()) {
-      const dateObj = new Date(dateKey);
-      const dayIndex = dateObj.getDate() - 1;
+      const dateObj = dayjs(dateKey);
+      const dayIndex = dateObj.date() - 1;
 
       if (dayIndex >= 0 && dayIndex < days.length) {
         const day = days[dayIndex];
@@ -196,14 +183,14 @@ const MonthlyTimesheet = () => {
           day.totalShifts = shifts.length;
 
           // Calculate total working hours - only count shifts with status END, LATE, FORGET
-          const totalHours = shifts.reduce((sum: number, shift: any) => {
+          const totalHours = Number(shifts.reduce((sum: number, shift: any) => {
             // Only add hours for shifts with status END, FORGET, or statusTimeKeeping LATE
             if (shift.status === "END" || shift.status === "FORGET") {
               return sum + (shift.workingHours || 0);
             }
             // For other statuses (ACTIVE, NOTSTARTED, etc.), add 0 hours
             return sum + 0;
-          }, 0);
+          }, 0).toFixed(2));
 
           day.totalWorkingHours = totalHours;
 
@@ -213,7 +200,7 @@ const MonthlyTimesheet = () => {
           const hasNotStartedShift = shifts.some(
             (s: any) => s.status === "NOTSTARTED"
           );
-
+          
           if (hasActiveShift) {
             day.status = "ACTIVE";
             day.value = "D";
@@ -251,13 +238,9 @@ const MonthlyTimesheet = () => {
 
   const handleChangeMonth = (isForward: boolean) => {
     if (isForward) {
-      setCurrentDate(
-        (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1)
-      );
+      setCurrentDate(currentDate.add(1, 'month'));
     } else {
-      setCurrentDate(
-        (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1)
-      );
+      setCurrentDate(currentDate.subtract(1, 'month'));
     }
   };
 
@@ -296,29 +279,19 @@ const MonthlyTimesheet = () => {
     // Create a copy of daysInMonth to avoid mutating state
     let days = [...daysInMonth];
 
-    const firstDay = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      days[0].day
-    ).getDay();
+    const firstDay = currentDate.startOf('month').day();
 
     // Add placeholder days for the beginning of the month
-    if (firstDay !== 0) {
-      for (let i = 0; i < firstDay - 1; i++) {
-        days.unshift({
-          day: 0,
-          status: "NOTSTARTED",
-          value: 0,
-        });
-      }
-    } else {
-      for (let i = 0; i < 6; i++) {
-        days.unshift({
-          day: 0,
-          status: "NOTSTARTED",
-          value: 0,
-        });
-      }
+    // day() returns 0 for Sunday, 1 for Monday, etc.
+    // We want to align with Monday as the first day of the week
+    const daysToAdd = firstDay === 0 ? 6 : firstDay - 1;
+    
+    for (let i = 0; i < daysToAdd; i++) {
+      days.unshift({
+        day: 0,
+        status: "NOTSTARTED",
+        value: 0,
+      });
     }
 
     // Add placeholder days to complete the grid (make it divisible by 7)
@@ -341,24 +314,18 @@ const MonthlyTimesheet = () => {
 
   // Render calendar grid
   const renderGrid = useCallback(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    const today = dayjs().startOf('day'); // Use dayjs for today
 
     return gridData.map((week, weekIndex) => (
       <View key={`week-${weekIndex}`} style={styles.weekRow}>
         {week.map((day, dayIndex) => {
           // Check if this day is in the future
-          const dayDate = new Date(
-            currentDate.getFullYear(),
-            currentDate.getMonth(),
-            day.day
-          );
-          const isFutureDate = dayDate > today && day.day !== 0;
+          const dayDate = currentDate.date(day.day);
+          const isFutureDate = dayDate.isAfter(today) && day.day !== 0;
 
           // Check if this day is the current date
-          const isCurrentDate =
-            dayDate.getTime() === today.getTime() && day.day !== 0;
-
+          const isCurrentDate = dayDate.isSame(today, 'day') && day.day !== 0;
+          
           // Check if day has multiple shifts
           const hasMultipleShifts = day.shifts && day.shifts.length > 1;
 
@@ -454,8 +421,8 @@ const MonthlyTimesheet = () => {
 
   // Header with month selector
   const renderHeader = () => {
-    const month = currentDate.getMonth() + 1; // Tháng hiện tại
-    const year = currentDate.getFullYear(); // Năm hiện tại
+    const month = currentDate.month() + 1; // Tháng hiện tại
+    const year = currentDate.year(); // Năm hiện tại
 
     return (
       <View style={styles.headerContainer}>
@@ -558,7 +525,7 @@ const MonthlyTimesheet = () => {
         visible={isModalVisible}
         onClose={handleCloseModal}
         selectedDate={choosenDate}
-        currentDate={currentDate}
+        currentDate={currentDate.toDate()}
       />
       <View style={styles.container}>
         <ScrollView
