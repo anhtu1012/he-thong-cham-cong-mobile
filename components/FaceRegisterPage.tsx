@@ -1,32 +1,32 @@
+import AntDesign from "@expo/vector-icons/AntDesign";
+import Feather from "@expo/vector-icons/Feather";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 import {
   CameraMode,
   CameraType,
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { useRef, useState, useEffect } from "react";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useRef, useState } from "react";
 import {
-  Button,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
   ActivityIndicator,
   Animated,
+  Button,
+  Pressable,
   SafeAreaView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
 } from "react-native";
-import { Image } from "expo-image";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Feather from "@expo/vector-icons/Feather";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { LinearGradient } from "expo-linear-gradient";
-import { checkMultipleFace, createForm, registerFace } from "../service/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
-import { CommonActions, useNavigation } from "@react-navigation/native";
 import { NavigationProps } from "../pages/Login";
+import { createForm, getUser, registerFace } from "../service/api";
 
 export default function FaceRegisterPage() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -171,7 +171,18 @@ export default function FaceRegisterPage() {
           text1: "Đăng ký khuôn mặt thành công!",
           text1Style: { textAlign: "center", fontSize: 16 },
         });
-        navigation.navigate("DrawerHomeScreen");
+        try {
+          const res = await getUser(user.code);
+          if (res.data.data.length > 0) {
+            await AsyncStorage.setItem(
+              "userData",
+              JSON.stringify(res.data.data[0])
+            );
+          }
+        } catch (apiError) {
+          console.error("Error calling API to update user data:", apiError);
+        }
+        navigation.goBack();
       } catch (error: any) {
         console.log("Upload error:", error.response.data);
         Toast.show({
