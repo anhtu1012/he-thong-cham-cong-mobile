@@ -120,7 +120,12 @@ const NotificationPage: React.FC = () => {
       }
       const userData = JSON.parse(userDataString);
       const response = await getNotifications(userData?.code);
-      setNotifications(response.data.data);
+      // Sắp xếp thông báo mới nhất trước
+      const sortedNotifications = response.data.data.sort(
+        (a: any, b: any) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setNotifications(sortedNotifications);
       // Tính unreadCount từ data mới nhận được
       const newUnreadCount = response.data.data.filter(
         (notification: NotificationItem) => !notification.isRead

@@ -157,13 +157,17 @@ export const getNotifications = async (userCode: string) => {
 };
 
 export const markAllNotificationsAsRead = async (userCode: string) => {
-  return api.post(`/v1/notification/mark-all-read`, {
+  return api.post(`/notification/mark-all-read`, {
     userCode: userCode,
   });
 };
 
 export const updateNotificationStatus = async (notificationId: string) => {
-  return api.put(`/v1/notification/${notificationId}`, {
+  return api.put(`/notification/${notificationId}`, {
     isRead: true,
   });
+};
+
+export const getUser = async (userCode: string) => {
+  return api.get(`/business/get-user-by-management?userCode=${userCode}`);
 };
