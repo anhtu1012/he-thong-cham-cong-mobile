@@ -37,27 +37,30 @@ const MonthlyTimesheet = () => {
     const userData = await AsyncStorage.getItem("userData");
     const user = JSON.parse(userData!);
     const userCode = user.code;
-    
+
     // Use dayjs for date calculations
-    let fromDate = currentDate.startOf('month').toDate();
-    const toDate = currentDate.endOf('month').toDate();
-    
-    let days: DayStatus[] = Array.from({ length: currentDate.daysInMonth() }, (_, i) => {
-      const dayDate = currentDate.date(i + 1);
-      return {
-        day: i + 1,
-        value: "N",
-        status: "normal",
-        date: dayDate.format('YYYY-MM-DD'),
-        checkInTime: undefined,
-        checkOutTime: undefined,
-        workingHourReal: undefined,
-        workingHours: undefined,
-        startShiftTime: undefined,
-        endShiftTime: undefined,
-        statusTimeKeeping: undefined,
-      };
-    });
+    let fromDate = currentDate.startOf("month").toDate();
+    const toDate = currentDate.endOf("month").toDate();
+
+    let days: DayStatus[] = Array.from(
+      { length: currentDate.daysInMonth() },
+      (_, i) => {
+        const dayDate = currentDate.date(i + 1);
+        return {
+          day: i + 1,
+          value: "N",
+          status: "normal",
+          date: dayDate.format("YYYY-MM-DD"),
+          checkInTime: undefined,
+          checkOutTime: undefined,
+          workingHourReal: undefined,
+          workingHours: undefined,
+          startShiftTime: undefined,
+          endShiftTime: undefined,
+          statusTimeKeeping: undefined,
+        };
+      }
+    );
 
     const timeScheduleRes = await getTimeSchedule(fromDate, toDate, userCode);
     let timeSchedule = timeScheduleRes.data.data;
@@ -73,7 +76,7 @@ const MonthlyTimesheet = () => {
     const today = dayjs(getCurrentDateRes());
     const currentDaySchedules = timeSchedule.filter((time: any) => {
       const timeDate = dayjs(time.date);
-      return timeDate.isSame(today, 'day');
+      return timeDate.isSame(today, "day");
     });
 
     if (currentDaySchedules.length > 0) {
@@ -148,7 +151,7 @@ const MonthlyTimesheet = () => {
     const shiftsByDate = new Map();
 
     for (const schedule of timeSchedule) {
-      const dateKey = dayjs(schedule.date).format('YYYY-MM-DD');
+      const dateKey = dayjs(schedule.date).format("YYYY-MM-DD");
 
       if (!shiftsByDate.has(dateKey)) {
         shiftsByDate.set(dateKey, []);
@@ -183,14 +186,18 @@ const MonthlyTimesheet = () => {
           day.totalShifts = shifts.length;
 
           // Calculate total working hours - only count shifts with status END, LATE, FORGET
-          const totalHours = Number(shifts.reduce((sum: number, shift: any) => {
-            // Only add hours for shifts with status END, FORGET, or statusTimeKeeping LATE
-            if (shift.status === "END" || shift.status === "FORGET") {
-              return sum + (shift.workingHours || 0);
-            }
-            // For other statuses (ACTIVE, NOTSTARTED, etc.), add 0 hours
-            return sum + 0;
-          }, 0).toFixed(2));
+          const totalHours = Number(
+            shifts
+              .reduce((sum: number, shift: any) => {
+                // Only add hours for shifts with status END, FORGET, or statusTimeKeeping LATE
+                if (shift.status === "END" || shift.status === "FORGET") {
+                  return sum + (shift.workingHours || 0);
+                }
+                // For other statuses (ACTIVE, NOTSTARTED, etc.), add 0 hours
+                return sum + 0;
+              }, 0)
+              .toFixed(2)
+          );
 
           day.totalWorkingHours = totalHours;
 
@@ -200,16 +207,16 @@ const MonthlyTimesheet = () => {
           const hasNotStartedShift = shifts.some(
             (s: any) => s.status === "NOTSTARTED"
           );
-          
+
           if (hasActiveShift) {
             day.status = "ACTIVE";
             day.value = "D";
-          } else if (hasEndShift) {
-            day.status = "END";
-            day.value = totalHours;
           } else if (hasNotStartedShift) {
             day.status = "NOTSTARTED";
             day.value = 0;
+          } else if (hasEndShift) {
+            day.status = "END";
+            day.value = totalHours;
           } else {
             day.status = "NOTWORK";
             day.value = "A";
@@ -238,9 +245,9 @@ const MonthlyTimesheet = () => {
 
   const handleChangeMonth = (isForward: boolean) => {
     if (isForward) {
-      setCurrentDate(currentDate.add(1, 'month'));
+      setCurrentDate(currentDate.add(1, "month"));
     } else {
-      setCurrentDate(currentDate.subtract(1, 'month'));
+      setCurrentDate(currentDate.subtract(1, "month"));
     }
   };
 
@@ -279,13 +286,13 @@ const MonthlyTimesheet = () => {
     // Create a copy of daysInMonth to avoid mutating state
     let days = [...daysInMonth];
 
-    const firstDay = currentDate.startOf('month').day();
+    const firstDay = currentDate.startOf("month").day();
 
     // Add placeholder days for the beginning of the month
     // day() returns 0 for Sunday, 1 for Monday, etc.
     // We want to align with Monday as the first day of the week
     const daysToAdd = firstDay === 0 ? 6 : firstDay - 1;
-    
+
     for (let i = 0; i < daysToAdd; i++) {
       days.unshift({
         day: 0,
@@ -314,18 +321,19 @@ const MonthlyTimesheet = () => {
 
   // Render calendar grid
   const renderGrid = useCallback(() => {
-    const today = dayjs().startOf('day'); // Use dayjs for today
+    const today = getCurrentDateRes(); // Use dayjs for today
 
     return gridData.map((week, weekIndex) => (
       <View key={`week-${weekIndex}`} style={styles.weekRow}>
         {week.map((day, dayIndex) => {
           // Check if this day is in the future
           const dayDate = currentDate.date(day.day);
+
           const isFutureDate = dayDate.isAfter(today) && day.day !== 0;
 
           // Check if this day is the current date
-          const isCurrentDate = dayDate.isSame(today, 'day') && day.day !== 0;
-          
+          const isCurrentDate = dayDate.isSame(today, "day") && day.day !== 0;
+
           // Check if day has multiple shifts
           const hasMultipleShifts = day.shifts && day.shifts.length > 1;
 
@@ -342,7 +350,6 @@ const MonthlyTimesheet = () => {
                 isCurrentDate &&
                   day.status === "NOTSTARTED" &&
                   styles.currentDateNotStartedCell,
-                hasMultipleShifts && styles.multipleShiftsCell,
               ]}
               activeOpacity={0.7}
               onPress={() => {
@@ -394,7 +401,9 @@ const MonthlyTimesheet = () => {
                       ]}
                     >
                       {hasMultipleShifts
-                        ? day.totalWorkingHours
+                        ? day.status == "ACTIVE"
+                          ? "D"
+                          : day.totalWorkingHours
                         : day.status === "END" ||
                           day.status === "FORGET" ||
                           day.statusTimeKeeping === "LATE" ||
@@ -402,6 +411,8 @@ const MonthlyTimesheet = () => {
                         ? day.value
                         : day.value === "N"
                         ? "N"
+                        : day.status == "ACTIVE"
+                        ? "D"
                         : 0}
                     </Text>
                     {hasMultipleShifts && (

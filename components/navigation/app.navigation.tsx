@@ -631,7 +631,11 @@ function AppNavigation() {
                         fontSize: 16,
                       }}
                     >
-                      {String(descriptor.options.title || descriptor.route.name || "Menu")}
+                      {String(
+                        descriptor.options.title ||
+                          descriptor.route.name ||
+                          "Menu"
+                      )}
                     </Text>
                     {descriptor.route.name === "NotificationDrawer" &&
                       notificationCount > 0 && (
@@ -653,11 +657,11 @@ function AppNavigation() {
                               fontSize: 10,
                               fontWeight: "bold",
                             }}
-                                                      >
-                              {notificationCount > 99
-                                ? "99+"
-                                : String(notificationCount)}
-                            </Text>
+                          >
+                            {notificationCount > 99
+                              ? "99+"
+                              : String(notificationCount)}
+                          </Text>
                         </View>
                       )}
                   </View>

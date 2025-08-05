@@ -483,6 +483,7 @@ export default function CameraPage() {
         userCode: user.code,
         checkInTime: getCurrentDateRes(),
       };
+
       // console.log("payload: ", payload);
 
       try {
